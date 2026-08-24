@@ -130,6 +130,20 @@ Only after the application foundation and UX are stable:
 - [ ] Bit-perfect path
 - [ ] Native C/C++ audio code
 
+
+## Repository presentation
+
+- [ ] Redesign README as a Sonethyst product landing page
+- [ ] Add Sonethyst logo / launcher artwork to README
+- [ ] Add real app screenshots
+- [ ] Add concise feature highlights and project status
+- [ ] Move detailed build documentation to `docs/BUILDING.md`
+- [ ] Move architecture/development notes to `docs/DEVELOPMENT.md`
+- [ ] Move advanced audio / USB DAC documentation to `docs/AUDIO.md`
+- [ ] Move troubleshooting details to `docs/TROUBLESHOOTING.md`
+- [ ] Keep Aurora attribution and third-party credits clearly visible
+- [ ] Add GitHub Releases installation section when release builds are available
+
 ## Technical debt / cleanup
 
 - [ ] Deprecated Android Virtualizer API usage

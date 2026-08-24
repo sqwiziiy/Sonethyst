@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
     /** Deliver the Spotify OAuth code from `sonethyst://spotify?code=...` to the auth flow. */
     private fun handleAuthRedirect(intent: Intent?) {
         val data = intent?.data ?: return
-        if (data.scheme == "aurora" && data.host == "spotify") {
+        if (data.scheme == "sonethyst" && data.host == "spotify") {
             data.getQueryParameter("code")?.takeIf { it.isNotBlank() }?.let {
                 (application as AuroraApplication).container.emitSpotifyRedirect(it)
             }
