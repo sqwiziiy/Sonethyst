@@ -324,6 +324,7 @@ class SettingsStore(private val context: Context) {
         val SOURCE_PRIORITY = stringPreferencesKey("source_priority")
         val UNIFIED_LIBRARY = booleanPreferencesKey("unified_library")
         val MERGE_SOURCES = stringSetPreferencesKey("merge_sources")      // empty = all
+        val LOCAL_EXCLUDED_FOLDERS = stringSetPreferencesKey("local_excluded_folders")
         val RECENT_SEARCHES = stringPreferencesKey("recent_searches")
         val SQUIG_BASE = stringPreferencesKey("squig_base_url")
         val SQUIG_TARGET = stringPreferencesKey("squig_target")
@@ -669,6 +670,50 @@ class SettingsStore(private val context: Context) {
     // empty = every eligible saved source
     val mergeSources: Flow<Set<String>> = context.dataStore.data.map { it[Keys.MERGE_SOURCES] ?: emptySet() }
     suspend fun setMergeSources(keys: Set<String>) = context.dataStore.edit { it[Keys.MERGE_SOURCES] = keys }
+
+    val localExcludedFolders: Flow<Set<String>> =
+        context.dataStore.data
+            .map { prefs ->
+                prefs[Keys.LOCAL_EXCLUDED_FOLDERS]
+                    ?.map { path ->
+                        path.replace('\\', '/').trim().trimEnd('/')
+                    }
+                    ?.filter { it.isNotBlank() }
+                    ?.toSet()
+                    ?: emptySet()
+            }
+            .distinctUntilChanged()
+
+    suspend fun setLocalFolderExcluded(
+        path: String,
+        excluded: Boolean,
+    ) {
+        val normalized =
+            path.replace('\\', '/').trim().trimEnd('/')
+
+        if (normalized.isBlank()) return
+
+        context.dataStore.edit { prefs ->
+            val current =
+                prefs[Keys.LOCAL_EXCLUDED_FOLDERS]
+                    ?.toMutableSet()
+                    ?: mutableSetOf()
+
+            if (excluded) {
+                current += normalized
+            } else {
+                current -= normalized
+            }
+
+            prefs[Keys.LOCAL_EXCLUDED_FOLDERS] = current
+        }
+    }
+
+    suspend fun clearLocalFolderExclusions() {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.LOCAL_EXCLUDED_FOLDERS] = emptySet()
+        }
+    }
 
     val recentSearches: Flow<List<String>> = context.dataStore.data.map { parseStringList(it[Keys.RECENT_SEARCHES]) }
 

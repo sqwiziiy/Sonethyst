@@ -295,6 +295,11 @@ class AppContainer(context: Context) {
         onLibraryChanged = { _libraryReload.value++ },
     )
 
+    suspend fun refreshLocalLibrary() {
+        localLibrary.refresh()
+        _libraryReload.value++
+    }
+
     private fun recomputeOffline() {
         // local-files mode never needs the network so it's never offline
         val local = backend?.session?.type == ServerType.LOCAL
@@ -372,6 +377,22 @@ class AppContainer(context: Context) {
         scope.launch {
             settingsStore.acoustIdKey.collect { acoustIdKeyValue = it }
         }
+        scope.launch {
+            var first = true
+
+            settingsStore.localExcludedFolders.collect { excluded ->
+                localLibrary.setExcludedFolders(excluded)
+
+                if (!first) {
+                    runCatching {
+                        refreshLocalLibrary()
+                    }
+                }
+
+                first = false
+            }
+        }
+
         scope.launch {
             settingsStore.preferLocalSources.collect { on ->
                 preferLocalSources = on

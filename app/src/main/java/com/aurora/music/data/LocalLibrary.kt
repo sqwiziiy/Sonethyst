@@ -34,6 +34,12 @@ class LocalLibrary(
 
     @Volatile private var dirOf: Map<String, String> = emptyMap()
 
+    @Volatile
+    private var excludedFolders: Set<String> = emptySet()
+
+    @Volatile
+    private var detectedFolders: List<String> = emptyList()
+
     @Volatile var folderRoot: String = ""; private set
 
     suspend fun ensureLoaded() {
@@ -48,6 +54,33 @@ class LocalLibrary(
     }
 
     fun song(id: String): Song? = byId[id]
+
+    fun detectedMusicFolders(): List<String> =
+        detectedFolders
+
+    fun setExcludedFolders(paths: Set<String>) {
+        excludedFolders =
+            paths
+                .map { normalizeFolder(it) }
+                .filter { it.isNotBlank() }
+                .toSet()
+    }
+
+    private fun normalizeFolder(path: String): String =
+        path.replace('\\', '/')
+            .trim()
+            .trimEnd('/')
+
+    private fun isFolderExcluded(path: String): Boolean {
+        val normalized = normalizeFolder(path)
+
+        if (normalized.isBlank()) return false
+
+        return excludedFolders.any { excluded ->
+            normalized == excluded ||
+                normalized.startsWith("$excluded/")
+        }
+    }
 
     // only substitute on a single unambiguous match so a different version is never swapped in
     fun findMatch(artist: String, title: String, durationSec: Int): Song? {
@@ -130,6 +163,8 @@ class LocalLibrary(
         val albumDateAdded = HashMap<String, Long>()
         val albumYear = HashMap<String, Int>()
         val dirs = HashMap<String, String>()
+        val allDetectedDirs = linkedSetOf<String>()
+
         runCatching {
             context.contentResolver.query(collection, projection, selection, null, sort)?.use { c ->
                 val idCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
@@ -161,9 +196,45 @@ class LocalLibrary(
                     val bitrateKbps = if (bitrateCol >= 0) (runCatching { c.getInt(bitrateCol) }.getOrDefault(0) / 1000) else 0
                     val art = albumArtUri(albumId)
                     val uri = ContentUris.withAppendedId(collection, id).toString()
-                    val data = if (dataCol >= 0) c.getString(dataCol).orEmpty() else ""
-                    if (data.contains('/')) dirs[id.toString()] = data.substringBeforeLast('/')
-                    val rg = if (data.isNotBlank()) gainProvider(data) else null
+                    val data =
+                        if (dataCol >= 0) {
+                            c.getString(dataCol).orEmpty()
+                        } else {
+                            ""
+                        }
+
+                    val directory =
+                        if (data.contains('/')) {
+                            normalizeFolder(
+                                data.substringBeforeLast('/')
+                            )
+                        } else {
+                            ""
+                        }
+
+                    if (directory.isNotBlank()) {
+                        allDetectedDirs += directory
+                    }
+
+                    // Exclusion affects Sonethyst's library only.
+                    // MediaStore and the actual file are never modified.
+                    if (
+                        directory.isNotBlank() &&
+                        isFolderExcluded(directory)
+                    ) {
+                        continue
+                    }
+
+                    if (directory.isNotBlank()) {
+                        dirs[id.toString()] = directory
+                    }
+
+                    val rg =
+                        if (data.isNotBlank()) {
+                            gainProvider(data)
+                        } else {
+                            null
+                        }
                     val sidAlbum = albumId.toString()
                     if (added > (albumDateAdded[sidAlbum] ?: 0L)) albumDateAdded[sidAlbum] = added
                     if (year > 0 && albumYear[sidAlbum] == null) albumYear[sidAlbum] = year
@@ -187,6 +258,15 @@ class LocalLibrary(
                 }
             }
         }
+        detectedFolders =
+            allDetectedDirs
+                .sortedWith(
+                    compareBy<String>(
+                        { it.count { ch -> ch == '/' } },
+                        { it.lowercase() },
+                    )
+                )
+
         songs = out
         byId = out.associateBy { it.id }
         matchIndex = out.groupBy { TrackMatch.key(it.artist, it.title) }

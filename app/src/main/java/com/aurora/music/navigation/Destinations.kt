@@ -29,6 +29,7 @@ object Routes {
     const val SETTINGS_ACCOUNTS = "settings_accounts"
     const val SETTINGS_BACKUP = "settings_backup"
     const val SETTINGS_SOURCES = "settings_sources"
+    const val SETTINGS_LOCAL_FOLDERS = "settings_local_folders"
     const val DISCORD_LOGIN = "discord_login"
     const val HISTORY = "history"
     const val STATS = "stats"

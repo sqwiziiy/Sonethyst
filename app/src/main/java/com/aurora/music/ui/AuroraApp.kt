@@ -579,7 +579,13 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             if (uri != null && text != null) {
                                 scope.launch(kotlinx.coroutines.Dispatchers.IO) {
                                     val ok = runCatching {
-                                        context.contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray()) } != null
+                                        context.contentResolver.openOutputStream(uri)?.use {
+                                            it.write(
+                                                text.toByteArray(
+                                                    Charsets.UTF_8
+                                                )
+                                            )
+                                        } != null
                                     }.getOrDefault(false)
                                     confirm(if (ok) "Playlist exported" else "Export failed")
                                 }
@@ -588,7 +594,9 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                         val importM3uLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                             if (uri != null) scope.launch {
                                 val (text, displayName) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                    val t = runCatching { context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } }.getOrNull()
+                                    val t = runCatching { context.contentResolver.openInputStream(uri)
+                                            ?.bufferedReader(Charsets.UTF_8)
+                                            ?.use { it.readText() } }.getOrNull()
                                     // saf uris carry opaque doc ids the human file name needs a query
                                     val n = runCatching {
                                         context.contentResolver.query(uri, null, null, null, null)?.use { c ->
@@ -972,6 +980,11 @@ onAddToPlaylist = {
                             onOpenVisualizer = { navController.navigate(Routes.SETTINGS_VISUALIZER) },
                             onOpenSonic = { navController.navigate(Routes.SETTINGS_SONIC) },
                             onOpenSources = { navController.navigate(Routes.SETTINGS_SOURCES) },
+                            onOpenMusicFolders = {
+                                navController.navigate(
+                                    Routes.SETTINGS_LOCAL_FOLDERS
+                                )
+                            },
                             onOpenDownloads = { navController.navigate(Routes.SETTINGS_STORAGE) },
                             onOpenAppearance = { navController.navigate(Routes.SETTINGS_APPEARANCE) },
                             onOpenGestures = { navController.navigate(Routes.SETTINGS_GESTURES) },
@@ -1040,7 +1053,20 @@ onAddToPlaylist = {
                         com.aurora.music.ui.screens.settings.SonicSettingsScreen(contentPadding = inner, onBack = { navController.popBackStack() })
                     }
                     composable(Routes.SETTINGS_SOURCES) {
-                        com.aurora.music.ui.screens.settings.SourcesSettingsScreen(contentPadding = inner, onBack = { navController.popBackStack() })
+                        com.aurora.music.ui.screens.settings.SourcesSettingsScreen(
+                            contentPadding = inner,
+                            onBack = {
+                                navController.popBackStack()
+                            },
+                        )
+                    }
+                    composable(Routes.SETTINGS_LOCAL_FOLDERS) {
+                        com.aurora.music.ui.screens.settings.MusicFoldersSettingsScreen(
+                            contentPadding = inner,
+                            onBack = {
+                                navController.popBackStack()
+                            },
+                        )
                     }
                     composable(Routes.SETTINGS_PERMISSIONS) {
                         com.aurora.music.ui.screens.settings.PermissionsScreen(contentPadding = inner, onBack = { navController.popBackStack() })

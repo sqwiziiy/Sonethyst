@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.MergeType
 import androidx.compose.material.icons.filled.Extension
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -56,6 +57,7 @@ fun SettingsScreen(
     onOpenVisualizer: () -> Unit,
     onOpenSonic: () -> Unit,
     onOpenSources: () -> Unit,
+    onOpenMusicFolders: () -> Unit,
     onOpenDownloads: () -> Unit,
     onOpenAppearance: () -> Unit,
     onOpenGestures: () -> Unit,
@@ -140,9 +142,26 @@ fun SettingsScreen(
             item { SettingsSectionTitle("Library") }
             item {
                 SettingsGroup {
-                    SettingsNavRow(Icons.Filled.MergeType, "Library & sources", "Best-source playback order, unified multi-server library", onClick = onOpenSources)
+                    SettingsNavRow(
+                        Icons.Filled.MergeType,
+                        "Library & sources",
+                        "Best-source playback order, unified multi-server library",
+                        onClick = onOpenSources,
+                    )
                     SettingsRowDivider()
-                    SettingsNavRow(Icons.Filled.Download, "Downloads & storage", "${downloads.size} downloaded · quality, offline", onClick = onOpenDownloads)
+                    SettingsNavRow(
+                        Icons.Filled.Folder,
+                        "Music folders",
+                        "Include or exclude local music folders",
+                        onClick = onOpenMusicFolders,
+                    )
+                    SettingsRowDivider()
+                    SettingsNavRow(
+                        Icons.Filled.Download,
+                        "Downloads & storage",
+                        "${downloads.size} downloaded · quality, offline",
+                        onClick = onOpenDownloads,
+                    )
                 }
             }
 

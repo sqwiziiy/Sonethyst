@@ -9,6 +9,8 @@ import com.aurora.music.model.Playlist
 import com.aurora.music.model.Song
 import com.aurora.music.util.accentFor
 import java.io.File
+import java.text.Normalizer
+import java.util.Locale
 
 data class HomeData(
     val newReleases: List<Album> = emptyList(),
@@ -213,31 +215,247 @@ class MusicRepository(
     suspend fun exportPlaylist(kind: String, id: String): String? =
         detail(kind, id)?.tracks?.takeIf { it.isNotEmpty() }?.let { M3u.write(it) }
 
-    suspend fun importPlaylist(name: String, entries: List<M3u.Entry>): Pair<Int, Int>? {
+    suspend fun importPlaylist(
+        name: String,
+        entries: List<M3u.Entry>,
+    ): Pair<Int, Int>? {
         if (offline || entries.isEmpty()) return null
-        val matched = entries.mapNotNull { matchEntry(it) }.distinctBy { it.id }
-        val playlistId = backend?.createPlaylistWithId(name) ?: return null
-        if (matched.isNotEmpty()) backend?.addToPlaylist(playlistId, matched.map { it.id })
+
+        // Import is an infrequent operation, so load the library once and use it
+        // for exact path / filename / metadata matching before making searches.
+        val library = runCatching {
+            allSongs()
+        }.getOrDefault(emptyList())
+
+        val matched = entries
+            .mapNotNull { matchEntry(it, library) }
+            .distinctBy { it.id }
+
+        val playlistId =
+            backend?.createPlaylistWithId(name) ?: return null
+
+        if (matched.isNotEmpty()) {
+            backend?.addToPlaylist(
+                playlistId,
+                matched.map { it.id },
+            )
+        }
+
         onLibraryChanged()
         return matched.size to entries.size
     }
 
-    private fun norm(s: String) = s.lowercase().replace(Regex("[^a-z0-9]+"), " ").trim()
+    private fun norm(value: String): String =
+        Normalizer.normalize(
+            value,
+            Normalizer.Form.NFKC,
+        )
+            .lowercase(Locale.ROOT)
+            .replace(
+                Regex("[^\\p{L}\\p{N}]+"),
+                " ",
+            )
+            .trim()
 
-    private suspend fun matchEntry(e: M3u.Entry): Song? {
-        val query = listOf(e.artist, e.title).filter { it.isNotBlank() }.joinToString(" ")
+    private fun locationKey(raw: String): String {
+        val input = raw
+            .trim()
+            .trim('"')
+
+        if (input.isBlank()) return ""
+
+        val parsed = runCatching {
+            Uri.parse(input)
+        }.getOrNull()
+
+        val pathLike =
+            if (
+                parsed?.scheme?.equals(
+                    "file",
+                    ignoreCase = true,
+                ) == true
+            ) {
+                parsed.path.orEmpty()
+            } else {
+                Uri.decode(input)
+            }
+
+        return pathLike
+            .replace('\\', '/')
+            .replace(Regex("/+"), "/")
+            .trim()
+            .trimEnd('/')
+            .lowercase(Locale.ROOT)
+    }
+
+    private fun basenameKey(raw: String): String =
+        locationKey(raw).substringAfterLast('/')
+
+    private fun matchScore(
+        entry: M3u.Entry,
+        song: Song,
+    ): Int {
+        val titleN = norm(entry.title)
+        val artistN = norm(entry.artist)
+        val songTitle = norm(song.title)
+        val songArtist = norm(song.artist)
+
+        var score = 0
+
+        if (titleN.isNotBlank()) {
+            score += when {
+                songTitle == titleN -> 8
+                songTitle.contains(titleN) ||
+                    titleN.contains(songTitle) -> 3
+                else -> 0
+            }
+        }
+
+        if (artistN.isNotBlank()) {
+            score += when {
+                songArtist == artistN -> 5
+                songArtist.contains(artistN) ||
+                    artistN.contains(songArtist) -> 3
+                else -> 0
+            }
+        }
+
+        if (entry.durationSec > 0 && song.durationSec > 0) {
+            val diff = kotlin.math.abs(
+                song.durationSec - entry.durationSec
+            )
+
+            score += when {
+                diff <= 2 -> 3
+                diff <= 5 -> 1
+                else -> 0
+            }
+        }
+
+        return score
+    }
+
+    private fun bestMatch(
+        entry: M3u.Entry,
+        candidates: List<Song>,
+        minimumScore: Int,
+    ): Song? =
+        candidates
+            .map { song ->
+                song to matchScore(entry, song)
+            }
+            .filter { (_, score) ->
+                score >= minimumScore
+            }
+            .maxByOrNull { (_, score) ->
+                score
+            }
+            ?.first
+
+    private suspend fun matchEntry(
+        entry: M3u.Entry,
+        library: List<Song>,
+    ): Song? {
+        /*
+         * Strongest match:
+         * actual M3U path against MediaStore/server path.
+         *
+         * Relative M3U paths are supported through endsWith().
+         */
+        val entryLocation = locationKey(entry.location)
+
+        if (entryLocation.isNotBlank()) {
+            val pathMatches = library.filter { song ->
+                val songPath = locationKey(song.path)
+
+                songPath.isNotBlank() &&
+                    (
+                        songPath == entryLocation ||
+                            (
+                                entryLocation.contains('/') &&
+                                    songPath.endsWith(
+                                        "/$entryLocation"
+                                    )
+                            )
+                    )
+            }
+
+            if (pathMatches.size == 1) {
+                return pathMatches.first()
+            }
+
+            bestMatch(
+                entry,
+                pathMatches,
+                minimumScore = 1,
+            )?.let {
+                return it
+            }
+
+            /*
+             * A playlist moved between devices commonly has a different
+             * absolute root but the same filename.
+             */
+            val entryBasename =
+                entryLocation.substringAfterLast('/')
+
+            if (entryBasename.isNotBlank()) {
+                val filenameMatches = library.filter { song ->
+                    song.path.isNotBlank() &&
+                        basenameKey(song.path) == entryBasename
+                }
+
+                if (filenameMatches.size == 1) {
+                    return filenameMatches.first()
+                }
+
+                bestMatch(
+                    entry,
+                    filenameMatches,
+                    minimumScore = 3,
+                )?.let {
+                    return it
+                }
+            }
+        }
+
+        /*
+         * Next try the already-loaded library. This avoids a server request
+         * for every entry and works with all Unicode scripts.
+         */
+        bestMatch(
+            entry,
+            library,
+            minimumScore = 8,
+        )?.let {
+            return it
+        }
+
+        /*
+         * Final fallback for backends whose allSongs() result is incomplete.
+         */
+        val query = listOf(
+            entry.artist,
+            entry.title,
+        )
+            .filter { it.isNotBlank() }
+            .joinToString(" ")
+
         if (query.isBlank()) return null
-        val candidates = search(query).songs.ifEmpty { search(e.title).songs }
-        val titleN = norm(e.title)
-        val artistN = norm(e.artist)
-        return candidates.map { s ->
-            var score = 0
-            val st = norm(s.title)
-            if (st == titleN) score += 3 else if (st.contains(titleN) || titleN.contains(st)) score += 1
-            if (artistN.isNotBlank() && norm(s.artist).contains(artistN)) score += 2
-            if (e.durationSec > 0 && kotlin.math.abs(s.durationSec - e.durationSec) <= 5) score += 2
-            s to score
-        }.filter { it.second >= 3 }.maxByOrNull { it.second }?.first
+
+        val searched = search(query).songs.ifEmpty {
+            if (entry.title.isNotBlank()) {
+                search(entry.title).songs
+            } else {
+                emptyList()
+            }
+        }
+
+        return bestMatch(
+            entry,
+            searched,
+            minimumScore = 8,
+        )
     }
 
     suspend fun updatePlaylist(id: String, name: String?, comment: String?): Boolean =
