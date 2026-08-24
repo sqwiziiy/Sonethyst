@@ -20,7 +20,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Aurora"
+rootProject.name = "Sonethyst"
 include(":app")
 
 // Vendored decent-player USB bit-perfect driver + Media3 wrapper (MIT). Experimental.

@@ -131,7 +131,7 @@ fun AuroraTheme(
     }
     MaterialTheme(
         colorScheme = colors,
-        typography = auroraTypography(uiPrefs.fontScale),
+        typography = sonethystTypography(uiPrefs.fontScale),
         shapes = auroraShapes(uiPrefs.cornerStyle),
     ) {
         // content renders outside any m3 surface so set default content color else text falls back to black

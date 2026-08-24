@@ -6,12 +6,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-val Circular = FontFamily.SansSerif
+val SonethystFont = FontFamily.SansSerif
 
-fun auroraTypography(scale: Float = 1f): Typography {
+fun sonethystTypography(scale: Float = 1f): Typography {
     val s = scale.coerceIn(0.8f, 1.4f)
     fun t(weight: FontWeight, size: Float, line: Float, letter: Float = 0f) = TextStyle(
-        fontFamily = Circular, fontWeight = weight,
+        fontFamily = SonethystFont, fontWeight = weight,
         fontSize = (size * s).sp, lineHeight = (line * s).sp, letterSpacing = letter.sp,
     )
     return Typography(
@@ -33,4 +33,4 @@ fun auroraTypography(scale: Float = 1f): Typography {
     )
 }
 
-val AuroraTypography = auroraTypography(1f)
+val SonethystTypography = sonethystTypography(1f)

@@ -29,8 +29,8 @@ class AuroraTileService : TileService() {
         val np = NowPlayingStore.read(this)
         val playing = playingOverride ?: np.isPlaying
         tile.state = if (playing) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-        tile.label = if (np.hasTrack && np.title.isNotBlank()) np.title else "Aurora"
-        if (Build.VERSION.SDK_INT >= 29) tile.subtitle = if (np.hasTrack) (if (playing) "Playing" else "Paused") else "Aurora"
+        tile.label = if (np.hasTrack && np.title.isNotBlank()) np.title else "Sonethyst"
+        if (Build.VERSION.SDK_INT >= 29) tile.subtitle = if (np.hasTrack) (if (playing) "Playing" else "Paused") else "Sonethyst"
         runCatching {
             tile.icon = Icon.createWithResource(
                 this, if (playing) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play,

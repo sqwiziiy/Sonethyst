@@ -10,11 +10,11 @@ android {
     ndkVersion = "27.0.12077973"
 
     defaultConfig {
-        applicationId = "com.aurora.music"
+        applicationId = "com.mentality.sonethyst"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.1.0-dev"
         vectorDrawables { useSupportLibrary = true }
         // Native AcoustID/Chromaprint fingerprinter (4.4c). arm64 for the phone, x86_64 for emulators.
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
