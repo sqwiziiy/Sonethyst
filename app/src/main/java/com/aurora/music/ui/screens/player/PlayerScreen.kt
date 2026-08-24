@@ -303,7 +303,9 @@ fun PlayerScreen(
                     }
                 }
                 val likeTint by animateColorAsState(
-                    if (state.isCurrentLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, label = "like",
+                    if (state.isCurrentLiked) accent
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    label = "like",
                 )
                 Icon(
                     imageVector = if (state.isCurrentLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,

@@ -17,39 +17,81 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentHashMap
+
+private val dominantColorCache =
+    ConcurrentHashMap<String, Color>()
 
 @Composable
-fun rememberDominantColor(url: String, fallback: Color): State<Color> {
+fun rememberDominantColor(
+    url: String,
+    fallback: Color,
+): State<Color> {
     val context = LocalContext.current
-    val resolved = remember(url) { mutableStateOf(fallback) }
 
-    LaunchedEffect(url) {
+    val initial = remember(url, fallback) {
+        dominantColorCache[url] ?: fallback
+    }
+
+    val resolved = remember(url, fallback) {
+        mutableStateOf(initial)
+    }
+
+    LaunchedEffect(url, fallback) {
         if (url.isBlank()) {
             resolved.value = fallback
             return@LaunchedEffect
         }
+
+        dominantColorCache[url]?.let { cached ->
+            resolved.value = cached
+            return@LaunchedEffect
+        }
+
         val color = withContext(Dispatchers.IO) {
             runCatching {
                 val loader = ImageLoader(context)
+
                 val request = ImageRequest.Builder(context)
                     .data(url)
                     .allowHardware(false)
                     .size(160)
                     .build()
+
                 val result = loader.execute(request)
-                val bitmap = (result as? SuccessResult)?.drawable
-                    ?.let { it as? BitmapDrawable }?.bitmap ?: return@runCatching null
-                val palette = Palette.from(bitmap).clearFilters().generate()
-                val rgb = palette.vibrantSwatch?.rgb
-                    ?: palette.lightVibrantSwatch?.rgb
-                    ?: palette.dominantSwatch?.rgb
-                    ?: palette.mutedSwatch?.rgb
+
+                val bitmap = (result as? SuccessResult)
+                    ?.drawable
+                    ?.let { it as? BitmapDrawable }
+                    ?.bitmap
+                    ?: return@runCatching null
+
+                val palette = Palette
+                    .from(bitmap)
+                    .clearFilters()
+                    .generate()
+
+                val rgb =
+                    palette.vibrantSwatch?.rgb
+                        ?: palette.lightVibrantSwatch?.rgb
+                        ?: palette.dominantSwatch?.rgb
+                        ?: palette.mutedSwatch?.rgb
+
                 rgb?.let { boost(Color(it)) }
             }.getOrNull()
         }
-        if (color != null) resolved.value = color
+
+        if (color != null) {
+            dominantColorCache[url] = color
+            resolved.value = color
+        }
     }
-    return animateColorAsState(resolved.value, tween(450), label = "dominant")
+
+    return animateColorAsState(
+        resolved.value,
+        tween(450),
+        label = "dominant",
+    )
 }
 
 private fun boost(c: Color): Color {

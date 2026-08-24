@@ -50,8 +50,13 @@ fun MiniPlayer(
     val song = state.current
     val ui = LocalUiPrefs.current
     val progress by animateFloatAsState(state.progress, label = "miniProgress")
+    val artworkAccent by com.aurora.music.util.rememberDominantColor(
+        song.artworkUrl,
+        song.accent,
+    )
     val likeTint by animateColorAsState(
-        if (state.isCurrentLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        if (state.isCurrentLiked) artworkAccent
+        else MaterialTheme.colorScheme.onSurfaceVariant,
         label = "likeTint",
     )
 
