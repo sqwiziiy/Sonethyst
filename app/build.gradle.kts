@@ -27,19 +27,10 @@ android {
         }
     }
 
-    signingConfigs {
-        create("release") {
-            storeFile = rootProject.file("keystore/aurora-release.jks")
-            storePassword = "aurora1234"
-            keyAlias = "aurora"
-            keyPassword = "aurora1234"
-        }
-    }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
