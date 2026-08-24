@@ -85,6 +85,7 @@ fun SearchScreen(
     onPlayAll: (List<Song>, Int) -> Unit,
     onAddToQueue: (Song) -> Unit,
     onPlayNext: (Song) -> Unit,
+    onAddToPlaylist: (Song) -> Unit,
     onToggleLike: (String) -> Unit,
     onOpenDetail: (String, String) -> Unit,
     downloadedIds: Set<String>,
@@ -170,7 +171,8 @@ fun SearchScreen(
                 Results(
                     effective, results, likedIds, currentSongId, isPlaying, contentPadding,
                     onPlayAll = { songs, i -> commitAnd { onPlayAll(songs, i) } },
-                    onAddToQueue = onAddToQueue, onPlayNext = onPlayNext, onToggleLike = onToggleLike,
+                    onAddToQueue = onAddToQueue, onPlayNext = onPlayNext,
+                    onAddToPlaylist = onAddToPlaylist, onToggleLike = onToggleLike,
                     onOpenDetail = { k, id -> commitAnd { onOpenDetail(k, id) } },
                     downloadedIds = downloadedIds, onDownload = onDownload, onRemoveDownload = onRemoveDownload, canDownload = canDownload,
                 )
@@ -220,6 +222,7 @@ private fun Results(
     onPlayAll: (List<Song>, Int) -> Unit,
     onAddToQueue: (Song) -> Unit,
     onPlayNext: (Song) -> Unit,
+    onAddToPlaylist: (Song) -> Unit,
     onToggleLike: (String) -> Unit,
     onOpenDetail: (String, String) -> Unit,
     downloadedIds: Set<String>,
@@ -270,6 +273,7 @@ private fun Results(
                     modifier = Modifier.padding(horizontal = 8.dp),
                     onAddToQueue = { onAddToQueue(song) },
                     onPlayNext = { onPlayNext(song) },
+                    onAddToPlaylist = { onAddToPlaylist(song) },
                     onGoToAlbum = if (song.albumId.isNotBlank()) ({ onOpenDetail("album", song.albumId) }) else null,
                     onGoToArtist = if (song.artistId.isNotBlank()) ({ onOpenDetail("artist", song.artistId) }) else null,
                     isDownloaded = canDownload && downloadedIds.contains(song.id),
