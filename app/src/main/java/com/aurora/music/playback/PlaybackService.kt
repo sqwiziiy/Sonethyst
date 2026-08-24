@@ -52,6 +52,8 @@ class PlaybackService : MediaLibraryService() {
     private val LIBRARY_ROOT = "root"
     private lateinit var player: ExoPlayer
     private var fadePlayer: ExoPlayer? = null
+    private lateinit var playbackDataSourceFactory:
+        androidx.media3.datasource.DataSource.Factory
     private var castPlayer: androidx.media3.cast.CastPlayer? = null
     private val monoProcessor = MonoAudioProcessor()
     private val auroraDsp = AuroraDspProcessor()
@@ -78,10 +80,20 @@ class PlaybackService : MediaLibraryService() {
     private val nowPlaying by lazy { NowPlayingStore(this) }
 
     private var xfadeActive = false
+    private var xfadePreparing = false
+    private var xfadePromoting = false
     private var xfadeStartMs = 0L
-    private var xfadeExpectedId: String? = null
+    private var xfadeDurationMs = 0
+
+    private var xfadeSourceId: String? = null
+    private var xfadeTargetId: String? = null
+    private var xfadeTargetIndex = -1
+    private var xfadeRepeatOne = false
+
     private var xfadeInGain = 1f
     private var xfadeOutGain = 1f
+
+    private var xfadeGeneration = 0
     @Volatile private var bitPerfect = false     // crossfade disabled in bit-perfect usb mode
 
     // pre-shuffle queue order for restore on disable null = not shuffled
@@ -158,10 +170,16 @@ class PlaybackService : MediaLibraryService() {
                 dataSpec.withUri(android.net.Uri.parse(real))
             } else dataSpec
         }
-        val dataSourceFactory = androidx.media3.datasource.ResolvingDataSource.Factory(
-            androidx.media3.datasource.DefaultDataSource.Factory(this), ytResolver,
-        )
-        val mediaSourceFactory = androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
+        playbackDataSourceFactory =
+            androidx.media3.datasource.ResolvingDataSource.Factory(
+                androidx.media3.datasource.DefaultDataSource.Factory(this),
+                ytResolver,
+            )
+
+        val mediaSourceFactory =
+            androidx.media3.exoplayer.source.DefaultMediaSourceFactory(
+                playbackDataSourceFactory
+            )
 
         val playerBuilder = ExoPlayer.Builder(this, renderersFactory)
             .setMediaSourceFactory(mediaSourceFactory)
@@ -393,16 +411,38 @@ class PlaybackService : MediaLibraryService() {
     }
 
     private fun tickAudio() {
-        if (sleepFadeActive) { driveSleepFade(); return }
-        if (wakeFadeActive) { driveWakeFade(); return }
-        if (xfadeActive) {
-            // cancel if user navigated away from the track we crossfaded into
-            if (player.currentMediaItem?.mediaId != xfadeExpectedId) { endXfade() } else { driveXfade() }
+        if (sleepFadeActive) {
+            driveSleepFade()
             return
         }
+
+        if (wakeFadeActive) {
+            driveWakeFade()
+            return
+        }
+
+        if (xfadePromoting) {
+            return
+        }
+
+        if (xfadeActive) {
+            driveXfade()
+            return
+        }
+
         val base = replayGainMultiplier()
-        if (kotlin.math.abs(player.volume - base) > 0.01f) player.volume = base
-        maybeBeginXfade()
+
+        if (
+            kotlin.math.abs(
+                player.volume - base
+            ) > 0.01f
+        ) {
+            player.volume = base
+        }
+
+        if (!xfadePreparing) {
+            maybeBeginXfade()
+        }
     }
 
     private fun driveSleepFade() {
@@ -425,73 +465,910 @@ class PlaybackService : MediaLibraryService() {
 
     private fun maybeBeginXfade() {
         val fade = crossfadeMs
-        // bit-perfect routes main player to the usb dac the 2nd fade player would come out the speaker so dont crossfade
-        if (fade <= 0 || bitPerfect || !player.isPlaying) return
-        // repeat-one navigation acts like repeat-off so loop back to position 0 of the same item to crossfade
-        val repeatOne = player.repeatMode == Player.REPEAT_MODE_ONE
-        if (!repeatOne && !player.hasNextMediaItem()) return
-        val duration = player.duration
-        if (duration == C.TIME_UNSET) return
-        val remaining = duration - player.currentPosition
-        if (remaining in 0..fade.toLong()) beginXfade(repeatOne)
+
+        if (
+            fade <= 0 ||
+            bitPerfect ||
+            !player.isPlaying ||
+            xfadePreparing ||
+            xfadeActive ||
+            xfadePromoting
+        ) {
+            return
+        }
+
+        val repeatOne =
+            player.repeatMode ==
+                Player.REPEAT_MODE_ONE
+
+        if (
+            !repeatOne &&
+            !player.hasNextMediaItem()
+        ) {
+            return
+        }
+
+        val duration =
+            player.duration
+
+        if (duration == C.TIME_UNSET) {
+            return
+        }
+
+        val remaining =
+            duration -
+                player.currentPosition
+
+        /*
+         * Give the incoming decoder plenty of time.
+         *
+         * 5 s crossfade -> begin preparing ~10 s
+         * before the outgoing song ends.
+         */
+        val prepareLeadMs = 5000L
+
+        val prepareWindow =
+            fade.toLong() +
+                prepareLeadMs
+
+        if (
+            remaining in
+                1L..prepareWindow
+        ) {
+            prepareIncomingXfade(
+                repeatOne
+            )
+        }
     }
 
-    private fun beginXfade(repeatOne: Boolean) {
-        val outgoing = player.currentMediaItem ?: return
-        val uri = outgoing.localConfiguration?.uri ?: return
-        val pos = player.currentPosition
-        val tail = ensureFadePlayer()
-        runCatching {
-            tail.setMediaItem(androidx.media3.common.MediaItem.fromUri(uri))
-            tail.prepare()
-            tail.seekTo(pos)
-            tail.volume = player.volume.coerceIn(0f, 1f)
-            tail.playWhenReady = true
+
+    /*
+     * New architecture:
+     *
+     * player     = OUTGOING song
+     * fadePlayer = INCOMING song
+     *
+     * We never duplicate the outgoing song.
+     */
+    private fun prepareIncomingXfade(
+        repeatOne: Boolean,
+    ) {
+        if (
+            xfadePreparing ||
+            xfadeActive ||
+            xfadePromoting
+        ) {
+            return
         }
-        xfadeOutGain = player.volume.coerceIn(0f, 1f)
-        if (repeatOne) player.seekTo(0) else player.seekToNextMediaItem()
-        xfadeInGain = replayGainMultiplier()
-        player.volume = 0f
-        xfadeExpectedId = player.currentMediaItem?.mediaId
-        xfadeStartMs = android.os.SystemClock.elapsedRealtime()
-        xfadeActive = true
+
+        val source =
+            player.currentMediaItem
+                ?: return
+
+        val sourceIndex =
+            player.currentMediaItemIndex
+
+        val targetIndex =
+            if (repeatOne) {
+                sourceIndex
+            } else {
+                player.nextMediaItemIndex
+            }
+
+        if (
+            targetIndex < 0 ||
+            targetIndex >=
+                player.mediaItemCount
+        ) {
+            return
+        }
+
+        val target =
+            player.getMediaItemAt(
+                targetIndex
+            )
+
+        val duration =
+            player.duration
+
+        if (duration == C.TIME_UNSET) {
+            return
+        }
+
+        val generation =
+            ++xfadeGeneration
+
+        xfadePreparing = true
+
+        xfadeSourceId =
+            source.mediaId
+
+        xfadeTargetId =
+            target.mediaId
+
+        xfadeTargetIndex =
+            targetIndex
+
+        xfadeRepeatOne =
+            repeatOne
+
+        val tail =
+            ensureFadePlayer()
+
+        val prepared =
+            runCatching {
+                tail.pause()
+                tail.clearMediaItems()
+
+                tail.volume = 0f
+
+                tail.setPlaybackParameters(
+                    player.playbackParameters
+                )
+
+                /*
+                 * Incoming song starts at 0.
+                 *
+                 * No copy of the outgoing timeline exists
+                 * in this player anymore.
+                 */
+                tail.setMediaItem(
+                    target
+                )
+
+                tail.seekTo(0L)
+
+                tail.prepare()
+
+                /*
+                 * Pre-buffer only.
+                 */
+                tail.playWhenReady = false
+            }
+            .onFailure {
+                android.util.Log.e(
+                    "SonethystXfade",
+                    "incoming prepare failed",
+                    it,
+                )
+            }
+            .isSuccess
+
+        if (!prepared) {
+            abortPreparedXfade(
+                generation
+            )
+            return
+        }
+
+        scope.launch {
+            val fade =
+                crossfadeMs.toLong()
+
+            /*
+             * Decoder must become READY before the real
+             * crossfade boundary.
+             */
+            while (
+                generation ==
+                    xfadeGeneration &&
+                xfadePreparing &&
+                player.currentMediaItem
+                    ?.mediaId ==
+                    xfadeSourceId &&
+                tail.playbackState !=
+                    Player.STATE_READY
+            ) {
+                val d =
+                    player.duration
+
+                if (d == C.TIME_UNSET) {
+                    abortPreparedXfade(
+                        generation
+                    )
+                    return@launch
+                }
+
+                val left =
+                    d -
+                        player.currentPosition
+
+                /*
+                 * Too late.
+                 *
+                 * Do not destroy normal playback just
+                 * because crossfade could not preload.
+                 */
+                if (left <= fade + 200L) {
+                    abortPreparedXfade(
+                        generation
+                    )
+                    return@launch
+                }
+
+                delay(10L)
+            }
+
+            if (
+                generation !=
+                    xfadeGeneration ||
+                !xfadePreparing ||
+                player.currentMediaItem
+                    ?.mediaId !=
+                    xfadeSourceId ||
+                tail.playbackState !=
+                    Player.STATE_READY
+            ) {
+                return@launch
+            }
+
+            /*
+             * Wait for the requested crossfade boundary.
+             */
+            while (
+                generation ==
+                    xfadeGeneration &&
+                xfadePreparing &&
+                player.currentMediaItem
+                    ?.mediaId ==
+                    xfadeSourceId
+            ) {
+                val d =
+                    player.duration
+
+                if (d == C.TIME_UNSET) {
+                    abortPreparedXfade(
+                        generation
+                    )
+                    return@launch
+                }
+
+                val left =
+                    d -
+                        player.currentPosition
+
+                if (left <= fade) {
+                    break
+                }
+
+                delay(5L)
+            }
+
+            if (
+                generation !=
+                    xfadeGeneration ||
+                !xfadePreparing ||
+                player.currentMediaItem
+                    ?.mediaId !=
+                    xfadeSourceId
+            ) {
+                return@launch
+            }
+
+            /*
+             * Incoming decoder is READY and paused at 0.
+             *
+             * Start it MUTED first so AudioTrack itself
+             * has genuinely started before we fade it in.
+             */
+            tail.volume = 0f
+            tail.play()
+
+            val startDeadline =
+                android.os.SystemClock
+                    .elapsedRealtime() +
+                    800L
+
+            while (
+                generation ==
+                    xfadeGeneration &&
+                xfadePreparing &&
+                !tail.isPlaying &&
+                android.os.SystemClock
+                    .elapsedRealtime() <
+                    startDeadline
+            ) {
+                delay(5L)
+            }
+
+            if (
+                generation !=
+                    xfadeGeneration ||
+                !xfadePreparing ||
+                !tail.isPlaying
+            ) {
+                abortPreparedXfade(
+                    generation
+                )
+                return@launch
+            }
+
+            val remainingNow =
+                (
+                    player.duration -
+                        player.currentPosition
+                )
+
+            if (remainingNow < 250L) {
+                abortPreparedXfade(
+                    generation
+                )
+                return@launch
+            }
+
+            /*
+             * Shorten the fade only if decoder startup
+             * consumed a little of the requested window.
+             */
+            xfadeDurationMs =
+                minOf(
+                    crossfadeMs,
+                    remainingNow
+                        .coerceAtMost(
+                            Int.MAX_VALUE.toLong()
+                        )
+                        .toInt(),
+                )
+                    .coerceAtLeast(250)
+
+            xfadeOutGain =
+                player.volume
+                    .coerceIn(0f, 1f)
+
+            xfadeInGain =
+                replayGainMultiplierFor(
+                    target
+                )
+
+            xfadeStartMs =
+                android.os.SystemClock
+                    .elapsedRealtime()
+
+            xfadePreparing = false
+            xfadeActive = true
+
+            android.util.Log.d(
+                "SonethystXfade",
+                "START source=${xfadeSourceId} " +
+                    "target=${xfadeTargetId} " +
+                    "duration=$xfadeDurationMs"
+            )
+        }
     }
+
 
     private fun driveXfade() {
-        val fade = crossfadeMs.coerceAtLeast(1)
-        val t = ((android.os.SystemClock.elapsedRealtime() - xfadeStartMs).toFloat() / fade).coerceIn(0f, 1f)
-        // equal-power curves avoid the ~3db dip two linear ramps produce
-        val half = Math.PI.toFloat() / 2f
-        val inG = kotlin.math.sin(t * half)
-        val outG = kotlin.math.cos(t * half)
-        player.volume = (inG * xfadeInGain).coerceIn(0f, 1f)
-        fadePlayer?.volume = (outG * xfadeOutGain).coerceIn(0f, 1f)
-        if (t >= 1f) endXfade()
+        val duration =
+            xfadeDurationMs
+                .coerceAtLeast(1)
+
+        val elapsed =
+            android.os.SystemClock
+                .elapsedRealtime() -
+                xfadeStartMs
+
+        val t =
+            (
+                elapsed.toFloat() /
+                    duration.toFloat()
+            ).coerceIn(0f, 1f)
+
+        val halfPi =
+            Math.PI.toFloat() / 2f
+
+        /*
+         * Equal-power musical crossfade.
+         */
+        val outgoing =
+            kotlin.math.cos(
+                t * halfPi
+            )
+
+        val incoming =
+            kotlin.math.sin(
+                t * halfPi
+            )
+
+        val mainId =
+            player.currentMediaItem
+                ?.mediaId
+
+        /*
+         * Main player is allowed to fade only while
+         * it still owns the outgoing song.
+         *
+         * When Media3 naturally reaches the next item,
+         * keep that copy completely muted. fadePlayer
+         * is already playing the incoming intro.
+         */
+        when (mainId) {
+            xfadeSourceId -> {
+                player.volume =
+                    (
+                        outgoing *
+                            xfadeOutGain
+                    ).coerceIn(0f, 1f)
+            }
+
+            xfadeTargetId -> {
+                player.volume = 0f
+            }
+
+            else -> {
+                cancelXfade()
+                return
+            }
+        }
+
+        fadePlayer?.volume =
+            (
+                incoming *
+                    xfadeInGain
+            ).coerceIn(0f, 1f)
+
+        if (t >= 1f) {
+            beginXfadePromotion()
+        }
     }
 
-    private fun endXfade() {
+
+    /*
+     * At this point:
+     *
+     * fadePlayer has already played roughly the first
+     * crossfadeDurationMs of the incoming song.
+     *
+     * It remains audible while the main player catches
+     * up silently.
+     */
+    private fun beginXfadePromotion() {
+        if (
+            !xfadeActive ||
+            xfadePromoting
+        ) {
+            return
+        }
+
+        val generation =
+            xfadeGeneration
+
+        val targetId =
+            xfadeTargetId
+                ?: run {
+                    cancelXfade()
+                    return
+                }
+
+        val tail =
+            fadePlayer
+                ?: run {
+                    cancelXfade()
+                    return
+                }
+
         xfadeActive = false
-        xfadeExpectedId = null
-        runCatching { fadePlayer?.run { pause(); clearMediaItems() } }
-        player.volume = replayGainMultiplier()
+        xfadePromoting = true
+
+        /*
+         * tail owns 100% of audible playback during
+         * preparation of main.
+         */
+        tail.volume =
+            xfadeInGain
+
+        player.volume = 0f
+
+        scope.launch {
+            /*
+             * Normally Media3 has naturally transitioned
+             * to the next item by now.
+             *
+             * If not, explicitly move it there while muted.
+             */
+            if (
+                player.currentMediaItem
+                    ?.mediaId != targetId
+            ) {
+                if (xfadeRepeatOne) {
+                    player.seekTo(
+                        xfadeTargetIndex,
+                        0L,
+                    )
+                } else if (
+                    xfadeTargetIndex >= 0 &&
+                    xfadeTargetIndex <
+                        player.mediaItemCount
+                ) {
+                    player.seekTo(
+                        xfadeTargetIndex,
+                        0L,
+                    )
+                } else {
+                    cancelXfade()
+                    return@launch
+                }
+            }
+
+            player.volume = 0f
+
+            /*
+             * Jump main to wherever the audible incoming
+             * player is NOW.
+             *
+             * Any buffering here is inaudible because
+             * fadePlayer keeps playing.
+             */
+            player.seekTo(
+                tail.currentPosition
+            )
+
+            player.play()
+
+            if (
+                !waitForMainXfadeReady(
+                    generation,
+                    targetId,
+                    3000L,
+                )
+            ) {
+                android.util.Log.w(
+                    "SonethystXfade",
+                    "main takeover did not become ready"
+                )
+
+                cancelXfade()
+                return@launch
+            }
+
+            /*
+             * main was muted while becoming ready, so tail
+             * moved further ahead. Re-sync under cover of
+             * the still-audible fadePlayer.
+             *
+             * Two corrections maximum; do not chase it
+             * forever.
+             */
+            for (attempt in 0 until 2) {
+                if (
+                    generation !=
+                        xfadeGeneration
+                ) {
+                    return@launch
+                }
+
+                val delta =
+                    kotlin.math.abs(
+                        tail.currentPosition -
+                            player.currentPosition
+                    )
+
+                if (delta <= 80L) {
+                    break
+                }
+
+                player.volume = 0f
+
+                player.seekTo(
+                    tail.currentPosition
+                )
+
+                if (
+                    !waitForMainXfadeReady(
+                        generation,
+                        targetId,
+                        1500L,
+                    )
+                ) {
+                    cancelXfade()
+                    return@launch
+                }
+            }
+
+            if (
+                generation !=
+                    xfadeGeneration ||
+                player.currentMediaItem
+                    ?.mediaId != targetId
+            ) {
+                return@launch
+            }
+
+            /*
+             * Both players now contain the INCOMING song.
+             *
+             * This ownership handoff is deliberately very
+             * short. Unlike the old implementation, we are
+             * not trying to keep two copies synchronized for
+             * five seconds.
+             */
+            val handoffMs = 180L
+
+            val handoffStart =
+                android.os.SystemClock
+                    .elapsedRealtime()
+
+            while (
+                generation ==
+                    xfadeGeneration
+            ) {
+                val handoffT =
+                    (
+                        (
+                            android.os.SystemClock
+                                .elapsedRealtime() -
+                                handoffStart
+                        ).toFloat() /
+                            handoffMs.toFloat()
+                    ).coerceIn(0f, 1f)
+
+                /*
+                 * Linear ownership transfer is intentional:
+                 * both players contain the same signal.
+                 * Equal-power would boost a correlated signal.
+                 */
+                tail.volume =
+                    (
+                        (1f - handoffT) *
+                            xfadeInGain
+                    ).coerceIn(0f, 1f)
+
+                player.volume =
+                    (
+                        handoffT *
+                            xfadeInGain
+                    ).coerceIn(0f, 1f)
+
+                if (handoffT >= 1f) {
+                    break
+                }
+
+                delay(5L)
+            }
+
+            if (
+                generation !=
+                    xfadeGeneration
+            ) {
+                return@launch
+            }
+
+            runCatching {
+                tail.volume = 0f
+                tail.pause()
+                tail.clearMediaItems()
+            }
+
+            player.volume =
+                replayGainMultiplier()
+
+            finishXfade()
+
+            android.util.Log.d(
+                "SonethystXfade",
+                "PROMOTED target=$targetId"
+            )
+        }
     }
+
+
+    private suspend fun waitForMainXfadeReady(
+        generation: Int,
+        targetId: String,
+        timeoutMs: Long,
+    ): Boolean {
+        val deadline =
+            android.os.SystemClock
+                .elapsedRealtime() +
+                timeoutMs
+
+        while (
+            generation ==
+                xfadeGeneration &&
+            android.os.SystemClock
+                .elapsedRealtime() <
+                deadline
+        ) {
+            if (
+                player.currentMediaItem
+                    ?.mediaId == targetId &&
+                player.playbackState ==
+                    Player.STATE_READY &&
+                player.isPlaying
+            ) {
+                return true
+            }
+
+            delay(5L)
+        }
+
+        return false
+    }
+
+
+    private fun abortPreparedXfade(
+        generation: Int,
+    ) {
+        if (
+            generation !=
+                xfadeGeneration
+        ) {
+            return
+        }
+
+        runCatching {
+            fadePlayer?.run {
+                volume = 0f
+                pause()
+                clearMediaItems()
+            }
+        }
+
+        resetXfadeState()
+
+        player.volume =
+            replayGainMultiplier()
+    }
+
+
+    private fun cancelXfade() {
+        ++xfadeGeneration
+
+        runCatching {
+            fadePlayer?.run {
+                volume = 0f
+                pause()
+                clearMediaItems()
+            }
+        }
+
+        resetXfadeState()
+
+        player.volume =
+            replayGainMultiplier()
+    }
+
+
+    private fun finishXfade() {
+        ++xfadeGeneration
+        resetXfadeState()
+    }
+
+
+    private fun resetXfadeState() {
+        xfadePreparing = false
+        xfadeActive = false
+        xfadePromoting = false
+
+        xfadeStartMs = 0L
+        xfadeDurationMs = 0
+
+        xfadeSourceId = null
+        xfadeTargetId = null
+        xfadeTargetIndex = -1
+        xfadeRepeatOne = false
+
+        xfadeInGain = 1f
+        xfadeOutGain = 1f
+    }
+
 
     private fun ensureFadePlayer(): ExoPlayer {
-        fadePlayer?.let { return it }
-        val attrs = AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).setUsage(C.USAGE_MEDIA).build()
+        fadePlayer?.let {
+            return it
+        }
+
+        val attrs =
+            AudioAttributes.Builder()
+                .setContentType(
+                    C.AUDIO_CONTENT_TYPE_MUSIC
+                )
+                .setUsage(
+                    C.USAGE_MEDIA
+                )
+                .build()
+
+        /*
+         * Same Sonethyst resolver as main.
+         *
+         * Do NOT force setPreferredAudioDevice() here:
+         * device testing showed that this can leave the
+         * secondary decoder running but inaudible.
+         */
+        val fadeMediaSourceFactory =
+            androidx.media3.exoplayer.source
+                .DefaultMediaSourceFactory(
+                    playbackDataSourceFactory
+                )
+
         return ExoPlayer.Builder(this)
-            .setAudioAttributes(attrs, /* handleAudioFocus = */ false)
-            .build().also { fadePlayer = it }
+            .setMediaSourceFactory(
+                fadeMediaSourceFactory
+            )
+            .setAudioAttributes(
+                attrs,
+                /* handleAudioFocus = */ false,
+            )
+            .setHandleAudioBecomingNoisy(false)
+            .build()
+            .also { tail ->
+                fadePlayer = tail
+
+                tail.addListener(
+                    object : Player.Listener {
+                        override fun onPlayerError(
+                            error:
+                                androidx.media3.common
+                                    .PlaybackException,
+                        ) {
+                            android.util.Log.e(
+                                "SonethystXfade",
+                                "secondary player error",
+                                error,
+                            )
+                        }
+
+                        override fun onPlaybackStateChanged(
+                            playbackState: Int,
+                        ) {
+                            android.util.Log.d(
+                                "SonethystXfade",
+                                "secondary state=$playbackState",
+                            )
+                        }
+                    }
+                )
+            }
     }
 
-    private fun replayGainMultiplier(): Float {
-        if (replayGainMode == 0) return 1f
-        val extras = player.currentMediaItem?.mediaMetadata?.extras ?: return 1f
-        val gainDb = if (replayGainMode == 2) extras.getFloat("rgAlbum", Float.NaN) else extras.getFloat("rgTrack", Float.NaN)
-        if (gainDb.isNaN() || gainDb == 0f) return 1f
-        // attenuate-only to avoid inter-sample clipping when boosting quiet tracks
-        return Math.pow(10.0, gainDb / 20.0).toFloat().coerceIn(0.1f, 1f)
+
+    private fun replayGainMultiplier():
+        Float =
+        replayGainMultiplierFor(
+            player.currentMediaItem
+        )
+
+
+    private fun replayGainMultiplierFor(
+        item: MediaItem?,
+    ): Float {
+        if (replayGainMode == 0) {
+            return 1f
+        }
+
+        val extras =
+            item
+                ?.mediaMetadata
+                ?.extras
+                ?: return 1f
+
+        val gainDb =
+            if (replayGainMode == 2) {
+                extras.getFloat(
+                    "rgAlbum",
+                    Float.NaN,
+                )
+            } else {
+                extras.getFloat(
+                    "rgTrack",
+                    Float.NaN,
+                )
+            }
+
+        if (
+            gainDb.isNaN() ||
+            gainDb == 0f
+        ) {
+            return 1f
+        }
+
+        return Math.pow(
+            10.0,
+            gainDb / 20.0,
+        )
+            .toFloat()
+            .coerceIn(0.1f, 1f)
     }
+
 
     private inner class MediaCallback : MediaLibrarySession.Callback {
         override fun onConnect(

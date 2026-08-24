@@ -134,6 +134,9 @@ Sonethyst is an independent Android music player fork based on Aurora.
   - [x] Adjustable crossfade duration
   - [x] Smoothly fade out the outgoing track while fading in the next track
   - [x] Avoid audible volume jumps at the transition
+  - [x] Prebuffer the incoming track before the overlap begins
+  - [x] Keep the outgoing tail continuous without replaying or skipping it
+  - [x] Continue the incoming track after the overlap without restarting its intro
   - [ ] Preserve true gapless playback where crossfade would be undesirable
   - [ ] Define behavior for manual Next/Previous separately from natural track completion
   - [ ] Ensure shuffle, repeat and queue transitions work correctly
