@@ -68,7 +68,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.aurora.music.data.ServerType
-import com.aurora.music.ui.theme.AuroraRose
 import com.aurora.music.viewmodel.AuthStep
 import com.aurora.music.viewmodel.AuthUiState
 
@@ -112,7 +111,7 @@ fun SignInScreen(
     Box(
         Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color(0xFF2A0E1C), MaterialTheme.colorScheme.background))),
+            .background(Brush.verticalGradient(listOf(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f), MaterialTheme.colorScheme.background))),
     ) {
         Column(
             Modifier
@@ -135,16 +134,16 @@ fun SignInScreen(
                     .size(92.dp)
                     .rotate(angle)
                     .clip(CircleShape)
-                    .background(Brush.sweepGradient(listOf(AuroraRose, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.secondary, AuroraRose))),
+                    .background(Brush.sweepGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary))),
                 contentAlignment = Alignment.Center,
             ) {
                 Box(Modifier.size(74.dp).clip(CircleShape).background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Filled.GraphicEq, null, tint = AuroraRose, modifier = Modifier.size(38.dp).rotate(-angle))
+                    Icon(Icons.Filled.GraphicEq, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(38.dp).rotate(-angle))
                 }
             }
 
             Spacer(Modifier.height(24.dp))
-            Text("Aurora", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onBackground)
+            Text("Sonethyst", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.height(4.dp))
             Text(
                 when (state.step) {
@@ -236,7 +235,7 @@ private fun TypeStep(
         )
         if (permDenied) {
             Text(
-                "Permission to read your music is needed for Local mode. Enable it in Settings → Apps → Aurora → Permissions.",
+                "Permission to read your music is needed for Local mode. Enable it in Settings → Apps → Sonethyst → Permissions.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
             )
@@ -250,33 +249,33 @@ private fun SpotifyStep(state: AuthUiState, onBack: () -> Unit, onConnect: (Stri
     var clientId by remember { mutableStateOf("") }
     Column(Modifier.fillMaxWidth()) {
         Text(
-            "Aurora streams your Spotify library through YouTube, so it needs your own free Spotify app:",
+            "Sonethyst streams your Spotify library through YouTube, so it needs your own free Spotify app:",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(12.dp))
         listOf(
             "Open the Spotify Developer Dashboard and create an app.",
-            "Set the Redirect URI to exactly:  aurora://spotify",
+            "Set the Redirect URI to exactly:  sonethyst://spotify",
             "Under APIs, tick Web API (and Android).",
             "In User Management, add your own Spotify account email.",
             "Copy the app's Client ID and paste it below.",
         ).forEachIndexed { i, line ->
             Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
-                Text("${i + 1}.", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = AuroraRose, modifier = Modifier.width(22.dp))
+                Text("${i + 1}.", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.width(22.dp))
                 Text(line, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
             }
         }
         Spacer(Modifier.height(12.dp))
         Box(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                .border(1.dp, AuroraRose.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
                 .clickable {
                     runCatching { ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://developer.spotify.com/dashboard"))) }
                 }
                 .padding(vertical = 12.dp),
             contentAlignment = Alignment.Center,
-        ) { Text("Open Spotify Dashboard", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = AuroraRose) }
+        ) { Text("Open Spotify Dashboard", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) }
         Spacer(Modifier.height(16.dp))
         OutlinedTextField(
             value = clientId,
@@ -310,9 +309,9 @@ private fun ServerTypeCard(icon: ImageVector, title: String, subtitle: String, o
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            Modifier.size(46.dp).clip(CircleShape).background(AuroraRose.copy(alpha = 0.16f)),
+            Modifier.size(46.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
             contentAlignment = Alignment.Center,
-        ) { Icon(icon, null, tint = AuroraRose, modifier = Modifier.size(24.dp)) }
+        ) { Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp)) }
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -323,10 +322,10 @@ private fun ServerTypeCard(icon: ImageVector, title: String, subtitle: String, o
 
 @Composable
 private fun fieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = AuroraRose,
+    focusedBorderColor = MaterialTheme.colorScheme.primary,
     unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-    focusedLeadingIconColor = AuroraRose,
-    cursorColor = AuroraRose,
+    focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
+    cursorColor = MaterialTheme.colorScheme.primary,
     focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
     unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.35f),
 )
@@ -413,7 +412,7 @@ private fun SchemePill(label: String, selected: Boolean, modifier: Modifier = Mo
         modifier
             .height(46.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(if (selected) AuroraRose else MaterialTheme.colorScheme.surface.copy(alpha = 0.4f))
+            .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface.copy(alpha = 0.4f))
             .then(if (selected) Modifier else Modifier.border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(12.dp)))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -445,7 +444,7 @@ private fun PrimaryButton(label: String, enabled: Boolean, modifier: Modifier = 
         modifier
             .height(54.dp)
             .clip(RoundedCornerShape(50))
-            .background(if (enabled) AuroraRose else MaterialTheme.colorScheme.surfaceContainerHighest)
+            .background(if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest)
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

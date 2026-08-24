@@ -25,13 +25,13 @@ import com.aurora.music.data.ThemeMode
 import com.aurora.music.data.UiPrefs
 
 private val DarkColors = darkColorScheme(
-    primary = AuroraRose,
+    primary = SonethystPurple,
     onPrimary = Color.White,
-    primaryContainer = AuroraRoseDeep,
+    primaryContainer = SonethystPurpleDeep,
     onPrimaryContainer = Color.White,
-    secondary = AuroraCoral,
+    secondary = SonethystAmethyst,
     onSecondary = Color(0xFF2A0E06),
-    tertiary = AuroraMagenta,
+    tertiary = SonethystLavender,
     onTertiary = Color.White,
     background = DarkBackground,
     onBackground = TextPrimaryDark,
@@ -48,13 +48,13 @@ private val DarkColors = darkColorScheme(
 )
 
 private val LightColors = lightColorScheme(
-    primary = AuroraRoseDeep,
+    primary = SonethystPurpleDeep,
     onPrimary = Color.White,
-    primaryContainer = AuroraBlush,
+    primaryContainer = SonethystPurpleSoft,
     onPrimaryContainer = TextPrimaryLight,
-    secondary = AuroraCoral,
+    secondary = SonethystAmethyst,
     onSecondary = Color.White,
-    tertiary = AuroraMagenta,
+    tertiary = SonethystLavender,
     background = LightBackground,
     onBackground = TextPrimaryLight,
     surface = LightSurface,

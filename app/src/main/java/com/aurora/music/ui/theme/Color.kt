@@ -3,46 +3,55 @@ package com.aurora.music.ui.theme
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
-val AuroraRose = Color(0xFFFF2E7E)
-val AuroraRoseDeep = Color(0xFFC7245C)
-val AuroraCoral = Color(0xFFFF7A59)
-val AuroraMagenta = Color(0xFFC24CE0)
-val AuroraBlush = Color(0xFFFF9BBA)
-val AuroraAmber = Color(0xFFF7B733)
-val AuroraViolet = Color(0xFFA855F7)
+// Sonethyst brand palette.
+// Used when Material You is disabled. Dynamic Color remains fully independent.
+val SonethystPurple = Color(0xFF9B7CFF)
+val SonethystPurpleDeep = Color(0xFF6848C8)
+val SonethystAmethyst = Color(0xFFB267FF)
+val SonethystLavender = Color(0xFFC4B5FD)
+val SonethystPurpleSoft = Color(0xFFE6DAFF)
 
-val DarkBackground = Color(0xFF0E0A0D)
-val DarkSurface = Color(0xFF191217)
-val DarkSurfaceElevated = Color(0xFF221820)
-val DarkSurfaceHigh = Color(0xFF2C2028)
-val DarkOutline = Color(0xFF3A2C34)
-val TextPrimaryDark = Color(0xFFF7F1F4)
-val TextSecondaryDark = Color(0xFFB3A4AD)
+val DarkBackground = Color(0xFF0D0A12)
+val DarkSurface = Color(0xFF17121F)
+val DarkSurfaceElevated = Color(0xFF20182B)
+val DarkSurfaceHigh = Color(0xFF2A2037)
+val DarkOutline = Color(0xFF40344D)
+val TextPrimaryDark = Color(0xFFF6F1FA)
+val TextSecondaryDark = Color(0xFFB9ADBF)
 
-val LightBackground = Color(0xFFFDF8FA)
+val LightBackground = Color(0xFFFCF9FF)
 val LightSurface = Color(0xFFFFFFFF)
-val LightSurfaceElevated = Color(0xFFF6EEF2)
-val LightOutline = Color(0xFFEADCE3)
-val TextPrimaryLight = Color(0xFF1A1016)
-val TextSecondaryLight = Color(0xFF6B5560)
+val LightSurfaceElevated = Color(0xFFF5EFFA)
+val LightOutline = Color(0xFFE5D9EE)
+val TextPrimaryLight = Color(0xFF19131F)
+val TextSecondaryLight = Color(0xFF62566B)
 
-val PlayerGradient = listOf(Color(0xFF3A1626), Color(0xFF1A0F16), DarkBackground)
-val AuthGradient = listOf(Color(0xFF2A0E1C), Color(0xFF0E0A0D))
+val PlayerGradient = listOf(
+    Color(0xFF2D1E4A),
+    Color(0xFF171020),
+    DarkBackground,
+)
 
-fun brandGradient() = Brush.linearGradient(listOf(AuroraRose, AuroraCoral))
+val AuthGradient = listOf(
+    Color(0xFF24153D),
+    DarkBackground,
+)
 
-// seed becomes the material primary scheme built around it in AuroraTheme
+fun brandGradient() =
+    Brush.linearGradient(listOf(SonethystPurple, SonethystAmethyst))
+
 data class AccentPreset(val name: String, val seed: Color)
 
 val AccentPresets = listOf(
-    AccentPreset("Rose", AuroraRose),
-    AccentPreset("Coral", AuroraCoral),
-    AccentPreset("Magenta", AuroraMagenta),
-    AccentPreset("Violet", AuroraViolet),
-    AccentPreset("Amber", AuroraAmber),
+    AccentPreset("Sonethyst", SonethystPurple),
+    AccentPreset("Amethyst", SonethystAmethyst),
+    AccentPreset("Lavender", SonethystLavender),
+    AccentPreset("Violet", Color(0xFF8B5CF6)),
     AccentPreset("Blue", Color(0xFF3B82F6)),
+    AccentPreset("Sky", Color(0xFF38BDF8)),
     AccentPreset("Teal", Color(0xFF14B8A6)),
     AccentPreset("Green", Color(0xFF22C55E)),
-    AccentPreset("Sky", Color(0xFF38BDF8)),
+    AccentPreset("Amber", Color(0xFFF7B733)),
+    AccentPreset("Rose", Color(0xFFFF4F91)),
     AccentPreset("Mono", Color(0xFFB8B0B4)),
 )
