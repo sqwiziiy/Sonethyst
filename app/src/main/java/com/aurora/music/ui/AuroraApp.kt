@@ -67,6 +67,7 @@ import com.aurora.music.navigation.Routes
 import com.aurora.music.navigation.topLevelDestinations
 import com.aurora.music.ui.components.AmbientBackground
 import com.aurora.music.ui.components.MiniPlayer
+import com.aurora.music.ui.components.PlaylistPickerSheet
 import com.aurora.music.ui.components.SidebarContent
 import com.aurora.music.ui.screens.auth.SignInScreen
 import com.aurora.music.ui.screens.detail.DetailScreen
@@ -174,6 +175,27 @@ fun AuroraApp() {
     var showOutput by remember { mutableStateOf(false) }
     var showSleep by remember { mutableStateOf(false) }
 
+    var playlistTarget by remember {
+        mutableStateOf<com.aurora.music.model.Song?>(null)
+    }
+    var playlistPickerPlaylists by remember {
+        mutableStateOf<List<com.aurora.music.model.Playlist>>(emptyList())
+    }
+    var playlistPickerLoading by remember { mutableStateOf(false) }
+
+    fun openPlaylistPicker(song: com.aurora.music.model.Song) {
+        playlistTarget = song
+        playlistPickerLoading = true
+
+        scope.launch {
+            playlistPickerPlaylists = runCatching {
+                container.repository.allPlaylists()
+            }.getOrDefault(emptyList())
+
+            playlistPickerLoading = false
+        }
+    }
+
     fun navigateTopLevel(route: String) {
         if (currentRoute == route) return
         container.haptic()
@@ -231,6 +253,34 @@ fun AuroraApp() {
             val url = runCatching { container.repository.profileImageUrl() }.getOrNull()
             if (!url.isNullOrBlank()) container.settingsStore.updateUserImage(url)
         }
+    }
+
+    playlistTarget?.let { target ->
+        PlaylistPickerSheet(
+            playlists = playlistPickerPlaylists,
+            loading = playlistPickerLoading,
+            onSelect = { playlist ->
+                scope.launch {
+                    val added = container.repository.addToPlaylist(
+                        playlist.id,
+                        listOf(target.id),
+                    )
+
+                    playlistTarget = null
+
+                    confirm(
+                        if (added) {
+                            "Added to ${playlist.title}"
+                        } else {
+                            "Couldn't add to playlist"
+                        }
+                    )
+                }
+            },
+            onDismiss = {
+                playlistTarget = null
+            },
+        )
     }
 
     ModalNavigationDrawer(
@@ -432,6 +482,7 @@ fun AuroraApp() {
                             onPlayAll = { songs, index -> playerVM.playAll(songs, index) },
                             onAddToQueue = { playerVM.addToQueue(it); confirm("Added to queue") },
                             onPlayNext = { playerVM.playNext(it); confirm("Playing next") },
+                            onAddToPlaylist = { openPlaylistPicker(it) },
                             onToggleLike = { playerVM.toggleLike(it) },
                             onOpenDetail = { kind, id -> openDetail(kind, id) },
                             downloadedIds = downloadedIds,

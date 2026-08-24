@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Download
@@ -60,6 +61,7 @@ fun SongRow(
     index: Int? = null,
     onPlayNext: (() -> Unit)? = null,
     onAddToQueue: (() -> Unit)? = null,
+    onAddToPlaylist: (() -> Unit)? = null,
     onGoToAlbum: (() -> Unit)? = null,
     onGoToArtist: (() -> Unit)? = null,
     isDownloaded: Boolean = false,
@@ -160,6 +162,11 @@ fun SongRow(
                     text = { Text("Add to queue") },
                     onClick = { menuOpen = false; onAddToQueue() },
                     leadingIcon = { Icon(Icons.AutoMirrored.Filled.QueueMusic, null) },
+                )
+                if (onAddToPlaylist != null) DropdownMenuItem(
+                    text = { Text("Add to playlist") },
+                    onClick = { menuOpen = false; onAddToPlaylist() },
+                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.PlaylistAdd, null) },
                 )
                 DropdownMenuItem(
                     text = { Text(if (isLiked) "Remove from liked" else "Add to liked") },

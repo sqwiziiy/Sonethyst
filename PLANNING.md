@@ -46,8 +46,8 @@ Sonethyst is an independent Android music player fork based on Aurora.
 
 ## Phase 1 — Playlist UX
 
-- [ ] Add "Add to playlist" to song menu
-- [ ] Playlist picker
+- [x] Add "Add to playlist" to song menu
+- [x] Playlist picker
 - [ ] Create playlist from picker
 - [ ] Add songs from playlist screen
 - [ ] Remove songs from playlist
@@ -99,6 +99,7 @@ Sonethyst is an independent Android music player fork based on Aurora.
 ## Phase 5 — Player UX
 
 - [ ] Improved Now Playing
+- [ ] Make the liked/favorite heart use the active track artwork-derived accent instead of a fixed theme color; fall back to MaterialTheme.colorScheme.primary when no track accent is available and preserve sufficient contrast
 - [ ] Waveform/visualization improvements
 - [ ] Artwork options
 - [ ] Credits
