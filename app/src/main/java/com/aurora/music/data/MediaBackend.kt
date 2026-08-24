@@ -33,6 +33,8 @@ interface MediaBackend {
 
     suspend fun addToPlaylist(playlistId: String, trackIds: List<String>): Boolean = false
     suspend fun removeFromPlaylist(playlistId: String, trackIds: List<String>): Boolean = false
+    suspend fun reorderPlaylist(playlistId: String, orderedTrackIds: List<String>): Boolean = false
+    val supportsPlaylistReorder: Boolean get() = false
     suspend fun setStarred(id: String, starred: Boolean, kind: String): Boolean
     suspend fun detail(kind: String, id: String): DetailData?
 

@@ -72,6 +72,20 @@ class LocalStore(context: Context) {
         persist()
     }
 
+    fun reorderTracks(id: String, orderedTrackIds: List<String>) = synchronized(lock) {
+        state = state.copy(playlists = state.playlists.orEmpty().map {
+            if (it.id == id) {
+                val existing = it.trackIds.orEmpty().toSet()
+                val ordered = orderedTrackIds.filter { trackId -> trackId in existing }
+                val missing = it.trackIds.orEmpty().filterNot { trackId -> trackId in ordered.toSet() }
+                it.copy(trackIds = ordered + missing)
+            } else {
+                it
+            }
+        })
+        persist()
+    }
+
     fun exportJson(): String = gson.toJson(state)
     fun importJson(json: String) = synchronized(lock) {
         runCatching { gson.fromJson(json, object : TypeToken<LocalState>() {}.type) as? LocalState }.getOrNull()?.let {

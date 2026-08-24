@@ -174,6 +174,14 @@ class MusicRepository(
     suspend fun removeFromPlaylist(playlistId: String, trackIds: List<String>): Boolean =
         libraryMutationResult(backend?.removeFromPlaylist(playlistId, trackIds) ?: false)
 
+    val supportsPlaylistReorder: Boolean
+        get() = !offline && backend?.supportsPlaylistReorder == true
+
+    suspend fun reorderPlaylist(playlistId: String, orderedTrackIds: List<String>): Boolean =
+        libraryMutationResult(
+            backend?.reorderPlaylist(playlistId, orderedTrackIds) ?: false
+        )
+
     suspend fun createPlaylistFromSongs(name: String, trackIds: List<String>): Boolean {
         val b = backend ?: return false
         val id = b.createPlaylistWithId(name) ?: return false

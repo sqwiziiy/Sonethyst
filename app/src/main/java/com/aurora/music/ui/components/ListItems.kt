@@ -59,6 +59,7 @@ fun SongRow(
     onClick: () -> Unit,
     onToggleLike: () -> Unit,
     modifier: Modifier = Modifier,
+    artworkModifier: Modifier = Modifier,
     index: Int? = null,
     onPlayNext: (() -> Unit)? = null,
     onAddToQueue: (() -> Unit)? = null,
@@ -81,7 +82,10 @@ fun SongRow(
             .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(contentAlignment = Alignment.Center) {
+        Box(
+            modifier = artworkModifier,
+            contentAlignment = Alignment.Center,
+        ) {
             Artwork(song.artworkUrl, song.accent, Modifier.size(52.dp), corner = 10.dp)
             if (isPlaying) {
                 Box(

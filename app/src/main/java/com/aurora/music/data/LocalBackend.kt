@@ -139,6 +139,16 @@ class LocalBackend(
     override suspend fun addToPlaylist(playlistId: String, trackIds: List<String>): Boolean { store.addTracks(playlistId, trackIds); return true }
     override suspend fun removeFromPlaylist(playlistId: String, trackIds: List<String>): Boolean { store.removeTracks(playlistId, trackIds); return true }
 
+    override val supportsPlaylistReorder: Boolean get() = true
+
+    override suspend fun reorderPlaylist(
+        playlistId: String,
+        orderedTrackIds: List<String>,
+    ): Boolean {
+        store.reorderTracks(playlistId, orderedTrackIds)
+        return true
+    }
+
     // folder tree rooted at the deepest common directory
 
     override val supportsFolders: Boolean get() = true

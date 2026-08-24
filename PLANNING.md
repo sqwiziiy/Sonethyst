@@ -55,7 +55,7 @@ Sonethyst is an independent Android music player fork based on Aurora.
 - [x] Remove songs from playlist
 - [ ] Multi-select
 - [ ] Add selected songs to playlist / queue / likes
-- [ ] Drag-and-drop reorder — drag tracks by a dedicated handle, animate surrounding rows while moving, preserve normal row tap behavior, and persist the final order
+- [x] Drag-and-drop reorder — drag tracks by a dedicated handle, preserve normal row tap behavior, and persist the final order
 - [ ] Playlist cover management
   - [ ] Choose a custom image from the device
   - [ ] Choose artwork from any track already inside the playlist

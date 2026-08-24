@@ -3,6 +3,11 @@ package com.aurora.music.ui.screens.detail
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -82,6 +87,7 @@ fun DetailScreen(
     onPlayNext: (Song) -> Unit,
     onAddToPlaylist: (Song) -> Unit,
     onRemoveFromPlaylist: ((Song) -> Unit)? = null,
+    onReorderPlaylist: ((List<Song>) -> Unit)? = null,
     onToggleLike: (String) -> Unit,
     onOpenDetail: (String, String) -> Unit,
     itemKind: String,
@@ -125,6 +131,22 @@ fun DetailScreen(
 
     val info = data.info
     val tracks = data.tracks
+
+    val playlistOrder = remember {
+        androidx.compose.runtime.mutableStateListOf<Song>()
+    }
+
+    androidx.compose.runtime.LaunchedEffect(tracks.map { it.id }) {
+        if (playlistOrder.map { it.id } != tracks.map { it.id }) {
+            playlistOrder.clear()
+            playlistOrder.addAll(tracks)
+        }
+    }
+
+    var draggingSongId by remember { mutableStateOf<String?>(null) }
+    var dragOffsetY by remember { mutableStateOf(0f) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val reorderStepPx = with(density) { 68.dp.toPx() }
     // artists often lack a server image fall back to enriched wiki photo
     val effectiveArt = info.artUrl.ifBlank { artistInfo?.imageUrl.orEmpty() }
     val accent by com.aurora.music.util.rememberDominantColor(effectiveArt, info.accent)
@@ -316,18 +338,97 @@ fun DetailScreen(
             }
         }
 
-        val shown = if (query.isBlank() || !searchOpen) tracks
-            else tracks.filter { it.title.contains(query, true) || it.artist.contains(query, true) }
+        val baseTracks =
+            if (itemKind == "playlist" && onReorderPlaylist != null) playlistOrder
+            else tracks
 
-        items(shown.size) { i ->
+        val shown = if (query.isBlank() || !searchOpen) baseTracks
+            else baseTracks.filter {
+                it.title.contains(query, true) || it.artist.contains(query, true)
+            }
+
+        items(
+            count = shown.size,
+            key = { i -> shown[i].id },
+        ) { i ->
             val s = shown[i]
+            val isDragging = draggingSongId == s.id
+
             SongRow(
                 song = s,
                 isPlaying = s.id == currentSongId && isPlaying,
                 isLiked = likedIds.contains(s.id),
                 onClick = { onPlayAll(shown, i) },
                 onToggleLike = { onToggleLike(s.id) },
-                modifier = Modifier.padding(horizontal = 8.dp),
+                modifier = Modifier
+                    .padding(horizontal = 8.dp)
+                    .zIndex(if (isDragging) 1f else 0f)
+                    .graphicsLayer {
+                        translationY = if (isDragging) dragOffsetY else 0f
+                        shadowElevation = if (isDragging) 16f else 0f
+                        scaleX = if (isDragging) 1.02f else 1f
+                        scaleY = if (isDragging) 1.02f else 1f
+                    },
+                artworkModifier =
+                    if (
+                        itemKind == "playlist" &&
+                        onReorderPlaylist != null &&
+                        !searchOpen
+                    ) {
+                        Modifier
+                            .size(52.dp)
+                            .pointerInput(s.id) {
+                                detectDragGestures(
+                                    onDragStart = {
+                                        draggingSongId = s.id
+                                        dragOffsetY = 0f
+                                    },
+                                    onDragCancel = {
+                                        draggingSongId = null
+                                        dragOffsetY = 0f
+                                        onReorderPlaylist(playlistOrder.toList())
+                                    },
+                                    onDragEnd = {
+                                        draggingSongId = null
+                                        dragOffsetY = 0f
+                                        onReorderPlaylist(playlistOrder.toList())
+                                    },
+                                ) { change, dragAmount ->
+                                    change.consume()
+                                    dragOffsetY += dragAmount.y
+
+                                    var currentIndex =
+                                        playlistOrder.indexOfFirst { it.id == s.id }
+
+                                    while (
+                                        currentIndex >= 0 &&
+                                        currentIndex < playlistOrder.lastIndex &&
+                                        dragOffsetY > reorderStepPx / 2f
+                                    ) {
+                                        val moved =
+                                            playlistOrder.removeAt(currentIndex)
+                                        playlistOrder.add(currentIndex + 1, moved)
+
+                                        currentIndex++
+                                        dragOffsetY -= reorderStepPx
+                                    }
+
+                                    while (
+                                        currentIndex > 0 &&
+                                        dragOffsetY < -reorderStepPx / 2f
+                                    ) {
+                                        val moved =
+                                            playlistOrder.removeAt(currentIndex)
+                                        playlistOrder.add(currentIndex - 1, moved)
+
+                                        currentIndex--
+                                        dragOffsetY += reorderStepPx
+                                    }
+                                }
+                            }
+                    } else {
+                        Modifier
+                    },
                 onAddToQueue = { onAddToQueue(s) },
                 onPlayNext = { onPlayNext(s) },
                 onAddToPlaylist = { onAddToPlaylist(s) },

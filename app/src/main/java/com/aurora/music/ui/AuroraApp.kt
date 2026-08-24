@@ -632,6 +632,19 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             onAddToQueue = { playerVM.addToQueue(it); confirm("Added to queue") },
                             onPlayNext = { playerVM.playNext(it); confirm("Playing next") },
 onAddToPlaylist = { openPlaylistPicker(it) },
+                            onReorderPlaylist =
+                                if (
+                                    kind == "playlist" &&
+                                    container.repository.supportsPlaylistReorder
+                                ) ({ ordered ->
+                                    scope.launch {
+                                        val ok = container.repository.reorderPlaylist(
+                                            id,
+                                            ordered.map { it.id },
+                                        )
+                                        if (!ok) confirm("Couldn't save playlist order")
+                                    }
+                                }) else null,
                             onRemoveFromPlaylist = if (kind == "playlist") ({ song ->
                                 scope.launch {
                                     val removed = container.repository.removeFromPlaylist(
