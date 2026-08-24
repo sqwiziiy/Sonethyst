@@ -79,6 +79,6 @@ class AlarmReceiver : BroadcastReceiver() {
     }
 
     companion object {
-        const val ACTION_FIRE = "com.aurora.music.action.ALARM_FIRE"
+        const val ACTION_FIRE = "com.mentality.sonethyst.action.ALARM_FIRE"
     }
 }

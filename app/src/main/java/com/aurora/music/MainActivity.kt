@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
         handleAuthRedirect(intent)
     }
 
-    /** Deliver the Spotify OAuth code from `aurora://spotify?code=...` to the auth flow. */
+    /** Deliver the Spotify OAuth code from `sonethyst://spotify?code=...` to the auth flow. */
     private fun handleAuthRedirect(intent: Intent?) {
         val data = intent?.data ?: return
         if (data.scheme == "aurora" && data.host == "spotify") {

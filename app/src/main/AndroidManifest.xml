@@ -54,7 +54,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="aurora" android:host="spotify" />
+                <data android:scheme="sonethyst" android:host="spotify" />
             </intent-filter>
             <!-- deliberately no USB_DEVICE_ATTACHED filter or android pops a chooser on every DAC plug -->
         </activity>

@@ -14,7 +14,7 @@ import java.security.SecureRandom
 
 // oauth pkce no client secret for mobile
 object SpotifyAuth {
-    const val REDIRECT = "aurora://spotify"
+    const val REDIRECT = "sonethyst://spotify"
     const val AUTH_HOST = "https://accounts.spotify.com"
 
     val SCOPES = listOf(

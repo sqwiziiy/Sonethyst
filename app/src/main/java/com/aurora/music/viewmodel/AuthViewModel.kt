@@ -42,7 +42,7 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
     private var spotifyVerifier: String? = null
 
     init {
-        // aurora://spotify redirect caught in MainActivity delivers the oauth code here
+        // sonethyst://spotify redirect caught in MainActivity delivers the oauth code here
         viewModelScope.launch { container.spotifyRedirect.collect { code -> completeSpotify(code) } }
     }
 
