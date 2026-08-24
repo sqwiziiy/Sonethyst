@@ -137,3 +137,22 @@ Only after the application foundation and UX are stable:
 - [ ] Review other compiler warnings
 - [ ] Add CI build
 - [ ] Add tests where practical
+
+## Localization / Multilanguage
+
+- [ ] Audit all user-visible hardcoded strings
+- [ ] Move user-visible text to Android string resources
+- [ ] Use `stringResource()` throughout Compose UI
+- [ ] English as the base/fallback language
+- [ ] Russian translation
+- [ ] Add additional community translations later
+- [ ] Per-app language selector
+- [ ] Follow Android system language by default
+- [ ] Correct plurals with `<plurals>`
+- [ ] Locale-aware numbers, dates, times and durations
+- [ ] RTL layout support and testing
+- [ ] Test long translated strings and UI truncation
+- [ ] Add pseudo-localization testing
+- [ ] Keep artist, album and track metadata untranslated
+- [ ] Keep the Sonethyst brand name untranslated
+- [ ] Make new UI features localization-ready from the start
