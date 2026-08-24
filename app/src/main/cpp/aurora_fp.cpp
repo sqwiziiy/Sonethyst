@@ -1,4 +1,4 @@
-// JNI bridge from com.aurora.music.data.Chromaprint to the vendored Chromaprint C API.
+// JNI bridge from com.mentality.sonethyst.data.Chromaprint to the vendored Chromaprint C API.
 // Kotlin streams decoded 16-bit PCM in; we return the AcoustID-compatible compressed fingerprint.
 #include <jni.h>
 #include <cstdint>
@@ -7,7 +7,7 @@
 extern "C" {
 
 JNIEXPORT jlong JNICALL
-Java_com_aurora_music_data_Chromaprint_nativeNew(JNIEnv *, jobject, jint sampleRate, jint channels) {
+Java_com_mentality_sonethyst_data_Chromaprint_nativeNew(JNIEnv *, jobject, jint sampleRate, jint channels) {
     ChromaprintContext *ctx = chromaprint_new(CHROMAPRINT_ALGORITHM_DEFAULT);
     if (ctx == nullptr) return 0;
     if (chromaprint_start(ctx, sampleRate, channels) != 1) {
@@ -18,7 +18,7 @@ Java_com_aurora_music_data_Chromaprint_nativeNew(JNIEnv *, jobject, jint sampleR
 }
 
 JNIEXPORT void JNICALL
-Java_com_aurora_music_data_Chromaprint_nativeFeed(JNIEnv *env, jobject, jlong ctxPtr, jshortArray pcm, jint length) {
+Java_com_mentality_sonethyst_data_Chromaprint_nativeFeed(JNIEnv *env, jobject, jlong ctxPtr, jshortArray pcm, jint length) {
     auto *ctx = reinterpret_cast<ChromaprintContext *>(ctxPtr);
     if (ctx == nullptr || pcm == nullptr || length <= 0) return;
     jshort *data = env->GetShortArrayElements(pcm, nullptr);
@@ -28,7 +28,7 @@ Java_com_aurora_music_data_Chromaprint_nativeFeed(JNIEnv *env, jobject, jlong ct
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_aurora_music_data_Chromaprint_nativeFinish(JNIEnv *env, jobject, jlong ctxPtr) {
+Java_com_mentality_sonethyst_data_Chromaprint_nativeFinish(JNIEnv *env, jobject, jlong ctxPtr) {
     auto *ctx = reinterpret_cast<ChromaprintContext *>(ctxPtr);
     if (ctx == nullptr) return nullptr;
     jstring result = nullptr;

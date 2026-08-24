@@ -23,7 +23,7 @@ Sonethyst is an independent Android music player fork based on Aurora.
 - [x] Remove hard dependency on unavailable Circular Std
 - [x] Rename app to Sonethyst
 - [x] Change application ID to `com.mentality.sonethyst`
-- [ ] Migrate Kotlin namespace/packages from `com.aurora.music` to `com.mentality.sonethyst`
+- [x] Migrate Kotlin namespace/packages to `com.mentality.sonethyst`
 - [x] Replace Aurora-specific URI schemes and integration identifiers
 - [x] Add Sonethyst branding and launcher icon
 - [x] Adopt permanent open-source typography

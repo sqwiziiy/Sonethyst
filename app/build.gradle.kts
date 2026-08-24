@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.aurora.music"
+    namespace = "com.mentality.sonethyst"
     compileSdk = 35
     ndkVersion = "27.0.12077973"
 
