@@ -66,6 +66,7 @@ import com.aurora.music.AuroraApplication
 import com.aurora.music.navigation.Routes
 import com.aurora.music.navigation.topLevelDestinations
 import com.aurora.music.ui.components.AmbientBackground
+import com.aurora.music.ui.components.AddSongsToPlaylistSheet
 import com.aurora.music.ui.components.MiniPlayer
 import com.aurora.music.ui.components.PlaylistPickerSheet
 import com.aurora.music.ui.components.SidebarContent
@@ -183,6 +184,36 @@ fun AuroraApp() {
     }
     var playlistPickerLoading by remember { mutableStateOf(false) }
 
+    var addSongsPlaylistId by remember { mutableStateOf<String?>(null) }
+    var addSongsCandidates by remember {
+        mutableStateOf<List<com.aurora.music.model.Song>>(emptyList())
+    }
+    var addSongsLoading by remember { mutableStateOf(false) }
+    var addSongsSaving by remember { mutableStateOf(false) }
+
+    fun openAddSongsToPlaylist(
+        playlistId: String,
+        existingTrackIds: Set<String>,
+    ) {
+        addSongsPlaylistId = playlistId
+        addSongsCandidates = emptyList()
+        addSongsLoading = true
+        addSongsSaving = false
+
+        scope.launch {
+            val songs = runCatching {
+                container.repository.allSongs()
+            }.getOrDefault(emptyList())
+                .distinctBy { it.id }
+                .filterNot { it.id in existingTrackIds }
+
+            if (addSongsPlaylistId == playlistId) {
+                addSongsCandidates = songs
+                addSongsLoading = false
+            }
+        }
+    }
+
     fun openPlaylistPickerForSongs(
         songs: List<com.aurora.music.model.Song>,
         excludePlaylistId: String? = null,
@@ -274,6 +305,49 @@ fun AuroraApp() {
             val url = runCatching { container.repository.profileImageUrl() }.getOrNull()
             if (!url.isNullOrBlank()) container.settingsStore.updateUserImage(url)
         }
+    }
+
+    addSongsPlaylistId?.let { playlistId ->
+        AddSongsToPlaylistSheet(
+            songs = addSongsCandidates,
+            loading = addSongsLoading,
+            saving = addSongsSaving,
+            onAdd = { songs: List<com.aurora.music.model.Song> ->
+                if (songs.isNotEmpty() && !addSongsSaving) {
+                    addSongsSaving = true
+
+                    scope.launch {
+                        val added =
+                            container.repository.addToPlaylist(
+                                playlistId,
+                                songs.map { song -> song.id },
+                            )
+
+                        addSongsSaving = false
+
+                        if (added) {
+                            addSongsPlaylistId = null
+                            addSongsCandidates = emptyList()
+
+                            confirm(
+                                "Added ${songs.size} song${if (songs.size == 1) "" else "s"}"
+                            )
+                        } else {
+                            confirm(
+                                "Couldn't add songs to playlist"
+                            )
+                        }
+                    }
+                }
+            },
+            onDismiss = {
+                if (!addSongsSaving) {
+                    addSongsPlaylistId = null
+                    addSongsCandidates = emptyList()
+                    addSongsLoading = false
+                }
+            },
+        )
     }
 
     playlistTargets.takeIf { it.isNotEmpty() }?.let { targets ->
@@ -808,6 +882,20 @@ onAddToPlaylist = {
                             onEditPlaylist = { name, desc ->
                                 scope.launch { container.repository.updatePlaylist(id, name, desc); detailVM.reload(kind, id) }
                             },
+                            onAddSongsToPlaylist =
+                                if (kind == "playlist") ({
+                                    val existingIds =
+                                        detailState.data
+                                            ?.tracks
+                                            ?.map { it.id }
+                                            ?.toSet()
+                                            ?: emptySet()
+
+                                    openAddSongsToPlaylist(
+                                        id,
+                                        existingIds,
+                                    )
+                                }) else null,
                             onSetPlaylistCover =
                                 if (
                                     kind == "playlist" &&

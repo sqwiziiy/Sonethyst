@@ -114,6 +114,7 @@ fun DetailScreen(
     onDownloadAll: () -> Unit,
     onRemoveDownloads: () -> Unit,
     onEditPlaylist: (String, String) -> Unit,
+    onAddSongsToPlaylist: (() -> Unit)? = null,
     onSetPlaylistCover: ((String, String?) -> Unit)? = null,
     onDeletePlaylist: () -> Unit,
     onLoadMore: () -> Unit = {},
