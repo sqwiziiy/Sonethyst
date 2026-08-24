@@ -31,7 +31,7 @@ import okhttp3.Request
 import org.json.JSONObject
 import java.net.URLEncoder
 
-// stream urls are sentinel aurora-yt:// uris resolved to a youtube stream at play time
+// stream urls are Sonethyst YouTube sentinel URIs resolved at play time
 class SpotifyBackend(
     private val c: SpotifyClient,
     private val maxBitrateProvider: () -> Int,
@@ -120,7 +120,7 @@ class SpotifyBackend(
     private fun sentinel(id: String, title: String, artist: String, durSec: Int): String {
         if (id.isBlank()) return ""
         val q = URLEncoder.encode("$title $artist".trim(), "UTF-8")
-        return "aurora-yt://$id?q=$q&dur=$durSec"
+        return "sonethyst-yt://$id?q=$q&dur=$durSec"
     }
 
     private fun SpTrack.toSong(fallbackArt: String = "", fallbackAlbum: String = "", fallbackAlbumId: String = ""): Song {
@@ -381,7 +381,7 @@ class SpotifyBackend(
 
     override suspend fun serverLyrics(song: Song): Lyrics? = null
 
-    override fun streamUrl(songId: String, maxBitrate: Int, lossless: Boolean): String = "aurora-yt://$songId"
+    override fun streamUrl(songId: String, maxBitrate: Int, lossless: Boolean): String = "sonethyst-yt://$songId"
 
     override fun coverArtUrl(id: String, size: Int): String = ""
 }

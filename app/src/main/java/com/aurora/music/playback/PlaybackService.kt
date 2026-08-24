@@ -145,11 +145,11 @@ class PlaybackService : MediaLibraryService() {
             renderersFactory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
         }
 
-        // resolve aurora-yt sentinel uris to a real youtube stream just-in-time on the loader thread
+        // resolve Sonethyst and legacy Aurora YouTube sentinels just-in-time
         val resolver = container.youtubeResolver
         val ytResolver = androidx.media3.datasource.ResolvingDataSource.Resolver { dataSpec ->
             val uri = dataSpec.uri
-            if (uri.scheme == "aurora-yt") {
+            if (uri.scheme == "sonethyst-yt" || uri.scheme == "aurora-yt") {
                 val real = resolver.resolve(
                     uri.host.orEmpty(),
                     uri.getQueryParameter("q").orEmpty(),

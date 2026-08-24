@@ -114,7 +114,7 @@ class AppContainer(context: Context) {
 
     private fun resolveYtSentinel(sentinel: String): String? {
         val uri = runCatching { android.net.Uri.parse(sentinel) }.getOrNull() ?: return null
-        if (uri.scheme != "aurora-yt") return null
+        if (uri.scheme != "sonethyst-yt" && uri.scheme != "aurora-yt") return null
         return youtubeResolver.resolve(
             uri.host.orEmpty(),
             uri.getQueryParameter("q").orEmpty(),

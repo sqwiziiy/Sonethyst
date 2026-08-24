@@ -152,9 +152,9 @@ class DownloadManager(
             val audioFile = File(dir, "${song.id}.audio")
             val bitrate = downloadBitrateProvider()
             val provided = streamUrlProvider(song.id, bitrate, bitrate == 0) ?: song.streamUrl
-            // resolve aurora-yt sentinel via the songs full sentinel which holds the search query
-            val audioUrl = if (provided.startsWith("aurora-yt://")) {
-                val sentinel = if (song.streamUrl.startsWith("aurora-yt://")) song.streamUrl else provided
+            // resolve Sonethyst/legacy Aurora YouTube sentinel
+            val audioUrl = if (provided.startsWith("sonethyst-yt://") || provided.startsWith("aurora-yt://")) {
+                val sentinel = if (song.streamUrl.startsWith("sonethyst-yt://") || song.streamUrl.startsWith("aurora-yt://")) song.streamUrl else provided
                 resolveSentinel(sentinel) ?: throw IOException("No stream found for this track")
             } else provided
             downloadTo(audioUrl, audioFile) { p -> setState(song.id, DownloadState.Downloading(p)) }
