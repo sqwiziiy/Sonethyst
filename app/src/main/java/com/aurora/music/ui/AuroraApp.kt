@@ -277,6 +277,24 @@ fun AuroraApp() {
                     )
                 }
             },
+            onCreate = { name ->
+                scope.launch {
+                    val created = container.repository.createPlaylistFromSongs(
+                        name,
+                        listOf(target.id),
+                    )
+
+                    playlistTarget = null
+
+                    confirm(
+                        if (created) {
+                            "Created $name and added track"
+                        } else {
+                            "Couldn't create playlist"
+                        }
+                    )
+                }
+            },
             onDismiss = {
                 playlistTarget = null
             },

@@ -55,9 +55,15 @@ class MusicRepository(
     private val currentServerIdProvider: () -> String = { "" },
     private val smartPlaylistsProvider: () -> List<SmartPlaylist> = { emptyList() },
     private val smartEngine: SmartPlaylistEngine? = null,
+    private val onLibraryChanged: () -> Unit = {},
 ) {
     private val backend: MediaBackend? get() = backendProvider()
     private val offline: Boolean get() = offlineProvider()
+
+    private fun libraryMutationResult(ok: Boolean): Boolean {
+        if (ok) onLibraryChanged()
+        return ok
+    }
 
     // offline shows every servers downloads online scopes to the active server
     private fun visibleDownloads(): List<DownloadedSong> {
@@ -159,15 +165,26 @@ class MusicRepository(
         return backend?.radio(seedId).orEmpty()
     }
 
-    suspend fun createPlaylist(name: String): Boolean = backend?.createPlaylist(name) ?: false
+    suspend fun createPlaylist(name: String): Boolean =
+        libraryMutationResult(backend?.createPlaylist(name) ?: false)
 
     suspend fun addToPlaylist(playlistId: String, trackIds: List<String>): Boolean =
-        backend?.addToPlaylist(playlistId, trackIds) ?: false
+        libraryMutationResult(backend?.addToPlaylist(playlistId, trackIds) ?: false)
 
     suspend fun createPlaylistFromSongs(name: String, trackIds: List<String>): Boolean {
         val b = backend ?: return false
         val id = b.createPlaylistWithId(name) ?: return false
-        return if (trackIds.isNotEmpty()) b.addToPlaylist(id, trackIds) else true
+
+        val result = if (trackIds.isNotEmpty()) {
+            b.addToPlaylist(id, trackIds)
+        } else {
+            true
+        }
+
+        // The playlist was created even if adding its first tracks failed,
+        // so every cached library/detail screen must refresh.
+        onLibraryChanged()
+        return result
     }
 
     suspend fun exportPlaylist(kind: String, id: String): String? =
@@ -178,6 +195,7 @@ class MusicRepository(
         val matched = entries.mapNotNull { matchEntry(it) }.distinctBy { it.id }
         val playlistId = backend?.createPlaylistWithId(name) ?: return null
         if (matched.isNotEmpty()) backend?.addToPlaylist(playlistId, matched.map { it.id })
+        onLibraryChanged()
         return matched.size to entries.size
     }
 
@@ -200,9 +218,10 @@ class MusicRepository(
     }
 
     suspend fun updatePlaylist(id: String, name: String?, comment: String?): Boolean =
-        backend?.updatePlaylist(id, name, comment) ?: false
+        libraryMutationResult(backend?.updatePlaylist(id, name, comment) ?: false)
 
-    suspend fun deletePlaylist(id: String): Boolean = backend?.deletePlaylist(id) ?: false
+    suspend fun deletePlaylist(id: String): Boolean =
+        libraryMutationResult(backend?.deletePlaylist(id) ?: false)
 
     // playlists arent server-starrable handled locally by the caller
     suspend fun setStarred(id: String, starred: Boolean, kind: String = "song"): Boolean =

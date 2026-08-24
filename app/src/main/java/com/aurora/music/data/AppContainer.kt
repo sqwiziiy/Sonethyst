@@ -292,6 +292,7 @@ class AppContainer(context: Context) {
         currentServerIdProvider = { currentServerId() },
         smartPlaylistsProvider = { smartPlaylistsValue },
         smartEngine = smartEngine,
+        onLibraryChanged = { _libraryReload.value++ },
     )
 
     private fun recomputeOffline() {

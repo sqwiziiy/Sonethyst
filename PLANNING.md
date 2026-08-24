@@ -48,16 +48,38 @@ Sonethyst is an independent Android music player fork based on Aurora.
 
 - [x] Add "Add to playlist" to song menu
 - [x] Playlist picker
-- [ ] Create playlist from picker
+- [x] Create playlist from picker
+- [x] Refresh playlist/library UI immediately after playlist create/add/edit/delete/import
+- [x] Keep playlist picker surfaces visually consistent with the Material 3 bottom sheet
 - [ ] Add songs from playlist screen
 - [ ] Remove songs from playlist
 - [ ] Multi-select
 - [ ] Add selected songs to playlist / queue / likes
 - [ ] Drag-and-drop reorder
-- [ ] Custom playlist covers
-- [ ] First-track artwork mode
-- [ ] 2x2 collage artwork mode
+- [ ] Playlist cover management
+  - [ ] Choose a custom image from the device
+  - [ ] Choose artwork from any track already inside the playlist
+  - [ ] First-track artwork mode — playlist cover automatically follows the current first track and updates after reorder — playlist cover automatically follows the current first track and updates after reorder
+  - [ ] 2x2 collage artwork mode
+  - [ ] Automatic/default artwork mode
+  - [ ] Reset a custom cover back to automatic
+  - [ ] Persist the selected cover mode and custom artwork
+  - [ ] Do not overwrite an explicitly selected custom/track cover when playlist contents change
 - [ ] Preserve M3U/M3U8 import/export
+
+
+## Playlist / library performance
+
+- [ ] Optimize scrolling performance for large song, album, artist and playlist lists
+- [ ] Use stable LazyColumn/LazyGrid item keys everywhere
+- [ ] Add appropriate `contentType` values for heterogeneous lazy lists
+- [ ] Minimize unnecessary Compose recompositions while scrolling
+- [ ] Avoid reloading complete library datasets when only one playlist/item changed
+- [ ] Optimize album-art loading, resizing and caching for list thumbnails
+- [ ] Avoid full-size artwork decoding for small list rows
+- [ ] Review paging/incremental loading for very large song libraries
+- [ ] Keep scroll position stable after likes, playlist mutations and metadata changes
+- [ ] Profile scrolling for dropped frames and excessive allocations on a real device
 
 ## Phase 2 — Library
 

@@ -9,6 +9,7 @@ import com.aurora.music.data.remote.ArtistInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -25,6 +26,18 @@ class DetailViewModel(app: Application) : AndroidViewModel(app) {
     private val container = (app as AuroraApplication).container
     private val _state = MutableStateFlow(DetailUiState())
     val state: StateFlow<DetailUiState> = _state.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            container.libraryReload.drop(1).collect {
+                val kind = curKind
+                val id = curId
+                if (kind != null && id != null) {
+                    fetch(kind, id)
+                }
+            }
+        }
+    }
 
     private var loadedKey: String? = null
     private var curKind: String? = null
