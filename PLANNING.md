@@ -51,7 +51,7 @@ Sonethyst is an independent Android music player fork based on Aurora.
 - [x] Create playlist from picker
 - [x] Refresh playlist/library UI immediately after playlist create/add/edit/delete/import
 - [x] Keep playlist picker surfaces visually consistent with the Material 3 bottom sheet
-- [ ] Add songs from playlist screen
+- [x] Add songs from playlist screen
 - [x] Remove songs from playlist
 - [x] Multi-select
 - [x] Add selected songs to playlist / queue / likes
@@ -65,7 +65,7 @@ Sonethyst is an independent Android music player fork based on Aurora.
   - [x] Reset a custom cover back to automatic
   - [x] Persist the selected cover mode and custom artwork
   - [x] Do not overwrite an explicitly selected custom/track cover when playlist contents change
-- [ ] Preserve M3U/M3U8 import/export
+- [x] Preserve M3U/M3U8 import/export
 
 
 ## Playlist / library performance
@@ -87,15 +87,15 @@ Sonethyst is an independent Android music player fork based on Aurora.
 - [ ] Ratings
 - [ ] Custom tags
 - [ ] Hide tracks/albums
-- [ ] Local music folder management in Settings
-  - [ ] Settings → Local music → Music folders
-  - [ ] Show detected music/source folders
-  - [ ] Exclude a folder and all descendants from the Sonethyst library
-  - [ ] Re-enable previously excluded folders
-  - [ ] Persist folder exclusions between restarts
-  - [ ] Rescan/update the local library after changes
+- [x] Local music folder management in Settings
+  - [x] Settings → Local music → Music folders
+  - [x] Show detected music/source folders
+  - [x] Exclude a folder and all descendants from the Sonethyst library
+  - [x] Re-enable previously excluded folders
+  - [x] Persist folder exclusions between restarts
+  - [x] Rescan/update the local library after changes
   - [ ] Optional include-only folder mode
-  - [ ] Folder management must never delete or modify the actual music files
+  - [x] Folder management must never delete or modify the actual music files
 - [ ] Improved duplicate detection
 - [ ] Better handling of multiple versions/edits of one song
 - [ ] Playlist folders
@@ -111,8 +111,8 @@ Sonethyst is an independent Android music player fork based on Aurora.
 - [ ] Metadata backup/restore
 - [ ] Lyrics editor
 - [ ] Synced-lyrics offset/editor
-- [ ] Improve M3U matching for Unicode/non-Latin metadata
-- [ ] Use local path/basename before fuzzy M3U matching where possible
+- [x] Improve M3U matching for Unicode/non-Latin metadata
+- [x] Use local path/basename before fuzzy M3U matching where possible
 
 ## Phase 4 — Audio quality tooling
 
@@ -128,12 +128,12 @@ Sonethyst is an independent Android music player fork based on Aurora.
 
 ## Playback transitions
 
-- [ ] Crossfade between songs
-  - [ ] Add the setting under Settings → Playback near gapless playback
-  - [ ] Disabled by default
-  - [ ] Adjustable crossfade duration
-  - [ ] Smoothly fade out the outgoing track while fading in the next track
-  - [ ] Avoid audible volume jumps at the transition
+- [x] Crossfade between songs
+  - [x] Add the setting under Settings → Playback near gapless playback
+  - [x] Disabled by default
+  - [x] Adjustable crossfade duration
+  - [x] Smoothly fade out the outgoing track while fading in the next track
+  - [x] Avoid audible volume jumps at the transition
   - [ ] Preserve true gapless playback where crossfade would be undesirable
   - [ ] Define behavior for manual Next/Previous separately from natural track completion
   - [ ] Ensure shuffle, repeat and queue transitions work correctly
@@ -178,10 +178,10 @@ Only after the application foundation and UX are stable:
 
 ## About / project links
 
-- [ ] Add a GitHub repository link to Settings → About
-  - [ ] Show the Sonethyst GitHub repository as a dedicated row/action
-  - [ ] Open `https://github.com/sqwiziiy/Sonethyst` in the browser/GitHub app
-  - [ ] Keep Aurora attribution and licensing visible separately
+- [x] Add a GitHub repository link to Settings → About
+  - [x] Show the Sonethyst GitHub repository as a dedicated row/action
+  - [x] Open `https://github.com/sqwiziiy/Sonethyst` in the browser/GitHub app
+  - [x] Keep Aurora attribution and licensing visible separately
 
 ## Repository presentation
 
