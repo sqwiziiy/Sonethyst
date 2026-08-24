@@ -146,7 +146,11 @@ fun HomeScreen(
                 SectionHeader("Jump back in", Modifier.padding(horizontal = 16.dp))
                 Spacer(Modifier.height(12.dp))
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(data.recentlyPlayed.size) { i ->
+                    items(
+                        count = data.recentlyPlayed.size,
+                        key = { i -> "recent:${data.recentlyPlayed[i].id}" },
+                        contentType = { "recent-album" },
+                    ) { i ->
                         val a = data.recentlyPlayed[i]
                         OverlayTile(a.title, a.artworkUrl, accentFor(a.id)) { onOpenDetail("album", a.id) }
                     }
@@ -159,8 +163,17 @@ fun HomeScreen(
                 SectionHeader("Your playlists", Modifier.padding(horizontal = 16.dp))
                 Spacer(Modifier.height(10.dp))
                 LazyRow(contentPadding = PaddingValues(horizontal = 8.dp)) {
-                    items(data.playlists.size) { i ->
-                        PlaylistCard(data.playlists[i], onClick = { onOpenDetail("playlist", data.playlists[i].id) })
+                    items(
+                        count = data.playlists.size,
+                        key = { i -> "playlist:${data.playlists[i].id}" },
+                        contentType = { "playlist-card" },
+                    ) { i ->
+                        PlaylistCard(
+                            data.playlists[i],
+                            onClick = {
+                                onOpenDetail("playlist", data.playlists[i].id)
+                            },
+                        )
                     }
                 }
             }
@@ -212,8 +225,17 @@ fun HomeScreen(
                 SectionHeader("Most played", Modifier.padding(horizontal = 16.dp))
                 Spacer(Modifier.height(10.dp))
                 LazyRow(contentPadding = PaddingValues(horizontal = 8.dp)) {
-                    items(data.mostPlayed.size) { i ->
-                        AlbumCard(data.mostPlayed[i], onClick = { onOpenDetail("album", data.mostPlayed[i].id) })
+                    items(
+                        count = data.mostPlayed.size,
+                        key = { i -> "most:${data.mostPlayed[i].id}" },
+                        contentType = { "album-card" },
+                    ) { i ->
+                        AlbumCard(
+                            data.mostPlayed[i],
+                            onClick = {
+                                onOpenDetail("album", data.mostPlayed[i].id)
+                            },
+                        )
                     }
                 }
             }
@@ -224,8 +246,17 @@ fun HomeScreen(
                 SectionHeader("Artists", Modifier.padding(horizontal = 16.dp))
                 Spacer(Modifier.height(10.dp))
                 LazyRow(contentPadding = PaddingValues(horizontal = 8.dp)) {
-                    items(data.artists.size) { i ->
-                        ArtistCircle(data.artists[i], onClick = { onOpenDetail("artist", data.artists[i].id) })
+                    items(
+                        count = data.artists.size,
+                        key = { i -> "artist:${data.artists[i].id}" },
+                        contentType = { "artist-circle" },
+                    ) { i ->
+                        ArtistCircle(
+                            data.artists[i],
+                            onClick = {
+                                onOpenDetail("artist", data.artists[i].id)
+                            },
+                        )
                     }
                 }
             }
@@ -236,8 +267,17 @@ fun HomeScreen(
                 SectionHeader("New releases", Modifier.padding(horizontal = 16.dp))
                 Spacer(Modifier.height(10.dp))
                 LazyRow(contentPadding = PaddingValues(horizontal = 8.dp)) {
-                    items(data.newReleases.size) { i ->
-                        AlbumCard(data.newReleases[i], onClick = { onOpenDetail("album", data.newReleases[i].id) })
+                    items(
+                        count = data.newReleases.size,
+                        key = { i -> "release:${data.newReleases[i].id}" },
+                        contentType = { "album-card" },
+                    ) { i ->
+                        AlbumCard(
+                            data.newReleases[i],
+                            onClick = {
+                                onOpenDetail("album", data.newReleases[i].id)
+                            },
+                        )
                     }
                 }
             }

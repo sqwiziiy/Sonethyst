@@ -183,18 +183,29 @@ fun SearchScreen(
 
 @Composable
 private fun FilterChips(selected: SearchFilter, results: SearchResults, onSelect: (SearchFilter) -> Unit) {
-    val available = buildList {
-        add(SearchFilter.ALL)
-        if (results.songs.isNotEmpty()) add(SearchFilter.SONGS)
-        if (results.albums.isNotEmpty()) add(SearchFilter.ALBUMS)
-        if (results.artists.isNotEmpty()) add(SearchFilter.ARTISTS)
-        if (results.playlists.isNotEmpty()) add(SearchFilter.PLAYLISTS)
+    val available = remember(
+        results.songs.isNotEmpty(),
+        results.albums.isNotEmpty(),
+        results.artists.isNotEmpty(),
+        results.playlists.isNotEmpty(),
+    ) {
+        buildList {
+            add(SearchFilter.ALL)
+            if (results.songs.isNotEmpty()) add(SearchFilter.SONGS)
+            if (results.albums.isNotEmpty()) add(SearchFilter.ALBUMS)
+            if (results.artists.isNotEmpty()) add(SearchFilter.ARTISTS)
+            if (results.playlists.isNotEmpty()) add(SearchFilter.PLAYLISTS)
+        }
     }
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        items(available.size) { i ->
+        items(
+            count = available.size,
+            key = { i -> available[i].name },
+            contentType = { "search-filter" },
+        ) { i ->
             val f = available[i]
             val on = f == selected
             Text(
@@ -240,7 +251,18 @@ private fun Results(
             item { SectionHeader("Artists", Modifier.padding(horizontal = 16.dp)) }
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 8.dp)) {
-                    items(results.artists.size) { i -> ArtistCircle(results.artists[i], onClick = { onOpenDetail("artist", results.artists[i].id) }) }
+                    items(
+                        count = results.artists.size,
+                        key = { i -> "artist:${results.artists[i].id}" },
+                        contentType = { "artist-circle" },
+                    ) { i ->
+                        ArtistCircle(
+                            results.artists[i],
+                            onClick = {
+                                onOpenDetail("artist", results.artists[i].id)
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -248,7 +270,18 @@ private fun Results(
             item { SectionHeader("Albums", Modifier.padding(horizontal = 16.dp)) }
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 8.dp)) {
-                    items(results.albums.size) { i -> AlbumCard(results.albums[i], onClick = { onOpenDetail("album", results.albums[i].id) }) }
+                    items(
+                        count = results.albums.size,
+                        key = { i -> "album:${results.albums[i].id}" },
+                        contentType = { "album-card" },
+                    ) { i ->
+                        AlbumCard(
+                            results.albums[i],
+                            onClick = {
+                                onOpenDetail("album", results.albums[i].id)
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -256,13 +289,28 @@ private fun Results(
             item { SectionHeader("Playlists", Modifier.padding(horizontal = 16.dp)) }
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 8.dp)) {
-                    items(results.playlists.size) { i -> PlaylistCard(results.playlists[i], onClick = { onOpenDetail("playlist", results.playlists[i].id) }) }
+                    items(
+                        count = results.playlists.size,
+                        key = { i -> "playlist:${results.playlists[i].id}" },
+                        contentType = { "playlist-card" },
+                    ) { i ->
+                        PlaylistCard(
+                            results.playlists[i],
+                            onClick = {
+                                onOpenDetail("playlist", results.playlists[i].id)
+                            },
+                        )
+                    }
                 }
             }
         }
         if (show(SearchFilter.SONGS) && results.songs.isNotEmpty()) {
             item { SectionHeader("Songs", Modifier.padding(horizontal = 16.dp)) }
-            items(results.songs.size) { i ->
+            items(
+                count = results.songs.size,
+                key = { i -> "song:${results.songs[i].id}" },
+                contentType = { "song" },
+            ) { i ->
                 val song = results.songs[i]
                 SongRow(
                     song = song,
@@ -304,7 +352,11 @@ private fun RecentSearches(
                     modifier = Modifier.clip(RoundedCornerShape(50)).clickable(onClick = onClear).padding(horizontal = 10.dp, vertical = 6.dp))
             }
         }
-        items(recents.size) { i ->
+        items(
+            count = recents.size,
+            key = { i -> "recent:${recents[i]}" },
+            contentType = { "recent-search" },
+        ) { i ->
             val q = recents[i]
             Row(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onClick(q) }.padding(horizontal = 16.dp, vertical = 12.dp),
