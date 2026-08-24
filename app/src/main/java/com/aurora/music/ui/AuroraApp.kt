@@ -401,6 +401,26 @@ fun AuroraApp() {
                     navController = navController,
                     startDestination = startDestination,
                     modifier = Modifier.fillMaxSize(),
+                    enterTransition = {
+                        androidx.compose.animation.fadeIn(
+                            androidx.compose.animation.core.tween(160)
+                        )
+                    },
+                    exitTransition = {
+                        androidx.compose.animation.fadeOut(
+                            androidx.compose.animation.core.tween(100)
+                        )
+                    },
+                    popEnterTransition = {
+                        androidx.compose.animation.fadeIn(
+                            androidx.compose.animation.core.tween(160)
+                        )
+                    },
+                    popExitTransition = {
+                        androidx.compose.animation.fadeOut(
+                            androidx.compose.animation.core.tween(100)
+                        )
+                    },
                 ) {
                     composable(Routes.SIGN_IN) {
                         SignInScreen(

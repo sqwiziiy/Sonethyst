@@ -167,7 +167,14 @@ fun QueueScreen(
                             }
                         }
                         if (showHistory) {
-                            items(played.size) { hi ->
+                            items(
+                                count = played.size,
+                                key = { hi ->
+                                    val i = played[hi]
+                                    "played:$i:${queue[i].id}"
+                                },
+                                contentType = { "queue-history" },
+                            ) { hi ->
                                 val i = played[hi]
                                 QueueTrackRow(
                                     song = queue[i], index = null, rowHeight = rowHeight,
@@ -186,7 +193,14 @@ fun QueueScreen(
                             modifier = Modifier.padding(vertical = 8.dp),
                         )
                     }
-                    items(upcoming.size) { vi ->
+                    items(
+                        count = upcoming.size,
+                        key = { vi ->
+                            val i = upcoming[vi]
+                            "upcoming:$i:${queue[i].id}"
+                        },
+                        contentType = { "queue-track" },
+                    ) { vi ->
                         val i = upcoming[vi]
                         val dragging = i == dragIndex
                         QueueTrackRow(

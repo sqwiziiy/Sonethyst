@@ -344,8 +344,17 @@ fun DetailScreen(
                 SectionHeader("Albums", Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
                 Spacer(Modifier.height(6.dp))
                 androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 8.dp)) {
-                    items(data.albums.size) { i ->
-                        com.aurora.music.ui.components.AlbumCard(data.albums[i], onClick = { onOpenDetail("album", data.albums[i].id) })
+                    items(
+                        count = data.albums.size,
+                        key = { i -> "album:${data.albums[i].id}" },
+                        contentType = { "album-card" },
+                    ) { i ->
+                        com.aurora.music.ui.components.AlbumCard(
+                            data.albums[i],
+                            onClick = {
+                                onOpenDetail("album", data.albums[i].id)
+                            },
+                        )
                     }
                 }
                 Spacer(Modifier.height(8.dp))

@@ -553,7 +553,11 @@ private fun SyncedLyrics(lines: List<LyricLine>, positionSec: Float, durationSec
         contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 120.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        items(lines.size) { i ->
+        items(
+            count = lines.size,
+            key = { i -> "synced:${lines[i].timeSec}:$i" },
+            contentType = { "synced-lyric" },
+        ) { i ->
             val active = i == currentIndex
             val scale by androidx.compose.animation.core.animateFloatAsState(if (active) 1f else 0.94f, label = "lyricScale")
             Text(
@@ -579,7 +583,11 @@ private fun PlainLyrics(lines: List<LyricLine>) {
         contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 40.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        items(lines.size) { i ->
+        items(
+            count = lines.size,
+            key = { i -> "plain:$i:${lines[i].text.hashCode()}" },
+            contentType = { "plain-lyric" },
+        ) { i ->
             Text(
                 lines[i].text.ifBlank { " " },
                 style = MaterialTheme.typography.titleMedium,

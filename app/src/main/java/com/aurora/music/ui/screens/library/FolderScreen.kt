@@ -102,14 +102,22 @@ fun FolderScreen(
                     Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                     contentPadding = PaddingValues(bottom = bottom),
                 ) {
-                    items(content.folders.size) { i ->
+                    items(
+                        count = content.folders.size,
+                        key = { i -> "folder:${content.folders[i].id}" },
+                        contentType = { "folder" },
+                    ) { i ->
                         val f = content.folders[i]
                         FolderRow(name = f.name) { onOpenFolder(f.id, f.name) }
                     }
                     if (content.folders.isNotEmpty() && content.songs.isNotEmpty()) {
                         item { Spacer(Modifier.height(8.dp)) }
                     }
-                    items(content.songs.size) { i ->
+                    items(
+                        count = content.songs.size,
+                        key = { i -> "song:${content.songs[i].id}" },
+                        contentType = { "song" },
+                    ) { i ->
                         val s = content.songs[i]
                         SongRow(
                             s, isPlaying = s.id == currentSongId && isPlaying, isLiked = likedIds.contains(s.id),

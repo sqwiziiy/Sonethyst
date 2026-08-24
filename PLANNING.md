@@ -53,32 +53,32 @@ Sonethyst is an independent Android music player fork based on Aurora.
 - [x] Keep playlist picker surfaces visually consistent with the Material 3 bottom sheet
 - [ ] Add songs from playlist screen
 - [x] Remove songs from playlist
-- [ ] Multi-select
-- [ ] Add selected songs to playlist / queue / likes
+- [x] Multi-select
+- [x] Add selected songs to playlist / queue / likes
 - [x] Drag-and-drop reorder — drag tracks by a dedicated handle, preserve normal row tap behavior, and persist the final order
-- [ ] Playlist cover management
-  - [ ] Choose a custom image from the device
-  - [ ] Choose artwork from any track already inside the playlist
-  - [ ] First-track artwork mode — playlist cover automatically follows the current first track and updates after reorder — playlist cover automatically follows the current first track and updates after reorder
-  - [ ] 2x2 collage artwork mode
-  - [ ] Automatic/default artwork mode
-  - [ ] Reset a custom cover back to automatic
-  - [ ] Persist the selected cover mode and custom artwork
-  - [ ] Do not overwrite an explicitly selected custom/track cover when playlist contents change
+- [x] Playlist cover management
+  - [x] Choose a custom image from the device
+  - [x] Choose artwork from any track already inside the playlist
+  - [x] First-track artwork mode — playlist cover automatically follows the current first track and updates after reorder
+  - [x] 2x2 collage artwork mode
+  - [x] Automatic/default artwork mode
+  - [x] Reset a custom cover back to automatic
+  - [x] Persist the selected cover mode and custom artwork
+  - [x] Do not overwrite an explicitly selected custom/track cover when playlist contents change
 - [ ] Preserve M3U/M3U8 import/export
 
 
 ## Playlist / library performance
 
-- [ ] Optimize scrolling performance for large song, album, artist and playlist lists
+- [x] Optimize scrolling performance for large song, album, artist and playlist lists
 - [ ] Use stable LazyColumn/LazyGrid item keys everywhere
 - [ ] Add appropriate `contentType` values for heterogeneous lazy lists
 - [ ] Minimize unnecessary Compose recompositions while scrolling
 - [ ] Avoid reloading complete library datasets when only one playlist/item changed
-- [ ] Optimize album-art loading, resizing and caching for list thumbnails
+- [x] Optimize album-art loading and caching for list thumbnails
 - [ ] Avoid full-size artwork decoding for small list rows
 - [ ] Review paging/incremental loading for very large song libraries
-- [ ] Keep scroll position stable after likes, playlist mutations and metadata changes
+- [x] Keep scroll position stable after likes, playlist mutations and metadata changes
 - [ ] Profile scrolling for dropped frames and excessive allocations on a real device
 
 ## Phase 2 — Library
@@ -87,7 +87,15 @@ Sonethyst is an independent Android music player fork based on Aurora.
 - [ ] Ratings
 - [ ] Custom tags
 - [ ] Hide tracks/albums
-- [ ] Folder blacklist
+- [ ] Local music folder management in Settings
+  - [ ] Settings → Local music → Music folders
+  - [ ] Show detected music/source folders
+  - [ ] Exclude a folder and all descendants from the Sonethyst library
+  - [ ] Re-enable previously excluded folders
+  - [ ] Persist folder exclusions between restarts
+  - [ ] Rescan/update the local library after changes
+  - [ ] Optional include-only folder mode
+  - [ ] Folder management must never delete or modify the actual music files
 - [ ] Improved duplicate detection
 - [ ] Better handling of multiple versions/edits of one song
 - [ ] Playlist folders
@@ -118,10 +126,24 @@ Sonethyst is an independent Android music player fork based on Aurora.
 - [ ] Batch ReplayGain
 - [ ] Identify low-quality tracks worth replacing
 
+## Playback transitions
+
+- [ ] Crossfade between songs
+  - [ ] Add the setting under Settings → Playback near gapless playback
+  - [ ] Disabled by default
+  - [ ] Adjustable crossfade duration
+  - [ ] Smoothly fade out the outgoing track while fading in the next track
+  - [ ] Avoid audible volume jumps at the transition
+  - [ ] Preserve true gapless playback where crossfade would be undesirable
+  - [ ] Define behavior for manual Next/Previous separately from natural track completion
+  - [ ] Ensure shuffle, repeat and queue transitions work correctly
+  - [ ] Keep Media3/system playback state and seek position correct during overlap
+  - [ ] Test with local lossy and lossless files
+
 ## Phase 5 — Player UX
 
 - [ ] Improved Now Playing
-- [ ] Make the liked/favorite heart use the active track artwork-derived accent instead of a fixed theme color; fall back to MaterialTheme.colorScheme.primary when no track accent is available and preserve sufficient contrast
+- [x] Make the liked/favorite heart use the active track artwork-derived accent instead of a fixed theme color; fall back to MaterialTheme.colorScheme.primary when no track accent is available and preserve sufficient contrast
 - [ ] Waveform/visualization improvements
 - [ ] Artwork options
 - [ ] Credits
@@ -153,6 +175,13 @@ Only after the application foundation and UX are stable:
 - [ ] Bit-perfect path
 - [ ] Native C/C++ audio code
 
+
+## About / project links
+
+- [ ] Add a GitHub repository link to Settings → About
+  - [ ] Show the Sonethyst GitHub repository as a dedicated row/action
+  - [ ] Open `https://github.com/sqwiziiy/Sonethyst` in the browser/GitHub app
+  - [ ] Keep Aurora attribution and licensing visible separately
 
 ## Repository presentation
 
