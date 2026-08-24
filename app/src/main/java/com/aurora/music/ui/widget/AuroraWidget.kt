@@ -87,7 +87,7 @@ private fun WidgetContent(np: NowPlaying, art: Bitmap?) {
                 Image(
                     provider = ImageProvider(R.drawable.ic_launcher_monochrome),
                     contentDescription = null,
-                    colorFilter = androidx.glance.ColorFilter.tint(ColorProvider(Color(0xFFFF2E7E))),
+                    colorFilter = androidx.glance.ColorFilter.tint(ColorProvider(Color(0xFF9B7CFF))),
                     modifier = GlanceModifier.size(34.dp),
                 )
             }

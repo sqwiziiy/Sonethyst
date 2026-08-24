@@ -4,9 +4,9 @@ import androidx.compose.ui.graphics.Color
 import kotlin.math.absoluteValue
 
 val AccentPalette = listOf(
-    Color(0xFFFF2E7E), Color(0xFFFF7A59), Color(0xFFC24CE0),
-    Color(0xFFFB7185), Color(0xFFF7B733), Color(0xFFA855F7),
-    Color(0xFFFF5C8A), Color(0xFFFF8E6E),
+    Color(0xFF9B7CFF), Color(0xFFB267FF), Color(0xFF8B5CF6),
+    Color(0xFF7C6DF2), Color(0xFF6366F1), Color(0xFF38BDF8),
+    Color(0xFFC084FC), Color(0xFFA78BFA),
 )
 
 // stable accent per id so an item always looks the same

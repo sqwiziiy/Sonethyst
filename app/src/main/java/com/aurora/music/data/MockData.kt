@@ -13,7 +13,7 @@ object MockData {
     private fun art(seed: String) = "https://picsum.photos/seed/$seed/500/500"
 
     val accents = listOf(
-        Color(0xFFFF2E7E), Color(0xFFFF7A59), Color(0xFFC24CE0),
+        Color(0xFF9B7CFF), Color(0xFFB267FF), Color(0xFF8B5CF6),
         Color(0xFFFB7185), Color(0xFFF7B733), Color(0xFFA855F7),
         Color(0xFFFF5C8A), Color(0xFFFF8E6E),
     )
