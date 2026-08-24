@@ -22,6 +22,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,7 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.SubcomposeAsyncImage
+import coil.compose.AsyncImage
 import coil.request.ImageRequest
 
 @Composable
@@ -45,6 +46,8 @@ fun Artwork(
     corner: Dp = 12.dp,
     contentScale: ContentScale = ContentScale.Crop,
 ) {
+    val context = LocalContext.current
+
     val placeholder = Brush.linearGradient(
         listOf(
             accent.copy(alpha = 0.55f),
@@ -52,7 +55,7 @@ fun Artwork(
         )
     )
 
-    val collageUrls =
+    val collageUrls = remember(url) {
         if (url.startsWith("sonethyst-collage:")) {
             url
                 .removePrefix("sonethyst-collage:")
@@ -73,6 +76,14 @@ fun Artwork(
         } else {
             emptyList()
         }
+    }
+
+    val request = remember(url, context) {
+        ImageRequest.Builder(context)
+            .data(url)
+            .crossfade(true)
+            .build()
+    }
 
     Box(
         modifier = modifier
@@ -127,28 +138,11 @@ fun Artwork(
                 }
             }
         } else {
-            SubcomposeAsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(url)
-                    .crossfade(true)
-                    .build(),
+            AsyncImage(
+                model = request,
                 contentDescription = null,
                 contentScale = contentScale,
                 modifier = Modifier.fillMaxSize(),
-                loading = {
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .background(placeholder)
-                    )
-                },
-                error = {
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .background(placeholder)
-                    )
-                },
             )
         }
     }
@@ -160,29 +154,25 @@ private fun CollageArtworkCell(
     placeholder: Brush,
     modifier: Modifier = Modifier,
 ) {
-    SubcomposeAsyncImage(
-        model = ImageRequest.Builder(LocalContext.current)
+    val context = LocalContext.current
+
+    val request = remember(url, context) {
+        ImageRequest.Builder(context)
             .data(url)
             .crossfade(true)
-            .build(),
-        contentDescription = null,
-        contentScale = ContentScale.Crop,
-        modifier = modifier,
-        loading = {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(placeholder)
-            )
-        },
-        error = {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(placeholder)
-            )
-        },
-    )
+            .build()
+    }
+
+    Box(
+        modifier = modifier.background(placeholder),
+    ) {
+        AsyncImage(
+            model = request,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
 }
 
 @Composable

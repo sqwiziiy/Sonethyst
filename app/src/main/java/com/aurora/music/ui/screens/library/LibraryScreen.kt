@@ -180,7 +180,11 @@ fun LibraryScreen(
             }
             // local mode has no downloads
             val visible = LibraryFilter.entries.filter { canDownload || it != LibraryFilter.DOWNLOADED }
-            items(visible.size) { i ->
+            items(
+                count = visible.size,
+                key = { i -> visible[i].name },
+                contentType = { "library-filter" },
+            ) { i ->
                 val f = visible[i]
                 if (f == LibraryFilter.ALL && filter != LibraryFilter.ALL) return@items
                 FilterChip(f.label, selected = f == filter) { onFilter(f) }
@@ -230,9 +234,21 @@ fun LibraryScreen(
         }
 
         if (filter == LibraryFilter.SONGS) {
-            val songs = sortedSongs(state.songs, sort)
-            LazyColumn(Modifier.fillMaxWidth().padding(horizontal = 8.dp), contentPadding = PaddingValues(bottom = bottom)) {
-                items(songs.size) { i ->
+            val songs = remember(state.songs, sort) {
+                sortedSongs(state.songs, sort)
+            }
+
+            LazyColumn(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                contentPadding = PaddingValues(bottom = bottom),
+            ) {
+                items(
+                    count = songs.size,
+                    key = { i -> songs[i].id },
+                    contentType = { "song" },
+                ) { i ->
                     val s = songs[i]
                     SongRow(
                         s, isPlaying = s.id == currentSongId && isPlaying, isLiked = likedIds.contains(s.id),
@@ -253,7 +269,18 @@ fun LibraryScreen(
         }
 
         if (filter == LibraryFilter.DOWNLOADED) {
-            val dlRows = state.downloadedRows.map { LibRow(it.title, "${it.kind.replaceFirstChar { c -> c.uppercase() }} • Downloaded", it.coverUrl, it.accent, it.id, it.kind) }
+            val dlRows = remember(state.downloadedRows) {
+                state.downloadedRows.map {
+                    LibRow(
+                        it.title,
+                        "${it.kind.replaceFirstChar { c -> c.uppercase() }} • Downloaded",
+                        it.coverUrl,
+                        it.accent,
+                        it.id,
+                        it.kind,
+                    )
+                }
+            }
             if (dlRows.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No downloads yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -262,17 +289,35 @@ fun LibraryScreen(
             }
             if (layout == LibraryLayout.LIST) {
                 LazyColumn(Modifier.fillMaxWidth().padding(horizontal = 8.dp), contentPadding = PaddingValues(bottom = bottom)) {
-                    items(dlRows.size) { i -> LibListItem(dlRows[i], actions) { onOpenDetail(dlRows[i].kind, dlRows[i].id) } }
+                    items(
+                        count = dlRows.size,
+                        key = { i -> "${dlRows[i].kind}:${dlRows[i].id}" },
+                        contentType = { "library-row" },
+                    ) { i ->
+                        LibListItem(dlRows[i], actions) {
+                            onOpenDetail(dlRows[i].kind, dlRows[i].id)
+                        }
+                    }
                 }
             } else {
                 LazyVerticalGrid(columns = GridCells.Fixed(libColumns), modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp), contentPadding = PaddingValues(bottom = bottom), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(dlRows.size) { i -> LibGridItem(dlRows[i], actions) { onOpenDetail(dlRows[i].kind, dlRows[i].id) } }
+                    items(
+                        count = dlRows.size,
+                        key = { i -> "${dlRows[i].kind}:${dlRows[i].id}" },
+                        contentType = { "library-grid" },
+                    ) { i ->
+                        LibGridItem(dlRows[i], actions) {
+                            onOpenDetail(dlRows[i].kind, dlRows[i].id)
+                        }
+                    }
                 }
             }
             return@Column
         }
 
-        val rows = buildRows(state, filter, sort, pins)
+        val rows = remember(state, filter, sort, pins) {
+            buildRows(state, filter, sort, pins)
+        }
         val openRow: (LibRow) -> Unit = { r ->
             when (r.kind) {
                 "folders" -> onOpenFolders()
@@ -283,7 +328,17 @@ fun LibraryScreen(
         }
         if (layout == LibraryLayout.LIST) {
             LazyColumn(Modifier.fillMaxWidth().padding(horizontal = 8.dp), contentPadding = PaddingValues(bottom = bottom)) {
-                items(rows.size) { i -> LibListItem(rows[i], actions) { openRow(rows[i]) } }
+                items(
+                    count = rows.size,
+                    key = { i ->
+                        "${rows[i].kind}:${rows[i].id.ifBlank { rows[i].title }}"
+                    },
+                    contentType = { "library-row" },
+                ) { i ->
+                    LibListItem(rows[i], actions) {
+                        openRow(rows[i])
+                    }
+                }
             }
         } else {
             LazyVerticalGrid(
@@ -293,7 +348,17 @@ fun LibraryScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(rows.size) { i -> LibGridItem(rows[i], actions) { openRow(rows[i]) } }
+                items(
+                    count = rows.size,
+                    key = { i ->
+                        "${rows[i].kind}:${rows[i].id.ifBlank { rows[i].title }}"
+                    },
+                    contentType = { "library-grid" },
+                ) { i ->
+                    LibGridItem(rows[i], actions) {
+                        openRow(rows[i])
+                    }
+                }
             }
         }
     }
