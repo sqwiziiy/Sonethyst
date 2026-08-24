@@ -12,6 +12,8 @@ data class LocalPlaylist(
     val title: String? = "",
     val subtitle: String? = "",
     val trackIds: List<String>? = emptyList(),
+    val coverMode: String? = "automatic",
+    val coverValue: String? = "",
 )
 
 private data class LocalState(
@@ -68,6 +70,24 @@ class LocalStore(context: Context) {
         val drop = trackIds.toSet()
         state = state.copy(playlists = state.playlists.orEmpty().map {
             if (it.id == id) it.copy(trackIds = it.trackIds.orEmpty().filterNot { t -> t in drop }) else it
+        })
+        persist()
+    }
+
+    fun setPlaylistCover(
+        id: String,
+        mode: String,
+        value: String?,
+    ) = synchronized(lock) {
+        state = state.copy(playlists = state.playlists.orEmpty().map {
+            if (it.id == id) {
+                it.copy(
+                    coverMode = mode,
+                    coverValue = value.orEmpty(),
+                )
+            } else {
+                it
+            }
         })
         persist()
     }

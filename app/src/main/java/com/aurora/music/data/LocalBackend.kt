@@ -1,5 +1,7 @@
 package com.aurora.music.data
 
+import android.util.Base64
+
 import com.aurora.music.model.Album
 import com.aurora.music.model.Artist
 import com.aurora.music.model.DetailInfo
@@ -14,13 +16,73 @@ class LocalBackend(
     override val session: Session,
 ) : MediaBackend {
 
+    private fun collageCover(tracks: List<Song>): String {
+        val artwork = tracks
+            .map { it.artworkUrl }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .take(4)
+
+        if (artwork.size < 4) {
+            return artwork.firstOrNull().orEmpty()
+        }
+
+        val encoded = artwork.map { url ->
+            Base64.encodeToString(
+                url.toByteArray(Charsets.UTF_8),
+                Base64.URL_SAFE or Base64.NO_WRAP,
+            )
+        }
+
+        return "sonethyst-collage:" + encoded.joinToString(".")
+    }
+
+    private fun automaticCover(tracks: List<Song>): String {
+        val distinctArtwork = tracks
+            .map { it.artworkUrl }
+            .filter { it.isNotBlank() }
+            .distinct()
+
+        return if (distinctArtwork.size >= 4) {
+            collageCover(tracks)
+        } else {
+            distinctArtwork.firstOrNull().orEmpty()
+        }
+    }
+
+    private fun LocalPlaylist.resolvedCover(tracks: List<Song>): String {
+        val automatic = automaticCover(tracks)
+
+        return when (coverMode?.lowercase()?.ifBlank { "automatic" }) {
+            "first" ->
+                tracks.firstOrNull()?.artworkUrl.orEmpty()
+
+            "collage" ->
+                collageCover(tracks)
+
+            "track" ->
+                tracks.firstOrNull { it.id == coverValue }
+                    ?.artworkUrl
+                    ?.takeIf { it.isNotBlank() }
+                    ?: automatic
+
+            "custom" ->
+                coverValue
+                    ?.takeIf { it.isNotBlank() }
+                    ?: automatic
+
+            else ->
+                automatic
+        }
+    }
+
     private fun LocalPlaylist.toPlaylist(): Playlist {
         val tracks = trackIds.orEmpty().mapNotNull { library.song(it) }
         return Playlist(
             id = id,
             title = title ?: "",
             subtitle = (subtitle ?: "").ifBlank { "${tracks.size} song${if (tracks.size == 1) "" else "s"}" },
-            coverUrl = tracks.firstOrNull { it.artworkUrl.isNotBlank() }?.artworkUrl ?: "",
+            coverUrl = resolvedCover(tracks),
             songCount = tracks.size,
             accent = accentFor(id),
         )
@@ -109,7 +171,7 @@ class LocalBackend(
                 val pl = store.playlist(id) ?: return null
                 val tracks = pl.trackIds.orEmpty().mapNotNull { library.song(it) }
                 DetailData(
-                    info = DetailInfo(pl.title ?: "", pl.subtitle ?: "", tracks.firstOrNull { it.artworkUrl.isNotBlank() }?.artworkUrl ?: "", accentFor(id), false, tracks.size, "Playlist"),
+                    info = DetailInfo(pl.title ?: "", pl.subtitle ?: "", pl.resolvedCover(tracks), accentFor(id), false, tracks.size, "Playlist"),
                     tracks = tracks,
                 )
             }
@@ -140,6 +202,17 @@ class LocalBackend(
     override suspend fun removeFromPlaylist(playlistId: String, trackIds: List<String>): Boolean { store.removeTracks(playlistId, trackIds); return true }
 
     override val supportsPlaylistReorder: Boolean get() = true
+
+    override val supportsPlaylistCoverManagement: Boolean get() = true
+
+    override suspend fun setPlaylistCover(
+        playlistId: String,
+        mode: String,
+        value: String?,
+    ): Boolean {
+        store.setPlaylistCover(playlistId, mode, value)
+        return true
+    }
 
     override suspend fun reorderPlaylist(
         playlistId: String,

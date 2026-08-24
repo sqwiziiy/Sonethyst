@@ -177,6 +177,18 @@ class MusicRepository(
     val supportsPlaylistReorder: Boolean
         get() = !offline && backend?.supportsPlaylistReorder == true
 
+    val supportsPlaylistCoverManagement: Boolean
+        get() = !offline && backend?.supportsPlaylistCoverManagement == true
+
+    suspend fun setPlaylistCover(
+        playlistId: String,
+        mode: String,
+        value: String? = null,
+    ): Boolean =
+        libraryMutationResult(
+            backend?.setPlaylistCover(playlistId, mode, value) ?: false
+        )
+
     suspend fun reorderPlaylist(playlistId: String, orderedTrackIds: List<String>): Boolean =
         libraryMutationResult(
             backend?.reorderPlaylist(playlistId, orderedTrackIds) ?: false

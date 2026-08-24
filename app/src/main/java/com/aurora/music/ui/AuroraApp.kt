@@ -784,6 +784,28 @@ onAddToPlaylist = {
                             onEditPlaylist = { name, desc ->
                                 scope.launch { container.repository.updatePlaylist(id, name, desc); detailVM.reload(kind, id) }
                             },
+                            onSetPlaylistCover =
+                                if (
+                                    kind == "playlist" &&
+                                    container.repository.supportsPlaylistCoverManagement
+                                ) ({ mode, value ->
+                                    scope.launch {
+                                        val ok =
+                                            container.repository.setPlaylistCover(
+                                                id,
+                                                mode,
+                                                value,
+                                            )
+
+                                        confirm(
+                                            if (ok) {
+                                                "Playlist cover updated"
+                                            } else {
+                                                "Couldn't update playlist cover"
+                                            }
+                                        )
+                                    }
+                                }) else null,
                             onDeletePlaylist = {
                                 scope.launch { container.repository.deletePlaylist(id); navController.popBackStack() }
                             },

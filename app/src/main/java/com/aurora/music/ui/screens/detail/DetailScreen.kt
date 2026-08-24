@@ -1,5 +1,9 @@
 package com.aurora.music.ui.screens.detail
 
+import android.content.Intent
+
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,6 +43,7 @@ import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PushPin
@@ -61,6 +66,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
@@ -71,6 +77,7 @@ import androidx.compose.ui.unit.dp
 import com.aurora.music.model.Song
 import com.aurora.music.ui.components.Artwork
 import com.aurora.music.ui.components.Eyebrow
+import com.aurora.music.ui.components.PlaylistCoverSheet
 import com.aurora.music.ui.components.SectionHeader
 import com.aurora.music.ui.components.SongRow
 import com.aurora.music.viewmodel.DetailUiState
@@ -107,6 +114,7 @@ fun DetailScreen(
     onDownloadAll: () -> Unit,
     onRemoveDownloads: () -> Unit,
     onEditPlaylist: (String, String) -> Unit,
+    onSetPlaylistCover: ((String, String?) -> Unit)? = null,
     onDeletePlaylist: () -> Unit,
     onLoadMore: () -> Unit = {},
     canDownload: Boolean = true,
@@ -119,6 +127,29 @@ fun DetailScreen(
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     var headerMenu by remember { mutableStateOf(false) }
     var showEdit by remember { mutableStateOf(false) }
+    var showCoverSheet by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+
+    val customCoverLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+            }
+
+            onSetPlaylistCover?.invoke(
+                "custom",
+                uri.toString(),
+            )
+
+            showCoverSheet = false
+        }
+    }
     var query by remember { mutableStateOf("") }
     var searchOpen by remember { mutableStateOf(false) }
     val searchFocus = remember { androidx.compose.ui.focus.FocusRequester() }
@@ -225,6 +256,19 @@ fun DetailScreen(
                                 leadingIcon = { Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, null) },
                             )
                             if (isPlaylist) {
+                                if (onSetPlaylistCover != null) {
+                                    DropdownMenuItem(
+                                        text = { Text("Change cover") },
+                                        onClick = {
+                                            headerMenu = false
+                                            showCoverSheet = true
+                                        },
+                                        leadingIcon = {
+                                            Icon(Icons.Filled.Image, null)
+                                        },
+                                    )
+                                }
+
                                 DropdownMenuItem(text = { Text("Edit playlist") }, onClick = { headerMenu = false; showEdit = true }, leadingIcon = { Icon(Icons.Filled.Edit, null) })
                                 DropdownMenuItem(text = { Text("Delete playlist") }, onClick = { headerMenu = false; onDeletePlaylist() }, leadingIcon = { Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error) })
                             }
@@ -697,6 +741,36 @@ fun DetailScreen(
                 }
             }
         }
+    }
+
+    if (showCoverSheet && onSetPlaylistCover != null) {
+        PlaylistCoverSheet(
+            tracks = tracks,
+            onAutomatic = {
+                onSetPlaylistCover("automatic", null)
+                showCoverSheet = false
+            },
+            onFirstTrack = {
+                onSetPlaylistCover("first", null)
+                showCoverSheet = false
+            },
+            onCollage = {
+                onSetPlaylistCover("collage", null)
+                showCoverSheet = false
+            },
+            onTrack = { song ->
+                onSetPlaylistCover("track", song.id)
+                showCoverSheet = false
+            },
+            onChooseImage = {
+                customCoverLauncher.launch(
+                    arrayOf("image/*")
+                )
+            },
+            onDismiss = {
+                showCoverSheet = false
+            },
+        )
     }
 
     if (showEdit) {
