@@ -10,14 +10,14 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 /** Pushes a fresh render to the home-screen widget + Quick Settings tile when playback changes. */
-object AuroraWidgetController {
+object SonethystWidgetController {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun refresh(context: Context) {
         val app = context.applicationContext
-        scope.launch { runCatching { AuroraWidget().updateAll(app) } }
+        scope.launch { runCatching { SonethystWidget().updateAll(app) } }
         runCatching {
-            TileService.requestListeningState(app, ComponentName(app, AuroraTileService::class.java))
+            TileService.requestListeningState(app, ComponentName(app, SonethystTileService::class.java))
         }
     }
 }

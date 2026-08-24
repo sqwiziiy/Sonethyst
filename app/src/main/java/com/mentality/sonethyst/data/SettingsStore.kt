@@ -86,7 +86,7 @@ object VisualizerStyle {
     const val CONSTELLATION = 15
     const val PEAK_DOTS = 16
     const val SPECTRUM_LINE = 17
-    const val AURORA = 18
+    const val NORTHERN_LIGHTS = 18
     const val SPECTRAL_RIVER = 19
     const val SPECTRAL_TERRAIN = 20
     const val CURL_FLOW = 21
@@ -101,7 +101,7 @@ object VisualizerStyle {
         PARTICLES -> "Particles"; FLUID -> "Fluid blob"; COMBO -> "Combo"
         SMOOTH_CURVE -> "Spectrum curve"; DOT_GRID -> "Dot matrix"; RINGS -> "Pulse rings"
         ORB -> "Orb"; LADDER -> "LED ladder"; HORIZON -> "Horizon"; CONSTELLATION -> "Constellation"
-        PEAK_DOTS -> "Peak dots"; SPECTRUM_LINE -> "Neon line"; AURORA -> "Aurora"
+        PEAK_DOTS -> "Peak dots"; SPECTRUM_LINE -> "Neon line"; NORTHERN_LIGHTS -> "Northern lights"
         SPECTRAL_RIVER -> "Spectral river"; SPECTRAL_TERRAIN -> "Terrain flyover"; CURL_FLOW -> "Curl flow"
         STRANGE_ATTRACTOR -> "Strange attractor"; CYMATIC -> "Cymatics"; SUPERFORMULA_BLOOM -> "Bloom"
         WORMHOLE -> "Wormhole"

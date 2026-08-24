@@ -40,7 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import kotlinx.coroutines.launch
 
 @Composable
@@ -50,7 +50,7 @@ fun MusicFoldersSettingsScreen(
 ) {
     val context = LocalContext.current
     val container =
-        (context.applicationContext as AuroraApplication).container
+        (context.applicationContext as SonethystApplication).container
 
     val excludedFolders by
         container.settingsStore.localExcludedFolders

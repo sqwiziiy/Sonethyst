@@ -3,7 +3,7 @@ package com.mentality.sonethyst.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.DetailData
 import com.mentality.sonethyst.data.remote.ArtistInfo
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +23,7 @@ data class DetailUiState(
 )
 
 class DetailViewModel(app: Application) : AndroidViewModel(app) {
-    private val container = (app as AuroraApplication).container
+    private val container = (app as SonethystApplication).container
     private val _state = MutableStateFlow(DetailUiState())
     val state: StateFlow<DetailUiState> = _state.asStateFlow()
 

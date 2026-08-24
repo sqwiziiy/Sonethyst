@@ -3,7 +3,7 @@ package com.mentality.sonethyst.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.AudioTags
 import com.mentality.sonethyst.data.remote.MetadataMatch
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +28,7 @@ data class TagEditState(
 )
 
 class TagEditViewModel(app: Application) : AndroidViewModel(app) {
-    private val container = (app as AuroraApplication).container
+    private val container = (app as SonethystApplication).container
     private val _state = MutableStateFlow(TagEditState())
     val state: StateFlow<TagEditState> = _state.asStateFlow()
 
@@ -78,7 +78,7 @@ class TagEditViewModel(app: Application) : AndroidViewModel(app) {
         val durationSec = _state.value.durationSec
         viewModelScope.launch {
             val fingerprint = runCatching { container.acoustId.fingerprint(path) }.getOrNull()
-            android.util.Log.i("AuroraFp", "fingerprint(${path.substringAfterLast('/')}) len=${fingerprint?.length ?: -1}")
+            android.util.Log.i("SonethystFp", "fingerprint(${path.substringAfterLast('/')}) len=${fingerprint?.length ?: -1}")
             when {
                 fingerprint == null -> _state.update { it.copy(identifying = false, matchError = "Couldn't fingerprint this file") }
                 !container.acoustId.configured -> _state.update {

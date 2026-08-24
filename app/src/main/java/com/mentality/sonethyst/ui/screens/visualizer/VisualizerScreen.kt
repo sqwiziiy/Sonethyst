@@ -48,7 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.VisualizerPrefs
 import com.mentality.sonethyst.data.VisualizerStyle
 import com.mentality.sonethyst.data.VizBackground
@@ -62,7 +62,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun VisualizerScreen(state: PlayerUiState, onClose: () -> Unit) {
     val ctx = LocalContext.current
-    val container = remember { (ctx.applicationContext as AuroraApplication).container }
+    val container = remember { (ctx.applicationContext as SonethystApplication).container }
     val controller = container.visualizer
     val prefs by container.settingsStore.visualizerPrefs.collectAsStateWithLifecycle(initialValue = VisualizerPrefs())
     val scope = rememberCoroutineScope()

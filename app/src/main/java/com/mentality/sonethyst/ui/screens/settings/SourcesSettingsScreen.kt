@@ -35,7 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.DEFAULT_SOURCE_PRIORITY
 import com.mentality.sonethyst.data.MERGE_NONE
 import com.mentality.sonethyst.data.ServerType
@@ -58,7 +58,7 @@ private fun tierSub(t: String) = when (t) {
 @Composable
 fun SourcesSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
     val ctx = LocalContext.current
-    val container = remember { (ctx.applicationContext as AuroraApplication).container }
+    val container = remember { (ctx.applicationContext as SonethystApplication).container }
     val store = container.settingsStore
     val scope = rememberCoroutineScope()
 

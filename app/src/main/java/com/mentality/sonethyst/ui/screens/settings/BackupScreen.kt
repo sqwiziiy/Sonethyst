@@ -31,7 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,7 +39,7 @@ import kotlinx.coroutines.withContext
 /** Backup & restore: export settings + local playlists/likes + history to a JSON file, or import one. */
 @Composable
 fun BackupScreen(contentPadding: PaddingValues, onBack: () -> Unit, confirm: (String) -> Unit) {
-    val container = (LocalContext.current.applicationContext as AuroraApplication).container
+    val container = (LocalContext.current.applicationContext as SonethystApplication).container
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     var pending by remember { mutableStateOf<String?>(null) }
@@ -68,7 +68,7 @@ fun BackupScreen(contentPadding: PaddingValues, onBack: () -> Unit, confirm: (St
                 ActionRow(Icons.Filled.Backup, "Export backup", "Settings, playlists, likes & listening history") {
                     scope.launch {
                         pending = container.backupManager.export(System.currentTimeMillis())
-                        exportLauncher.launch("aurora-backup.json")
+                        exportLauncher.launch("sonethyst-backup.json")
                     }
                 }
                 SettingsRowDivider()

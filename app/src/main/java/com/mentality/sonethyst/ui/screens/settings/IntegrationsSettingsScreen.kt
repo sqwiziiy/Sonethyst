@@ -26,7 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.DiscordAccount
 import com.mentality.sonethyst.data.LastfmAccount
 import kotlinx.coroutines.CoroutineScope
@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun IntegrationsSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit, onOpenDiscordLogin: () -> Unit) {
-    val container = (LocalContext.current.applicationContext as AuroraApplication).container
+    val container = (LocalContext.current.applicationContext as SonethystApplication).container
     val lrclib by container.settingsStore.lrclibEnabled.collectAsStateWithLifecycle(initialValue = true)
     val artistEnrichment by container.settingsStore.artistEnrichment.collectAsStateWithLifecycle(initialValue = true)
     val scope = rememberCoroutineScope()
@@ -69,7 +69,7 @@ fun IntegrationsSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit
 @Composable
 private fun AcoustIdRow(scope: CoroutineScope) {
     val ctx = LocalContext.current
-    val container = (ctx.applicationContext as AuroraApplication).container
+    val container = (ctx.applicationContext as SonethystApplication).container
     val saved by container.settingsStore.acoustIdKey.collectAsStateWithLifecycle(initialValue = "")
     var key by remember(saved) { mutableStateOf(saved) }
     SettingsNavRow(
@@ -96,7 +96,7 @@ private fun AcoustIdRow(scope: CoroutineScope) {
 @Composable
 private fun LastfmRow(scope: CoroutineScope) {
     val ctx = LocalContext.current
-    val container = (ctx.applicationContext as AuroraApplication).container
+    val container = (ctx.applicationContext as SonethystApplication).container
     val acct by container.settingsStore.lastfm.collectAsStateWithLifecycle(initialValue = LastfmAccount())
     var pendingToken by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -169,7 +169,7 @@ private fun LastfmRow(scope: CoroutineScope) {
 @Composable
 private fun ListenBrainzRow(scope: CoroutineScope) {
     val ctx = LocalContext.current
-    val container = (ctx.applicationContext as AuroraApplication).container
+    val container = (ctx.applicationContext as SonethystApplication).container
     val acct by container.settingsStore.listenBrainz.collectAsStateWithLifecycle(initialValue = com.mentality.sonethyst.data.ListenBrainzAccount())
     if (acct.token.isNotBlank()) {
         SettingsSwitchRow(Icons.Filled.Album, "ListenBrainz", "Scrobbling as ${acct.username}", acct.enabled) { v ->
@@ -209,7 +209,7 @@ private fun ListenBrainzRow(scope: CoroutineScope) {
 @Composable
 private fun DiscordRow(scope: CoroutineScope, onConnect: () -> Unit) {
     val ctx = LocalContext.current
-    val container = (ctx.applicationContext as AuroraApplication).container
+    val container = (ctx.applicationContext as SonethystApplication).container
     val acct by container.settingsStore.discord.collectAsStateWithLifecycle(initialValue = DiscordAccount())
 
     if (acct.token.isNotBlank()) {

@@ -61,7 +61,7 @@ fun VisualizerCanvas(
             VisualizerStyle.CONSTELLATION -> drawConstellation(f, colors, timeSec)
             VisualizerStyle.PEAK_DOTS -> drawPeakDots(f, colors)
             VisualizerStyle.SPECTRUM_LINE -> drawSpectrumLine(f, colors)
-            VisualizerStyle.AURORA -> drawAurora(f, colors, timeSec)
+            VisualizerStyle.NORTHERN_LIGHTS -> drawNorthernLights(f, colors, timeSec)
             VisualizerStyle.SPECTRAL_RIVER -> { river.update(f, timeSec, size.width, size.height); river.draw(this, colors) }
             VisualizerStyle.SPECTRAL_TERRAIN -> { terrain.update(f, timeSec, size.width, size.height); terrain.draw(this, colors) }
             VisualizerStyle.CURL_FLOW -> { curlFlow.update(f, timeSec, size.width, size.height); curlFlow.draw(this, colors) }

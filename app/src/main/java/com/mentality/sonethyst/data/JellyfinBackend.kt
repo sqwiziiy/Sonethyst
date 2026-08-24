@@ -209,7 +209,7 @@ class JellyfinBackend(
             }
             else -> null
         }
-    }.onFailure { android.util.Log.e("AuroraDetail", "jellyfin detail($kind,$id) failed", it) }.getOrNull()
+    }.onFailure { android.util.Log.e("SonethystDetail", "jellyfin detail($kind,$id) failed", it) }.getOrNull()
 
     override val supportsFolders: Boolean get() = true
 
@@ -230,7 +230,7 @@ class JellyfinBackend(
                 songs = children.filter { it.Type == "Audio" }.map { it.toSong() },
             )
         }
-    }.onFailure { android.util.Log.e("AuroraFolders", "jellyfin browseFolder($folderId) failed", it) }.getOrNull()
+    }.onFailure { android.util.Log.e("SonethystFolders", "jellyfin browseFolder($folderId) failed", it) }.getOrNull()
 
     override val supportsServerTagEdit: Boolean get() = true
 
@@ -265,7 +265,7 @@ class JellyfinBackend(
         tags.trackNumber.toIntOrNull()?.let { obj.addProperty("IndexNumber", it) }
 
         client.api.updateItem(songId, obj).isSuccessful
-    }.onFailure { android.util.Log.e("AuroraTagEdit", "jellyfin updateMetadata($songId) failed", it) }.getOrDefault(false)
+    }.onFailure { android.util.Log.e("SonethystTagEdit", "jellyfin updateMetadata($songId) failed", it) }.getOrDefault(false)
 
     override suspend fun serverLyrics(song: Song): Lyrics? {
         val lines = runCatching { client.api.lyrics(song.id).Lyrics }.getOrNull()?.filter { !it.Text.isNullOrEmpty() }.orEmpty()

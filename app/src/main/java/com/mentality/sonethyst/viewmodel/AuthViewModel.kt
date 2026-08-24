@@ -3,7 +3,7 @@ package com.mentality.sonethyst.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.ServerType
 import com.mentality.sonethyst.data.Session
 import com.mentality.sonethyst.data.remote.JellyfinClient
@@ -34,7 +34,7 @@ data class AuthUiState(
 
 class AuthViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val container = (app as AuroraApplication).container
+    private val container = (app as SonethystApplication).container
 
     private val _state = MutableStateFlow(AuthUiState())
     val state: StateFlow<AuthUiState> = _state.asStateFlow()

@@ -496,7 +496,7 @@ private fun SeekBar(progress: Float, positionSec: Int, durationSec: Int, accent:
 
 @Composable
 private fun LyricsPanel(song: com.mentality.sonethyst.model.Song, positionSec: Float, durationSec: Int, accent: Color, onSeek: (Float) -> Unit) {
-    val container = (androidx.compose.ui.platform.LocalContext.current.applicationContext as com.mentality.sonethyst.AuroraApplication).container
+    val container = (androidx.compose.ui.platform.LocalContext.current.applicationContext as com.mentality.sonethyst.SonethystApplication).container
     var lyrics by remember(song.id) { mutableStateOf<com.mentality.sonethyst.data.Lyrics?>(null) }
     var loading by remember(song.id) { mutableStateOf(true) }
     LaunchedEffect(song.id) {

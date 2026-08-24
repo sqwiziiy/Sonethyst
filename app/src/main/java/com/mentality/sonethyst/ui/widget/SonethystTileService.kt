@@ -10,7 +10,7 @@ import com.mentality.sonethyst.playback.NowPlaying
 import com.mentality.sonethyst.playback.NowPlayingStore
 import com.mentality.sonethyst.playback.PlaybackService
 
-class AuroraTileService : TileService() {
+class SonethystTileService : TileService() {
 
     override fun onStartListening() = render()
 

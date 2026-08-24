@@ -16,7 +16,7 @@ fun cornerScale(style: Int): Float = when (style) {
 fun cornerDp(style: Int, base: Dp): Dp =
     if (style == CornerStyle.PILL) (base.value * 2.4f).dp else (base.value * cornerScale(style)).dp
 
-fun auroraShapes(style: Int): Shapes = Shapes(
+fun sonethystShapes(style: Int): Shapes = Shapes(
     extraSmall = RoundedCornerShape(cornerDp(style, 8.dp)),
     small = RoundedCornerShape(cornerDp(style, 12.dp)),
     medium = RoundedCornerShape(cornerDp(style, 16.dp)),
@@ -24,4 +24,4 @@ fun auroraShapes(style: Int): Shapes = Shapes(
     extraLarge = RoundedCornerShape(cornerDp(style, 32.dp)),
 )
 
-val AuroraShapes = auroraShapes(CornerStyle.DEFAULT)
+val SonethystShapes = sonethystShapes(CornerStyle.DEFAULT)

@@ -34,7 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.PlayEvent
 import com.mentality.sonethyst.ui.components.Artwork
 import com.mentality.sonethyst.util.accentFor
@@ -45,7 +45,7 @@ import java.util.Locale
 
 @Composable
 fun ListeningHistoryScreen(contentPadding: PaddingValues, onBack: () -> Unit, onPlay: (String) -> Unit) {
-    val container = (LocalContext.current.applicationContext as AuroraApplication).container
+    val container = (LocalContext.current.applicationContext as SonethystApplication).container
     val history by container.playHistory.history.collectAsStateWithLifecycle()
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }

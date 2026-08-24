@@ -20,7 +20,7 @@
     <uses-feature android:name="android.hardware.usb.host" android:required="false" />
 
     <application
-        android:name=".AuroraApplication"
+        android:name=".SonethystApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -88,7 +88,7 @@
         </receiver>
 
         <receiver
-            android:name=".ui.widget.AuroraWidgetReceiver"
+            android:name=".ui.widget.SonethystWidgetReceiver"
             android:exported="false"
             android:label="@string/app_name">
             <intent-filter>
@@ -96,11 +96,11 @@
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/aurora_widget_info" />
+                android:resource="@xml/sonethyst_widget_info" />
         </receiver>
 
         <service
-            android:name=".ui.widget.AuroraTileService"
+            android:name=".ui.widget.SonethystTileService"
             android:exported="true"
             android:icon="@drawable/ic_launcher_monochrome"
             android:label="@string/app_name"

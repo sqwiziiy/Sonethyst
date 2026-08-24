@@ -65,7 +65,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.AppContainer
 import com.mentality.sonethyst.data.AudioPrefs
 import com.mentality.sonethyst.data.DEFAULT_SQUIG_BASE
@@ -89,7 +89,7 @@ import kotlin.math.roundToInt
 
 @Composable
 fun EqualizerScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
-    val container = (LocalContext.current.applicationContext as AuroraApplication).container
+    val container = (LocalContext.current.applicationContext as SonethystApplication).container
     val store = container.settingsStore
     val fx = container.audioEffects
     val prefs by store.audioPrefs.collectAsStateWithLifecycle(initialValue = AudioPrefs())

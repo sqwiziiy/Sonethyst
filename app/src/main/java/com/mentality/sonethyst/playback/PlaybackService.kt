@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.SettableFuture
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.AudioEffectsController
 import com.mentality.sonethyst.data.AudioPrefs
 import com.mentality.sonethyst.data.DspMode
@@ -46,7 +46,7 @@ import kotlinx.coroutines.runBlocking
 class PlaybackService : MediaLibraryService() {
 
     private var mediaSession: MediaLibrarySession? = null
-    private val container by lazy { (application as AuroraApplication).container }
+    private val container by lazy { (application as SonethystApplication).container }
     private val browseCache = java.util.concurrent.ConcurrentHashMap<String, MediaItem>()
     private val searchCache = java.util.concurrent.ConcurrentHashMap<String, List<MediaItem>>()
     private val LIBRARY_ROOT = "root"
@@ -56,7 +56,7 @@ class PlaybackService : MediaLibraryService() {
         androidx.media3.datasource.DataSource.Factory
     private var castPlayer: androidx.media3.cast.CastPlayer? = null
     private val monoProcessor = MonoAudioProcessor()
-    private val auroraDsp = AuroraDspProcessor()
+    private val sonethystDsp = SonethystDspProcessor()
     private val convolver = ConvolutionProcessor()
     @Volatile private var lastIrPath: String = ""
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -144,7 +144,7 @@ class PlaybackService : MediaLibraryService() {
                     }
                 }
                 val base = DefaultAudioSink.Builder(context)
-                    .setAudioProcessors(arrayOf(monoProcessor, auroraDsp, convolver))
+                    .setAudioProcessors(arrayOf(monoProcessor, sonethystDsp, convolver))
                     .setEnableFloatOutput(useFloat)
                     // float bypasses sonic so use hardware playback params for speed
                     .setEnableAudioTrackPlaybackParams(useFloat || enableAudioTrackPlaybackParams)
@@ -292,8 +292,8 @@ class PlaybackService : MediaLibraryService() {
             compThreshDb = ap.dspCompThreshDb,
             compRatio = ap.dspCompRatio,
         )
-        auroraDsp.update(params)
-        auroraDsp.enabled = mode == DspMode.CUSTOM
+        sonethystDsp.update(params)
+        sonethystDsp.enabled = mode == DspMode.CUSTOM
         audioEffects?.setMasterEnabled(mode == DspMode.SYSTEM)
 
         convolver.enabled = ap.dspConvEnabled
@@ -363,7 +363,7 @@ class PlaybackService : MediaLibraryService() {
     }
 
     private fun updateSignalPath() {
-        val container = (application as AuroraApplication).container
+        val container = (application as SonethystApplication).container
         val fmt = runCatching { player.audioFormat }.getOrNull()
         val ap = lastAudioPrefs
         val device = currentOutputDevice()

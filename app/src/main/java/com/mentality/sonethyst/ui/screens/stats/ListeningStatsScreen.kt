@@ -39,7 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.RankedItem
 import com.mentality.sonethyst.ui.components.Artwork
 import com.mentality.sonethyst.ui.components.SectionHeader
@@ -47,7 +47,7 @@ import com.mentality.sonethyst.util.accentFor
 
 @Composable
 fun ListeningStatsScreen(contentPadding: PaddingValues, onBack: () -> Unit, onPlay: (String) -> Unit, onOpenDetail: (String, String) -> Unit) {
-    val store = (LocalContext.current.applicationContext as AuroraApplication).container.playHistory
+    val store = (LocalContext.current.applicationContext as SonethystApplication).container.playHistory
     val history by store.history.collectAsStateWithLifecycle()
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     var range by remember { mutableIntStateOf(0) } // 0 week 1 month 2 all

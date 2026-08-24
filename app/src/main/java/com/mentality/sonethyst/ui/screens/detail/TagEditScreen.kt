@@ -43,7 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.AudioTags
 import com.mentality.sonethyst.data.remote.MetadataMatch
 import com.mentality.sonethyst.ui.components.Artwork
@@ -64,7 +64,7 @@ fun TagEditScreen(
     onBack: () -> Unit,
     confirm: (String) -> Unit,
 ) {
-    val container = (LocalContext.current.applicationContext as AuroraApplication).container
+    val container = (LocalContext.current.applicationContext as SonethystApplication).container
     val scope = rememberCoroutineScope()
     var saving by remember { mutableStateOf(false) }
 

@@ -30,9 +30,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.UiPrefs
-import com.mentality.sonethyst.ui.theme.AuroraTheme
+import com.mentality.sonethyst.ui.theme.SonethystTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -54,10 +54,10 @@ class AlarmActivity : ComponentActivity() {
                     android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
             )
         }
-        val container = (application as AuroraApplication).container
+        val container = (application as SonethystApplication).container
         setContent {
             val uiPrefs by container.settingsStore.uiPrefs.collectAsStateWithLifecycle(initialValue = UiPrefs())
-            AuroraTheme(uiPrefs = uiPrefs) {
+            SonethystTheme(uiPrefs = uiPrefs) {
                 AlarmDismissScreen(
                     onDismiss = { dismiss(disableDaily = false) },
                     onTurnOff = { dismiss(disableDaily = true) },
@@ -71,7 +71,7 @@ class AlarmActivity : ComponentActivity() {
             startService(Intent(this, PlaybackService::class.java).setAction(PlaybackService.ACTION_ALARM_DISMISS))
         }
         if (disableDaily) {
-            val store = (application as AuroraApplication).container.settingsStore
+            val store = (application as SonethystApplication).container.settingsStore
             // detached scope so the write survives finish
             CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
                 val a = store.alarmPrefs.first()

@@ -400,7 +400,7 @@ fun DrawScope.drawSpectrumLine(f: VisualizerController.Frame, c: VizColors) {
     drawPath(dn, brush, style = Stroke(2.5f, cap = StrokeCap.Round))
 }
 
-fun DrawScope.drawAurora(f: VisualizerController.Frame, c: VizColors, time: Float) {
+fun DrawScope.drawNorthernLights(f: VisualizerController.Frame, c: VizColors, time: Float) {
     val bands = f.bands
     val n = bands.size
     fun energy(lo: Float, hi: Float): Float {

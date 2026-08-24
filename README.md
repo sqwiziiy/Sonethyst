@@ -121,7 +121,7 @@ Skip any of them and that integration is disabled; the rest of the app is unaffe
 
 MVVM + Compose + Navigation + Media3, with **manual dependency injection** (no Hilt/Dagger).
 
-- **`AppContainer`** is the composition root, constructed once by `AuroraApplication` and reachable via `(app as AuroraApplication).container`. It owns the settings store, the active backend, the download manager, the DSP/effects controllers, the play-history and queue stores, and the integration clients. ViewModels read it through `AndroidViewModel`.
+- **`AppContainer`** is the composition root, constructed once by `SonethystApplication` and reachable via `(app as SonethystApplication).container`. It owns the settings store, the active backend, the download manager, the DSP/effects controllers, the play-history and queue stores, and the integration clients. ViewModels read it through `AndroidViewModel`.
 - **`MediaBackend`** is the server abstraction. It returns the app's own domain models, and each implementation (one per server type, plus the streaming-service and local-file backends) owns its DTO mapping, auth, and URL building. A server-touching feature is added to the interface and every backend, then exposed through the repository; UI/playback code never branches on server type.
 - **`MusicRepository`** is the server-agnostic facade every ViewModel calls. Online it delegates to the active backend; offline it serves from downloads.
 - **Playback** lives entirely in **`PlaybackService`** (a Media3 `MediaLibraryService` hosting ExoPlayer). The UI drives it through a `MediaController`; the service is the single owner of the player. Shuffle is a physical queue reorder owned by the service (custom session commands), not ExoPlayer's native shuffle.

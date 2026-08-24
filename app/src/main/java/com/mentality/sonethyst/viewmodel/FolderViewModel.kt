@@ -3,7 +3,7 @@ package com.mentality.sonethyst.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.FolderContent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +18,7 @@ data class FolderUiState(
 
 /** One level of the folder/file-tree browser (each navigation push gets its own VM instance). */
 class FolderViewModel(app: Application) : AndroidViewModel(app) {
-    private val container = (app as AuroraApplication).container
+    private val container = (app as SonethystApplication).container
     private val _state = MutableStateFlow(FolderUiState())
     val state: StateFlow<FolderUiState> = _state.asStateFlow()
 

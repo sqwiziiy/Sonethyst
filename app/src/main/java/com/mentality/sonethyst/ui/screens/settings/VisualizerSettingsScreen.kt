@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.VisualizerPrefs
 import com.mentality.sonethyst.data.VisualizerStyle
 import com.mentality.sonethyst.data.VizBackground
@@ -49,7 +49,7 @@ private val SWATCHES = listOf(
 @Composable
 fun VisualizerSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
     val ctx = LocalContext.current
-    val container = remember { (ctx.applicationContext as AuroraApplication).container }
+    val container = remember { (ctx.applicationContext as SonethystApplication).container }
     val store = container.settingsStore
     val controller = container.visualizer
     val prefs by store.visualizerPrefs.collectAsStateWithLifecycle(initialValue = VisualizerPrefs())
@@ -174,7 +174,7 @@ fun VisualizerSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) 
 @Composable
 private fun VisualizerPreview(prefs: VisualizerPrefs) {
     val ctx = LocalContext.current
-    val container = remember { (ctx.applicationContext as AuroraApplication).container }
+    val container = remember { (ctx.applicationContext as SonethystApplication).container }
     val controller = container.visualizer
     val colors = when (prefs.colorSource) {
         VizColor.CUSTOM -> VizColors(Color(prefs.primaryColor), Color(prefs.primaryColor))

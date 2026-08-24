@@ -5,7 +5,7 @@ object Chromaprint {
     @Volatile private var loaded = false
 
     init {
-        loaded = runCatching { System.loadLibrary("aurora_fp"); true }.getOrDefault(false)
+        loaded = runCatching { System.loadLibrary("sonethyst_fp"); true }.getOrDefault(false)
     }
 
     val available: Boolean get() = loaded

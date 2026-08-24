@@ -69,7 +69,7 @@ fun SettingsScreen(
     onOpenBackup: () -> Unit,
     onLogout: () -> Unit,
 ) {
-    val container = (androidx.compose.ui.platform.LocalContext.current.applicationContext as com.mentality.sonethyst.AuroraApplication).container
+    val container = (androidx.compose.ui.platform.LocalContext.current.applicationContext as com.mentality.sonethyst.SonethystApplication).container
     val session by container.settingsStore.session.collectAsStateWithLifecycle(initialValue = null)
     val downloads by container.downloadManager.downloads.collectAsStateWithLifecycle()
     val serverBadge = when (session?.type) {

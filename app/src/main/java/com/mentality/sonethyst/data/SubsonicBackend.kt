@@ -218,7 +218,7 @@ class SubsonicBackend(
             }
             else -> null
         }
-    }.onFailure { android.util.Log.e("AuroraDetail", "subsonic detail($kind,$id) failed", it) }.getOrNull()
+    }.onFailure { android.util.Log.e("SonethystDetail", "subsonic detail($kind,$id) failed", it) }.getOrNull()
 
     override val supportsFolders: Boolean get() = true
 
@@ -242,7 +242,7 @@ class SubsonicBackend(
                 )
             }
         }
-    }.onFailure { android.util.Log.e("AuroraFolders", "subsonic browseFolder($folderId) failed", it) }.getOrNull()
+    }.onFailure { android.util.Log.e("SonethystFolders", "subsonic browseFolder($folderId) failed", it) }.getOrNull()
 
     private suspend fun indexLevel(musicFolderId: String?, title: String): FolderContent {
         val idx = c.api.getIndexes(musicFolderId).response.indexes

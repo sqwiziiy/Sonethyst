@@ -3,7 +3,7 @@ package com.mentality.sonethyst.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.SearchResults
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -22,7 +22,7 @@ data class SearchUiState(
 )
 
 class SearchViewModel(app: Application) : AndroidViewModel(app) {
-    private val container = (app as AuroraApplication).container
+    private val container = (app as SonethystApplication).container
     private val _state = MutableStateFlow(SearchUiState())
     val state: StateFlow<SearchUiState> = _state.asStateFlow()
 

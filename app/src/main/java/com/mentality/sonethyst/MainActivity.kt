@@ -8,19 +8,19 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mentality.sonethyst.data.UiPrefs
-import com.mentality.sonethyst.ui.AuroraApp
-import com.mentality.sonethyst.ui.theme.AuroraTheme
+import com.mentality.sonethyst.ui.SonethystApp
+import com.mentality.sonethyst.ui.theme.SonethystTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        val container = (application as AuroraApplication).container
+        val container = (application as SonethystApplication).container
         handleAuthRedirect(intent)
         setContent {
             val uiPrefs by container.settingsStore.uiPrefs.collectAsStateWithLifecycle(initialValue = UiPrefs())
-            AuroraTheme(uiPrefs = uiPrefs) {
-                AuroraApp()
+            SonethystTheme(uiPrefs = uiPrefs) {
+                SonethystApp()
             }
         }
     }
@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
         val data = intent?.data ?: return
         if (data.scheme == "sonethyst" && data.host == "spotify") {
             data.getQueryParameter("code")?.takeIf { it.isNotBlank() }?.let {
-                (application as AuroraApplication).container.emitSpotifyRedirect(it)
+                (application as SonethystApplication).container.emitSpotifyRedirect(it)
             }
         }
     }

@@ -3,7 +3,7 @@ package com.mentality.sonethyst.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
 import com.mentality.sonethyst.model.LibraryFilter
@@ -35,7 +35,7 @@ data class LibraryUiState(
 )
 
 class LibraryViewModel(app: Application) : AndroidViewModel(app) {
-    private val container = (app as AuroraApplication).container
+    private val container = (app as SonethystApplication).container
     private val _state = MutableStateFlow(LibraryUiState())
     val state: StateFlow<LibraryUiState> = _state.asStateFlow()
 

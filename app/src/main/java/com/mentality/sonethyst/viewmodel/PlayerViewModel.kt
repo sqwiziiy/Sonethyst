@@ -13,7 +13,7 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionToken
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.SavedQueue
 import com.mentality.sonethyst.data.isPodcast
 import com.mentality.sonethyst.data.isRadio
@@ -62,7 +62,7 @@ data class PlayerUiState(
 
 class PlayerViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val container = (app as AuroraApplication).container
+    private val container = (app as SonethystApplication).container
 
     private val _state = MutableStateFlow(PlayerUiState())
     val state: StateFlow<PlayerUiState> = _state.asStateFlow()

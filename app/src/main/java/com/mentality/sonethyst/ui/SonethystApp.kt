@@ -62,7 +62,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.navigation.Routes
 import com.mentality.sonethyst.navigation.topLevelDestinations
 import com.mentality.sonethyst.ui.components.AmbientBackground
@@ -89,9 +89,9 @@ import com.mentality.sonethyst.viewmodel.SearchViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun AuroraApp() {
+fun SonethystApp() {
     val context = LocalContext.current
-    val container = (context.applicationContext as AuroraApplication).container
+    val container = (context.applicationContext as SonethystApplication).container
 
     val navController = rememberNavController()
     val playerVM: PlayerViewModel = viewModel()

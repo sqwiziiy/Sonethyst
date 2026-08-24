@@ -3,7 +3,7 @@ package com.mentality.sonethyst.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.DuplicateFinder
 import com.mentality.sonethyst.data.DuplicateGroup
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +20,7 @@ data class DuplicatesUiState(
 
 /** Scans the reachable library for likely duplicate tracks. */
 class DuplicatesViewModel(app: Application) : AndroidViewModel(app) {
-    private val container = (app as AuroraApplication).container
+    private val container = (app as SonethystApplication).container
     private val _state = MutableStateFlow(DuplicatesUiState())
     val state: StateFlow<DuplicatesUiState> = _state.asStateFlow()
 

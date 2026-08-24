@@ -3,7 +3,7 @@ package com.mentality.sonethyst.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.Podcast
 import com.mentality.sonethyst.data.PodcastEpisode
 import kotlinx.coroutines.Job
@@ -32,7 +32,7 @@ data class EpisodesUiState(
 )
 
 class PodcastViewModel(app: Application) : AndroidViewModel(app) {
-    private val container = (app as AuroraApplication).container
+    private val container = (app as SonethystApplication).container
 
     val subscriptions: StateFlow<List<Podcast>> =
         container.settingsStore.podcastSubs.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())

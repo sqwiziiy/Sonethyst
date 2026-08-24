@@ -30,13 +30,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import kotlinx.coroutines.launch
 
 @Composable
 fun SonicSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
     val ctx = LocalContext.current
-    val app = remember { (ctx.applicationContext as AuroraApplication).container }
+    val app = remember { (ctx.applicationContext as SonethystApplication).container }
     val progress by app.sonicEngine.progress.collectAsStateWithLifecycle()
     val analyzed by app.sonicEngine.analyzedCount.collectAsStateWithLifecycle()
     val auto by app.settingsStore.sonicAutoAnalyze.collectAsStateWithLifecycle(initialValue = false)

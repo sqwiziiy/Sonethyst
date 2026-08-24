@@ -32,7 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.BuildConfig
 import com.mentality.sonethyst.data.ServerType
 
@@ -40,7 +40,7 @@ import com.mentality.sonethyst.data.ServerType
 fun AboutSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
     val context = LocalContext.current
     val container =
-        (context.applicationContext as AuroraApplication).container
+        (context.applicationContext as SonethystApplication).container
     val session by container.settingsStore.session.collectAsStateWithLifecycle(initialValue = null)
 
     Column(Modifier.fillMaxWidth()) {

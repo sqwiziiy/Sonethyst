@@ -33,7 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.ServerType
 import com.mentality.sonethyst.data.Session
 
@@ -46,7 +46,7 @@ fun AccountsScreen(
     onAddAccount: () -> Unit,
 ) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
-    val container = (ctx.applicationContext as AuroraApplication).container
+    val container = (ctx.applicationContext as SonethystApplication).container
     val saved by container.settingsStore.savedSessions.collectAsStateWithLifecycle(initialValue = emptyList())
     val active by container.settingsStore.session.collectAsStateWithLifecycle(initialValue = null)
     fun key(s: Session?) = s?.let { "${it.type}|${it.server}|${it.username}|${it.userId}" } ?: ""

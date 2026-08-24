@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22.1)
-project(aurora_fp)
+project(sonethyst_fp)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,8 +19,8 @@ add_definitions(
 
 include_directories(${CP} ${KISS})
 
-add_library(aurora_fp SHARED
-    aurora_fp.cpp
+add_library(sonethyst_fp SHARED
+    sonethyst_fp.cpp
     ${CP}/chromaprint.cpp
     ${CP}/audio_processor.cpp
     ${CP}/chroma.cpp
@@ -45,4 +45,4 @@ add_library(aurora_fp SHARED
 )
 
 find_library(log-lib log)
-target_link_libraries(aurora_fp ${log-lib})
+target_link_libraries(sonethyst_fp ${log-lib})

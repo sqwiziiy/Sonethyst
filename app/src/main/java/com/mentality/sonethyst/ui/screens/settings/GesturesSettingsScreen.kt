@@ -23,14 +23,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.GesturePrefs
 import com.mentality.sonethyst.data.PlaybackPrefs
 import kotlinx.coroutines.launch
 
 @Composable
 fun GesturesSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
-    val container = (LocalContext.current.applicationContext as AuroraApplication).container
+    val container = (LocalContext.current.applicationContext as SonethystApplication).container
     val store = container.settingsStore
     val gestures by store.gesturePrefs.collectAsStateWithLifecycle(initialValue = GesturePrefs())
     val haptics by store.haptics.collectAsStateWithLifecycle(initialValue = false)

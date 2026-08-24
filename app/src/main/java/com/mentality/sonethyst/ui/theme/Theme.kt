@@ -95,7 +95,7 @@ private fun ColorScheme.toAmoled(): ColorScheme = copy(
 )
 
 @Composable
-fun AuroraTheme(
+fun SonethystTheme(
     uiPrefs: UiPrefs = UiPrefs(),
     content: @Composable () -> Unit,
 ) {
@@ -132,7 +132,7 @@ fun AuroraTheme(
     MaterialTheme(
         colorScheme = colors,
         typography = sonethystTypography(uiPrefs.fontScale),
-        shapes = auroraShapes(uiPrefs.cornerStyle),
+        shapes = sonethystShapes(uiPrefs.cornerStyle),
     ) {
         // content renders outside any m3 surface so set default content color else text falls back to black
         CompositionLocalProvider(

@@ -14,7 +14,7 @@ import kotlin.math.tanh
 // math in float for headroom transport stays 16-bit since exoplayer silence-skip/sonic run after us
 // and only accept 16-bit emitting float here would break them hi-res float is a separate no-dsp path
 @UnstableApi
-class AuroraDspProcessor : BaseAudioProcessor() {
+class SonethystDspProcessor : BaseAudioProcessor() {
 
     @Volatile
     var enabled: Boolean = false

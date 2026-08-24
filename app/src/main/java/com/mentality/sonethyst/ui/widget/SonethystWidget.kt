@@ -39,7 +39,7 @@ import com.mentality.sonethyst.playback.NowPlaying
 import com.mentality.sonethyst.playback.NowPlayingStore
 import com.mentality.sonethyst.playback.PlaybackService
 
-class AuroraWidget : GlanceAppWidget() {
+class SonethystWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val np = NowPlayingStore.read(context)

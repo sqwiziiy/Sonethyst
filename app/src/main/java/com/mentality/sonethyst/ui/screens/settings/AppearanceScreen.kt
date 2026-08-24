@@ -34,7 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.AccentMode
 import com.mentality.sonethyst.data.CornerStyle
 import com.mentality.sonethyst.data.HomeSection
@@ -49,7 +49,7 @@ import kotlin.math.roundToInt
 
 @Composable
 fun AppearanceScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
-    val container = (LocalContext.current.applicationContext as AuroraApplication).container
+    val container = (LocalContext.current.applicationContext as SonethystApplication).container
     val store = container.settingsStore
     val prefs by store.uiPrefs.collectAsStateWithLifecycle(initialValue = UiPrefs())
     val scope = rememberCoroutineScope()

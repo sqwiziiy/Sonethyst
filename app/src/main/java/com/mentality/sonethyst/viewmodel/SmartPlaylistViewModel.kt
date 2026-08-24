@@ -3,7 +3,7 @@ package com.mentality.sonethyst.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.SmartPlaylist
 import com.mentality.sonethyst.data.SmartRule
 import java.util.UUID
@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 
 /** Edits one smart playlist (a new one when [load] gets a blank id). */
 class SmartPlaylistViewModel(app: Application) : AndroidViewModel(app) {
-    private val container = (app as AuroraApplication).container
+    private val container = (app as SonethystApplication).container
     private val _state = MutableStateFlow(SmartPlaylist())
     val state: StateFlow<SmartPlaylist> = _state.asStateFlow()
 

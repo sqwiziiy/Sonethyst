@@ -11,7 +11,7 @@ data class PrefsBackup(
     val stringSets: Map<String, List<String>> = emptyMap(),
 )
 
-data class AuroraBackup(
+data class SonethystBackup(
     val version: Int = 1,
     val createdAt: Long = 0L,
     val prefs: PrefsBackup = PrefsBackup(),
@@ -27,7 +27,7 @@ class BackupManager(
     private val gson = Gson()
 
     suspend fun export(nowMs: Long): String {
-        val backup = AuroraBackup(
+        val backup = SonethystBackup(
             version = 1,
             createdAt = nowMs,
             prefs = settingsStore.exportPrefs(),
@@ -38,7 +38,7 @@ class BackupManager(
     }
 
     suspend fun import(json: String): Boolean {
-        val backup = runCatching { gson.fromJson(json, AuroraBackup::class.java) }.getOrNull() ?: return false
+        val backup = runCatching { gson.fromJson(json, SonethystBackup::class.java) }.getOrNull() ?: return false
         settingsStore.importPrefs(backup.prefs)
         if (backup.localStore.isNotBlank()) localStore.importJson(backup.localStore)
         playHistory.restore(backup.playHistory)

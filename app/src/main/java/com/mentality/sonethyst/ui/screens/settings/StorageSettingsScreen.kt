@@ -31,7 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mentality.sonethyst.AuroraApplication
+import com.mentality.sonethyst.SonethystApplication
 import kotlinx.coroutines.launch
 
 @Composable
@@ -146,7 +146,7 @@ fun StorageSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
 
 @Composable
 private fun LocalContextApp() =
-    (LocalContext.current.applicationContext as AuroraApplication).container
+    (LocalContext.current.applicationContext as SonethystApplication).container
 
 private fun formatBytes(bytes: Long): String {
     if (bytes <= 0) return "0 MB"
