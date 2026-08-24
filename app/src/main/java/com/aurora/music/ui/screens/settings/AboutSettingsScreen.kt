@@ -1,5 +1,8 @@
 package com.aurora.music.ui.screens.settings
 
+import android.content.Intent
+import android.net.Uri
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -34,7 +38,9 @@ import com.aurora.music.data.ServerType
 
 @Composable
 fun AboutSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
-    val container = (LocalContext.current.applicationContext as AuroraApplication).container
+    val context = LocalContext.current
+    val container =
+        (context.applicationContext as AuroraApplication).container
     val session by container.settingsStore.session.collectAsStateWithLifecycle(initialValue = null)
 
     Column(Modifier.fillMaxWidth()) {
@@ -76,6 +82,29 @@ fun AboutSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
             InfoRow("Playback engine", "AndroidX Media3 (ExoPlayer)")
 
             Spacer(Modifier.height(20.dp))
+
+            SettingsGroup {
+                SettingsNavRow(
+                    icon = Icons.Filled.Code,
+                    title = "GitHub",
+                    subtitle = "sqwiziiy/Sonethyst",
+                    onClick = {
+                        runCatching {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse(
+                                        "https://github.com/sqwiziiy/Sonethyst"
+                                    ),
+                                )
+                            )
+                        }
+                    },
+                )
+            }
+
+            Spacer(Modifier.height(20.dp))
+
             Text(
                 "Built with Jetpack Compose & Material 3.\nBased in part on Aurora by nessli420 (Apache 2.0).",
                 style = MaterialTheme.typography.bodySmall,
