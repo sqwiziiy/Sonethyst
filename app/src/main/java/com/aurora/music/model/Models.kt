@@ -59,6 +59,7 @@ data class DetailInfo(
     val isArtist: Boolean,
     val songCount: Int,
     val typeLabel: String,
+    val playlistCoverMode: String = "",
 )
 
 enum class LibraryFilter(val label: String) {

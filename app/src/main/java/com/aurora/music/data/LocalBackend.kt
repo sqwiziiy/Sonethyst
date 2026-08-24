@@ -171,7 +171,16 @@ class LocalBackend(
                 val pl = store.playlist(id) ?: return null
                 val tracks = pl.trackIds.orEmpty().mapNotNull { library.song(it) }
                 DetailData(
-                    info = DetailInfo(pl.title ?: "", pl.subtitle ?: "", pl.resolvedCover(tracks), accentFor(id), false, tracks.size, "Playlist"),
+                    info = DetailInfo(
+                        pl.title ?: "",
+                        pl.subtitle ?: "",
+                        pl.resolvedCover(tracks),
+                        accentFor(id),
+                        false,
+                        tracks.size,
+                        "Playlist",
+                        pl.coverMode?.ifBlank { "automatic" } ?: "automatic",
+                    ),
                     tracks = tracks,
                 )
             }

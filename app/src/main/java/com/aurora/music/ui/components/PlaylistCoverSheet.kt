@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Filter1
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Image
@@ -39,6 +40,7 @@ import com.aurora.music.model.Song
 @Composable
 fun PlaylistCoverSheet(
     tracks: List<Song>,
+    currentMode: String,
     onAutomatic: () -> Unit,
     onFirstTrack: () -> Unit,
     onCollage: () -> Unit,
@@ -151,6 +153,15 @@ fun PlaylistCoverSheet(
                     leadingContent = {
                         Icon(Icons.Filled.AutoAwesome, null)
                     },
+                    trailingContent = {
+                        if (currentMode == "automatic") {
+                            Icon(
+                                Icons.Filled.Check,
+                                "Selected",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    },
                     modifier = Modifier.clickable(onClick = onAutomatic),
                     colors = ListItemDefaults.colors(
                         containerColor = Color.Transparent,
@@ -164,6 +175,15 @@ fun PlaylistCoverSheet(
                     },
                     leadingContent = {
                         Icon(Icons.Filled.Filter1, null)
+                    },
+                    trailingContent = {
+                        if (currentMode == "first") {
+                            Icon(
+                                Icons.Filled.Check,
+                                "Selected",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     },
                     modifier = Modifier.clickable(
                         enabled = tracks.isNotEmpty(),
@@ -188,6 +208,15 @@ fun PlaylistCoverSheet(
                     leadingContent = {
                         Icon(Icons.Filled.GridView, null)
                     },
+                    trailingContent = {
+                        if (currentMode == "collage") {
+                            Icon(
+                                Icons.Filled.Check,
+                                "Selected",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    },
                     modifier = Modifier.clickable(
                         enabled = distinctArtworkCount >= 4,
                         onClick = onCollage,
@@ -204,6 +233,15 @@ fun PlaylistCoverSheet(
                     },
                     leadingContent = {
                         Icon(Icons.Filled.MusicNote, null)
+                    },
+                    trailingContent = {
+                        if (currentMode == "track") {
+                            Icon(
+                                Icons.Filled.Check,
+                                "Selected",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     },
                     modifier = Modifier.clickable(
                         enabled = trackArtworks.isNotEmpty(),
@@ -222,6 +260,15 @@ fun PlaylistCoverSheet(
                     },
                     leadingContent = {
                         Icon(Icons.Filled.Image, null)
+                    },
+                    trailingContent = {
+                        if (currentMode == "custom") {
+                            Icon(
+                                Icons.Filled.Check,
+                                "Selected",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     },
                     modifier = Modifier.clickable(onClick = onChooseImage),
                     colors = ListItemDefaults.colors(

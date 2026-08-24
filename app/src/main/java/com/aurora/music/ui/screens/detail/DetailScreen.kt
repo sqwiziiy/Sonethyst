@@ -746,6 +746,9 @@ fun DetailScreen(
     if (showCoverSheet && onSetPlaylistCover != null) {
         PlaylistCoverSheet(
             tracks = tracks,
+            currentMode = info.playlistCoverMode
+                .ifBlank { "automatic" }
+                .lowercase(),
             onAutomatic = {
                 onSetPlaylistCover("automatic", null)
                 showCoverSheet = false
