@@ -171,6 +171,9 @@ class MusicRepository(
     suspend fun addToPlaylist(playlistId: String, trackIds: List<String>): Boolean =
         libraryMutationResult(backend?.addToPlaylist(playlistId, trackIds) ?: false)
 
+    suspend fun removeFromPlaylist(playlistId: String, trackIds: List<String>): Boolean =
+        libraryMutationResult(backend?.removeFromPlaylist(playlistId, trackIds) ?: false)
+
     suspend fun createPlaylistFromSongs(name: String, trackIds: List<String>): Boolean {
         val b = backend ?: return false
         val id = b.createPlaylistWithId(name) ?: return false

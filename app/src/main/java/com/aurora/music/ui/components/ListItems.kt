@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.Edit
@@ -62,6 +63,7 @@ fun SongRow(
     onPlayNext: (() -> Unit)? = null,
     onAddToQueue: (() -> Unit)? = null,
     onAddToPlaylist: (() -> Unit)? = null,
+    onRemoveFromPlaylist: (() -> Unit)? = null,
     onGoToAlbum: (() -> Unit)? = null,
     onGoToArtist: (() -> Unit)? = null,
     isDownloaded: Boolean = false,
@@ -167,6 +169,17 @@ fun SongRow(
                     text = { Text("Add to playlist") },
                     onClick = { menuOpen = false; onAddToPlaylist() },
                     leadingIcon = { Icon(Icons.AutoMirrored.Filled.PlaylistAdd, null) },
+                )
+                if (onRemoveFromPlaylist != null) DropdownMenuItem(
+                    text = { Text("Remove from playlist") },
+                    onClick = { menuOpen = false; onRemoveFromPlaylist() },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Filled.Delete,
+                            null,
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    },
                 )
                 DropdownMenuItem(
                     text = { Text(if (isLiked) "Remove from liked" else "Add to liked") },

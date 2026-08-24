@@ -632,6 +632,21 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             onAddToQueue = { playerVM.addToQueue(it); confirm("Added to queue") },
                             onPlayNext = { playerVM.playNext(it); confirm("Playing next") },
 onAddToPlaylist = { openPlaylistPicker(it) },
+                            onRemoveFromPlaylist = if (kind == "playlist") ({ song ->
+                                scope.launch {
+                                    val removed = container.repository.removeFromPlaylist(
+                                        id,
+                                        listOf(song.id),
+                                    )
+                                    confirm(
+                                        if (removed) {
+                                            "Removed ${song.title} from playlist"
+                                        } else {
+                                            "Couldn't remove track"
+                                        }
+                                    )
+                                }
+                            }) else null,
                             onToggleLike = { playerVM.toggleLike(it) },
                             onOpenDetail = { k, i -> openDetail(k, i) },
                             itemKind = kind,
