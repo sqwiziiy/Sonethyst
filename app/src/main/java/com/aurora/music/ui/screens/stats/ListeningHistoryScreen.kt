@@ -73,7 +73,13 @@ fun ListeningHistoryScreen(contentPadding: PaddingValues, onBack: () -> Unit, on
                 item {
                     Text(day, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 6.dp))
                 }
-                items(events.size) { i ->
+                items(
+                    count = events.size,
+                    key = { i ->
+                        "history:${events[i].timestamp}:${events[i].songId}"
+                    },
+                    contentType = { "history-track" },
+                ) { i ->
                     val e = events[i]
                     Row(
                         Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).clickable { onPlay(e.songId) }.padding(horizontal = 16.dp, vertical = 8.dp),

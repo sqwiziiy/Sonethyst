@@ -132,7 +132,11 @@ fun RadioScreen(
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(GENRE_TAGS.size) { i ->
+                    items(
+                        count = GENRE_TAGS.size,
+                        key = { i -> "genre:${GENRE_TAGS[i]}" },
+                        contentType = { "radio-genre" },
+                    ) { i ->
                         val tag = GENRE_TAGS[i]
                         val selected = state.activeTag == tag
                         Text(
@@ -151,7 +155,11 @@ fun RadioScreen(
 
             if (favorites.isNotEmpty()) {
                 item { SectionLabel("Your stations") }
-                items(favorites.size) { i ->
+                items(
+                    count = favorites.size,
+                    key = { i -> "favorite:${favorites[i].uuid}" },
+                    contentType = { "radio-station" },
+                ) { i ->
                     val st = favorites[i]
                     StationRow(st, isFavorite = true, onPlay = { playStation(st) }, onToggleFavorite = { vm.toggleFavorite(st) })
                 }
@@ -179,7 +187,11 @@ fun RadioScreen(
                     }
                 }
             } else {
-                items(listed.size) { i ->
+                items(
+                    count = listed.size,
+                    key = { i -> "listed:${listed[i].uuid}" },
+                    contentType = { "radio-station" },
+                ) { i ->
                     val st = listed[i]
                     StationRow(st, isFavorite = favoriteUuids.contains(st.uuid), onPlay = { playStation(st) }, onToggleFavorite = { vm.toggleFavorite(st) })
                 }

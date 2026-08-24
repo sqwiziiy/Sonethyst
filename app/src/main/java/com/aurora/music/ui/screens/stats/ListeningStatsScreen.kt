@@ -106,15 +106,49 @@ fun ListeningStatsScreen(contentPadding: PaddingValues, onBack: () -> Unit, onPl
 
             if (artists.isNotEmpty()) {
                 item { SectionHeader("Top artists", Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) }
-                items(artists.size) { i -> RankRow(i + 1, artists[i], circle = true) { if (artists[i].id.isNotBlank()) onOpenDetail("artist", artists[i].id) } }
+                items(
+                    count = artists.size,
+                    key = { i ->
+                        "artist:${artists[i].id.ifBlank { artists[i].name }}"
+                    },
+                    contentType = { "stats-artist" },
+                ) { i ->
+                    RankRow(i + 1, artists[i], circle = true) {
+                        if (artists[i].id.isNotBlank()) {
+                            onOpenDetail("artist", artists[i].id)
+                        }
+                    }
+                }
             }
             if (songs.isNotEmpty()) {
                 item { SectionHeader("Top songs", Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) }
-                items(songs.size) { i -> RankRow(i + 1, songs[i], circle = false) { onPlay(songs[i].id) } }
+                items(
+                    count = songs.size,
+                    key = { i ->
+                        "song:${songs[i].id.ifBlank { songs[i].name }}"
+                    },
+                    contentType = { "stats-song" },
+                ) { i ->
+                    RankRow(i + 1, songs[i], circle = false) {
+                        onPlay(songs[i].id)
+                    }
+                }
             }
             if (albums.isNotEmpty()) {
                 item { SectionHeader("Top albums", Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) }
-                items(albums.size) { i -> RankRow(i + 1, albums[i], circle = false) { if (albums[i].id.isNotBlank()) onOpenDetail("album", albums[i].id) } }
+                items(
+                    count = albums.size,
+                    key = { i ->
+                        "album:${albums[i].id.ifBlank { albums[i].name }}"
+                    },
+                    contentType = { "stats-album" },
+                ) { i ->
+                    RankRow(i + 1, albums[i], circle = false) {
+                        if (albums[i].id.isNotBlank()) {
+                            onOpenDetail("album", albums[i].id)
+                        }
+                    }
+                }
             }
         }
     }

@@ -128,7 +128,18 @@ fun ProfileScreen(
                 SectionHeader("Top artists", Modifier.padding(horizontal = 16.dp))
                 Spacer(Modifier.height(10.dp))
                 LazyRow(contentPadding = PaddingValues(horizontal = 8.dp)) {
-                    items(artists.size) { i -> ArtistCircle(artists[i], onClick = { onOpenDetail("artist", artists[i].id) }) }
+                    items(
+                        count = artists.size,
+                        key = { i -> "artist:${artists[i].id}" },
+                        contentType = { "artist-circle" },
+                    ) { i ->
+                        ArtistCircle(
+                            artists[i],
+                            onClick = {
+                                onOpenDetail("artist", artists[i].id)
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -138,7 +149,18 @@ fun ProfileScreen(
                 SectionHeader("Your playlists", Modifier.padding(horizontal = 16.dp))
                 Spacer(Modifier.height(10.dp))
                 LazyRow(contentPadding = PaddingValues(horizontal = 8.dp)) {
-                    items(playlists.size) { i -> PlaylistCard(playlists[i], onClick = { onOpenDetail("playlist", playlists[i].id) }) }
+                    items(
+                        count = playlists.size,
+                        key = { i -> "playlist:${playlists[i].id}" },
+                        contentType = { "playlist-card" },
+                    ) { i ->
+                        PlaylistCard(
+                            playlists[i],
+                            onClick = {
+                                onOpenDetail("playlist", playlists[i].id)
+                            },
+                        )
+                    }
                 }
             }
         }

@@ -54,11 +54,36 @@ fun LottieEqualizer(
 }
 
 @Composable
-fun LottieLoader(modifier: Modifier = Modifier) {
-    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.loader))
+fun LottieLoader(
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.primary,
+) {
+    val composition by rememberLottieComposition(
+        LottieCompositionSpec.RawRes(R.raw.loader)
+    )
+
     val progress by animateLottieCompositionAsState(
         composition = composition,
         iterations = LottieConstants.IterateForever,
     )
-    LottieAnimation(composition = composition, progress = { progress }, modifier = modifier)
+
+    val dynamicProperties = rememberLottieDynamicProperties(
+        rememberLottieDynamicProperty(
+            property = LottieProperty.COLOR,
+            value = color.toArgb(),
+            keyPath = arrayOf("**"),
+        ),
+        rememberLottieDynamicProperty(
+            property = LottieProperty.STROKE_COLOR,
+            value = color.toArgb(),
+            keyPath = arrayOf("**"),
+        ),
+    )
+
+    LottieAnimation(
+        composition = composition,
+        progress = { progress },
+        modifier = modifier,
+        dynamicProperties = dynamicProperties,
+    )
 }
