@@ -137,7 +137,7 @@ Two recurring gotchas the code works around:
 .
 ├── app/                         The Android app
 │   └── src/main/
-│       ├── java/com/aurora/music/
+│       ├── java/com/mentality/sonethyst/
 │       │   ├── data/            backends, MusicRepository, stores, DSP, download manager
 │       │   ├── data/remote/     Retrofit clients + DTOs (Subsonic, Jellyfin, Green Music App,
 │       │   │                    MusicBrainz, AcoustID, ListenBrainz, Last.fm)
