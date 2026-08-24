@@ -121,7 +121,7 @@ class SquigClient {
 
     private companion object {
         const val USER_AGENT =
-            "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36 Aurora/1.0"
+            "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36 Sonethyst/0.1"
         val SEP = Regex("[\\s,]+")
     }
 }

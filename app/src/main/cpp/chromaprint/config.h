@@ -1,4 +1,4 @@
-// Hand-written replacement for Chromaprint's CMake-generated config.h, fixed for the Aurora NDK
+// Hand-written replacement for Chromaprint's CMake-generated config.h, fixed for the Sonethyst NDK
 // build: KissFFT for the transform, the bundled internal av_resample (no FFmpeg), and the standard
 // C99 math functions the NDK provides.
 #ifndef CHROMAPRINT_CONFIG_H_

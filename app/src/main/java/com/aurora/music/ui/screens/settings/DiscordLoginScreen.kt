@@ -39,7 +39,7 @@ fun DiscordLoginScreen(contentPadding: PaddingValues, onBack: () -> Unit, onToke
     Column(Modifier.fillMaxSize()) {
         SettingsTopBar("Connect Discord", onBack)
         Text(
-            "Log in to Discord below — Aurora reads your token locally to set Rich Presence (never sent anywhere but Discord). If the page stays blank, paste a token instead.",
+            "Log in to Discord below — Sonethyst reads your token locally to set Rich Presence (never sent anywhere but Discord). If the page stays blank, paste a token instead.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),

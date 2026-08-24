@@ -870,7 +870,7 @@ class PlaybackService : MediaLibraryService() {
         )
         val notif = androidx.core.app.NotificationCompat.Builder(this, "aurora_alarm")
             .setSmallIcon(com.aurora.music.R.drawable.ic_launcher_monochrome)
-            .setContentTitle("Aurora alarm")
+            .setContentTitle("Sonethyst alarm")
             .setContentText("Tap to dismiss")
             .setPriority(androidx.core.app.NotificationCompat.PRIORITY_MAX)
             .setCategory(androidx.core.app.NotificationCompat.CATEGORY_ALARM)
@@ -929,11 +929,11 @@ class PlaybackService : MediaLibraryService() {
         const val CMD_SHUFFLE = "com.aurora.music.SHUFFLE"
         const val CMD_REPEAT = "com.aurora.music.REPEAT"
         const val CMD_SLEEP_FADE = "com.aurora.music.SLEEP_FADE"
-        const val ACTION_PLAY_PAUSE = "com.aurora.music.action.PLAY_PAUSE"
-        const val ACTION_NEXT = "com.aurora.music.action.NEXT"
-        const val ACTION_PREV = "com.aurora.music.action.PREV"
-        const val ACTION_ALARM = "com.aurora.music.action.ALARM"
-        const val ACTION_ALARM_DISMISS = "com.aurora.music.action.ALARM_DISMISS"
+        const val ACTION_PLAY_PAUSE = "com.mentality.sonethyst.action.PLAY_PAUSE"
+        const val ACTION_NEXT = "com.mentality.sonethyst.action.NEXT"
+        const val ACTION_PREV = "com.mentality.sonethyst.action.PREV"
+        const val ACTION_ALARM = "com.mentality.sonethyst.action.ALARM"
+        const val ACTION_ALARM_DISMISS = "com.mentality.sonethyst.action.ALARM_DISMISS"
         private const val ALARM_NOTIF_ID = 0xA1A
     }
 }

@@ -75,7 +75,7 @@ class LyricsRepository(
     }
 
     private fun req(url: String): Request =
-        Request.Builder().url(url).header("User-Agent", "Aurora Music (Navidrome client)").build()
+        Request.Builder().url(url).header("User-Agent", "Sonethyst Music Player").build()
 
     private data class LrcLibDto(val syncedLyrics: String? = null, val plainLyrics: String? = null)
 

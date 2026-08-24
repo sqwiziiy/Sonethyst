@@ -101,7 +101,7 @@ fun PermissionsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
         ) {
             item {
                 Text(
-                    "Grant what you use. Aurora works without any of these, but each unlocks a feature.",
+                    "Grant what you use. Sonethyst works without any of these, but each unlocks a feature.",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 4.dp),
                 )
@@ -145,7 +145,7 @@ fun PermissionsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
             item {
                 Text(
                     "Android can't grant a USB device permanently without a per-plug prompt, so the DAC " +
-                        "may re-ask on reconnect — Aurora re-requests automatically when bit-perfect is on.",
+                        "may re-ask on reconnect — Sonethyst re-requests automatically when bit-perfect is on.",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                 )

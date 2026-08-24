@@ -1,4 +1,6 @@
-# Aurora
+# Sonethyst
+
+Sonethyst is a fork of Aurora by nessli420, licensed under Apache 2.0, with its own branding and continued development.
 
 A native Android music client for self-hosted libraries (**Navidrome/Subsonic** and **Jellyfin**) that also connects to **Green Music App** and plays **local files** on the device. Built with Jetpack Compose on Media3/ExoPlayer. Includes a switchable software DSP engine, ReplayGain, and an experimental USB DAC driver for bit-perfect output.
 
@@ -59,7 +61,7 @@ Multiple logins can be saved and switched between, including a jump to the local
 
 ## Bit-perfect USB output (experimental)
 
-Android resamples USB audio to 48 kHz before it reaches the DAC. Aurora has an experimental path that bypasses the entire Android audio stack (AudioFlinger, AudioTrack, AAudio, ALSA, and the kernel `snd-usb-audio` driver) and writes PCM straight to the DAC over Linux `usbdevfs` isochronous transfers. No root, Android 10+.
+Android resamples USB audio to 48 kHz before it reaches the DAC. Sonethyst has an experimental path that bypasses the entire Android audio stack (AudioFlinger, AudioTrack, AAudio, ALSA, and the kernel `snd-usb-audio` driver) and writes PCM straight to the DAC over Linux `usbdevfs` isochronous transfers. No root, Android 10+.
 
 It's built on **[decent-player](https://github.com/Ma145/decent-player)** by Marcelo Silva (MIT). Its USB Audio Class 2.0 driver and Media3 `AudioSink` wrapper are vendored under `decent/`. Two decoding paths feed it:
 
@@ -89,15 +91,8 @@ The toolchain is slightly non-standard, so a few specifics matter.
    ```properties
    sdk.dir=/absolute/path/to/Android/sdk
    ```
-2. **Display font (required to compile).** Aurora's UI uses Circular Std, a commercial font that can't be redistributed, so it's not in the repo. Add your own licensed `.otf` files to `app/src/main/res/font/` with these exact names:
-   ```
-   circular_light.otf        circular_light_italic.otf
-   circular_book.otf         circular_book_italic.otf
-   circular_medium.otf       circular_medium_italic.otf
-   circular_bold.otf         circular_bold_italic.otf
-   circular_black.otf        circular_black_italic.otf
-   ```
-   Without a license, change `ui/theme/Type.kt` to an OSS face (Inter, Manrope, etc.) or the system default. The `FontFamily` there is the only place the font is referenced.
+2. **Display font.** Sonethyst uses the Android system sans-serif font by default; no proprietary font files are required to build the project.
+
 3. For a release build, provide a signing keystore and wire it into `app/build.gradle.kts`. The keystore and its passwords are gitignored; debug builds need nothing extra.
 
 **Build**
@@ -114,7 +109,7 @@ Nothing requiring a personal API credential is shipped hardcoded. Enter everythi
 
 | Integration | What you need | Where to get it |
 |---|---|---|
-| **Green Music App** | App **client ID** (PKCE, no secret) | [developer.spotify.com](https://developer.spotify.com/dashboard), set redirect `aurora://spotify` |
+| **Green Music App** | App **client ID** (PKCE, no secret) | [developer.spotify.com](https://developer.spotify.com/dashboard), set redirect `sonethyst://spotify` |
 | **Last.fm** | **API key + shared secret** | [last.fm/api/account/create](https://www.last.fm/api/account/create) |
 | **ListenBrainz** | **User token** | [listenbrainz.org/profile](https://listenbrainz.org/profile) |
 | **AcoustID** (tag identify) | **Application API key** | [acoustid.org/new-application](https://acoustid.org/new-application) |
@@ -171,7 +166,7 @@ Two recurring gotchas the code works around:
 
 ## Third-party code & credits
 
-Aurora uses a number of other projects. The notable ones:
+Sonethyst uses a number of other projects. The notable ones:
 
 - **[decent-player](https://github.com/Ma145/decent-player)** (MIT): the USB Audio Class 2.0 bit-perfect driver and its Media3 wrapper. Vendored under `decent/`, realigned to this app's toolchain, with a control-interface fix for DACs that don't put AudioControl on interface 0. See [`decent/NOTICE.md`](decent/NOTICE.md).
 - **[xiph/flac](https://github.com/xiph/flac)** (BSD): libFLAC, used by both the bit-perfect native engine and the AcoustID parser.
@@ -185,5 +180,5 @@ Aurora uses a number of other projects. The notable ones:
 
 Vendored `decent/` modules retain their MIT licensing; bundled xiph/flac and Chromaprint sources keep their original licenses (see the file headers). decent-player's AGPL proof-of-concept harness is not included, only its MIT libraries.
 
-Aurora isn't affiliated with or endorsed by Navidrome, Jellyfin, Green Music App, Last.fm, ListenBrainz, Discord, or any DAC manufacturer; brand and device names are used descriptively, for interoperability.
+Sonethyst isn't affiliated with or endorsed by Navidrome, Jellyfin, Green Music App, Last.fm, ListenBrainz, Discord, or any DAC manufacturer; brand and device names are used descriptively, for interoperability.
 

@@ -124,6 +124,6 @@ class MusicBrainzClient {
     }
 
     private companion object {
-        const val USER_AGENT = "Aurora/1.0 ( https://github.com/aurora-music/aurora )"
+        const val USER_AGENT = "Sonethyst/0.1 (https://github.com/sqwiziiy/Sonethyst)"
     }
 }

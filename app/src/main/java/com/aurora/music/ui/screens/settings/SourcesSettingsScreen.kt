@@ -87,7 +87,7 @@ fun SourcesSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
             }
             item {
                 Text(
-                    "When a track is available from more than one place, Aurora plays it from the first " +
+                    "When a track is available from more than one place, Sonethyst plays it from the first " +
                         "source below that has it. Reorder to taste.",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),

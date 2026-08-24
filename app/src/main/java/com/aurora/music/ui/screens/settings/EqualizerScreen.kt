@@ -179,7 +179,7 @@ private fun ToneEngineCard(mode: Int, onSelect: (Int) -> Unit) {
         Text(
             when (mode) {
                 DspMode.SYSTEM -> "Android system effects — device-dependent."
-                DspMode.CUSTOM -> "Aurora software DSP — works on any device. Overrides bit-perfect output. Restart playback after switching engines."
+                DspMode.CUSTOM -> "Sonethyst software DSP — works on any device. Overrides bit-perfect output. Restart playback after switching engines."
                 else -> "All tone shaping bypassed."
             },
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
