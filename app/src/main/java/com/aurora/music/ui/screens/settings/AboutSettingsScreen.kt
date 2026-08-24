@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aurora.music.AuroraApplication
+import com.aurora.music.BuildConfig
 import com.aurora.music.data.ServerType
 
 @Composable
@@ -37,7 +38,7 @@ fun AboutSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
     val session by container.settingsStore.session.collectAsStateWithLifecycle(initialValue = null)
 
     Column(Modifier.fillMaxWidth()) {
-        SettingsTopBar("About Aurora", onBack)
+        SettingsTopBar("About Sonethyst", onBack)
         Column(
             Modifier.fillMaxWidth().padding(bottom = contentPadding.calculateBottomPadding() + 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -49,20 +50,34 @@ fun AboutSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
                 contentAlignment = Alignment.Center,
             ) { Icon(Icons.Filled.GraphicEq, null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(44.dp)) }
             Spacer(Modifier.height(14.dp))
-            val isJellyfin = session?.type == ServerType.JELLYFIN
-            Text("Aurora", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
-            Text("Version 1.0  •  ${if (isJellyfin) "Jellyfin" else "Navidrome"} client", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val clientType = when (session?.type) {
+                ServerType.JELLYFIN -> "Jellyfin"
+                ServerType.SUBSONIC -> "Navidrome"
+                ServerType.SPOTIFY -> "Spotify"
+                ServerType.LOCAL -> "Local"
+                null -> "Local"
+            }
+            val protocol = when (session?.type) {
+                ServerType.JELLYFIN -> "Jellyfin"
+                ServerType.SUBSONIC -> "Subsonic / OpenSubsonic"
+                ServerType.SPOTIFY -> "Spotify Web API"
+                ServerType.LOCAL -> "Local files"
+                null -> "—"
+            }
+
+            Text("Sonethyst", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+            Text("Version ${BuildConfig.VERSION_NAME}  •  $clientType client", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(24.dp))
 
             InfoRow("Connected server", session?.server?.removePrefix("http://")?.removePrefix("https://") ?: "—")
             InfoRow("Signed in as", session?.username ?: "—")
-            InfoRow("Protocol", if (isJellyfin) "Jellyfin" else "Subsonic / OpenSubsonic")
-            InfoRow("Client name", "Aurora")
+            InfoRow("Protocol", protocol)
+            InfoRow("Client name", "Sonethyst")
             InfoRow("Playback engine", "AndroidX Media3 (ExoPlayer)")
 
             Spacer(Modifier.height(20.dp))
             Text(
-                "Built with Jetpack Compose & Material 3.\nMusic streamed from your own music server.",
+                "Built with Jetpack Compose & Material 3.\nBased in part on Aurora by nessli420 (Apache 2.0).",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

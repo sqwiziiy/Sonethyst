@@ -34,7 +34,7 @@ class JellyfinClient(val session: Session) {
         }
 
     companion object {
-        const val CLIENT_NAME = "Aurora"
+        const val CLIENT_NAME = "Sonethyst"
         const val DEVICE_ID = "aurora-android"
         const val VERSION = "1.0"
 

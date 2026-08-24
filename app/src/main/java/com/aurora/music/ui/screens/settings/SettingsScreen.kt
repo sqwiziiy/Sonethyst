@@ -1,5 +1,7 @@
 package com.aurora.music.ui.screens.settings
 
+import com.aurora.music.BuildConfig
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -160,7 +162,7 @@ fun SettingsScreen(
                     SettingsRowDivider()
                     SettingsNavRow(Icons.Filled.Lock, "Permissions", "Notifications, background, alarms, DAC", onClick = onOpenPermissions)
                     SettingsRowDivider()
-                    SettingsNavRow(Icons.Filled.Info, "About Aurora", value = "v1.0", onClick = onOpenAbout)
+                    SettingsNavRow(Icons.Filled.Info, "About Sonethyst", value = "v${BuildConfig.VERSION_NAME}", onClick = onOpenAbout)
                 }
             }
 

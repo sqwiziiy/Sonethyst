@@ -68,7 +68,7 @@ class SubsonicClient(val session: Session) {
 
     companion object {
         const val API_VERSION = "1.16.1"
-        const val CLIENT_NAME = "Aurora"
+        const val CLIENT_NAME = "Sonethyst"
 
         private fun enc(s: String): String = URLEncoder.encode(s, "UTF-8")
 

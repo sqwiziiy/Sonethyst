@@ -72,7 +72,7 @@ class DiscordRpc(
     private fun buildActivity(song: Song, isPlaying: Boolean, positionSec: Float): JSONObject? {
         if (song.title.isBlank()) return null
         val a = JSONObject()
-            .put("name", "Aurora")
+            .put("name", "Sonethyst")
             .put("type", 2)
             .put("details", song.title)
             .put("state", song.artist.ifBlank { "Unknown artist" })

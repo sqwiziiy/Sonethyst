@@ -61,7 +61,7 @@ class DiscordGateway(
         val props = JSONObject()
             .put("os", "Android")
             .put("browser", "Discord Android")
-            .put("device", "Aurora")
+            .put("device", "Sonethyst")
         val d = JSONObject()
             .put("token", token)
             .put("capabilities", 16381)
