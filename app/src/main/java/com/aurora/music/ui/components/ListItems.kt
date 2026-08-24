@@ -1,7 +1,9 @@
 package com.aurora.music.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.DownloadDone
@@ -51,6 +54,7 @@ import com.aurora.music.model.Artist
 import com.aurora.music.model.Playlist
 import com.aurora.music.model.Song
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SongRow(
     song: Song,
@@ -58,6 +62,9 @@ fun SongRow(
     isLiked: Boolean,
     onClick: () -> Unit,
     onToggleLike: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
+    onArtworkClick: (() -> Unit)? = null,
+    selected: Boolean = false,
     modifier: Modifier = Modifier,
     artworkModifier: Modifier = Modifier,
     index: Int? = null,
@@ -78,12 +85,30 @@ fun SongRow(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick)
+            .background(
+                if (selected) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                } else {
+                    androidx.compose.ui.graphics.Color.Transparent
+                }
+            )
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            )
             .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = artworkModifier,
+            modifier = artworkModifier.then(
+                if (onArtworkClick != null) {
+                    Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable(onClick = onArtworkClick)
+                } else {
+                    Modifier
+                }
+            ),
             contentAlignment = Alignment.Center,
         ) {
             Artwork(song.artworkUrl, song.accent, Modifier.size(52.dp), corner = 10.dp)
@@ -94,6 +119,22 @@ fun SongRow(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(Icons.Filled.GraphicEq, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+                }
+            }
+            if (selected) {
+                Box(
+                    Modifier
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.48f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Filled.CheckCircle,
+                        "Selected",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(26.dp),
+                    )
                 }
             }
         }

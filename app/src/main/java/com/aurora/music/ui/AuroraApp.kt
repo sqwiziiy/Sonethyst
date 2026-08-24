@@ -175,25 +175,42 @@ fun AuroraApp() {
     var showOutput by remember { mutableStateOf(false) }
     var showSleep by remember { mutableStateOf(false) }
 
-    var playlistTarget by remember {
-        mutableStateOf<com.aurora.music.model.Song?>(null)
+    var playlistTargets by remember {
+        mutableStateOf<List<com.aurora.music.model.Song>>(emptyList())
     }
     var playlistPickerPlaylists by remember {
         mutableStateOf<List<com.aurora.music.model.Playlist>>(emptyList())
     }
     var playlistPickerLoading by remember { mutableStateOf(false) }
 
-    fun openPlaylistPicker(song: com.aurora.music.model.Song) {
-        playlistTarget = song
+    fun openPlaylistPickerForSongs(
+        songs: List<com.aurora.music.model.Song>,
+        excludePlaylistId: String? = null,
+    ) {
+        if (songs.isEmpty()) return
+
+        playlistTargets = songs
         playlistPickerLoading = true
 
         scope.launch {
             playlistPickerPlaylists = runCatching {
                 container.repository.allPlaylists()
-            }.getOrDefault(emptyList())
+            }.getOrDefault(emptyList()).filterNot {
+                excludePlaylistId != null && it.id == excludePlaylistId
+            }
 
             playlistPickerLoading = false
         }
+    }
+
+    fun openPlaylistPicker(
+        song: com.aurora.music.model.Song,
+        excludePlaylistId: String? = null,
+    ) {
+        openPlaylistPickerForSongs(
+            listOf(song),
+            excludePlaylistId,
+        )
     }
 
     fun navigateTopLevel(route: String) {
@@ -255,7 +272,7 @@ fun AuroraApp() {
         }
     }
 
-    playlistTarget?.let { target ->
+    playlistTargets.takeIf { it.isNotEmpty() }?.let { targets ->
         PlaylistPickerSheet(
             playlists = playlistPickerPlaylists,
             loading = playlistPickerLoading,
@@ -263,14 +280,18 @@ fun AuroraApp() {
                 scope.launch {
                     val added = container.repository.addToPlaylist(
                         playlist.id,
-                        listOf(target.id),
+                        targets.map { it.id },
                     )
 
-                    playlistTarget = null
+                    playlistTargets = emptyList()
 
                     confirm(
                         if (added) {
-                            "Added to ${playlist.title}"
+                            if (targets.size == 1) {
+                                "Added to ${playlist.title}"
+                            } else {
+                                "Added ${targets.size} tracks to ${playlist.title}"
+                            }
                         } else {
                             "Couldn't add to playlist"
                         }
@@ -281,14 +302,18 @@ fun AuroraApp() {
                 scope.launch {
                     val created = container.repository.createPlaylistFromSongs(
                         name,
-                        listOf(target.id),
+                        targets.map { it.id },
                     )
 
-                    playlistTarget = null
+                    playlistTargets = emptyList()
 
                     confirm(
                         if (created) {
-                            "Created $name and added track"
+                            if (targets.size == 1) {
+                                "Created $name and added track"
+                            } else {
+                                "Created $name and added ${targets.size} tracks"
+                            }
                         } else {
                             "Couldn't create playlist"
                         }
@@ -296,7 +321,7 @@ fun AuroraApp() {
                 }
             },
             onDismiss = {
-                playlistTarget = null
+                playlistTargets = emptyList()
             },
         )
     }
@@ -630,8 +655,59 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             onPlayAll = { songs, index -> playerVM.playCollection(kind, id, songs, index, detailState.data?.info?.songCount ?: songs.size) },
                             onShufflePlay = { songs -> playerVM.shuffleCollection(kind, id, songs, detailState.data?.info?.songCount ?: songs.size) },
                             onAddToQueue = { playerVM.addToQueue(it); confirm("Added to queue") },
+                            onAddSelectedToPlaylist = { songs ->
+                                openPlaylistPickerForSongs(
+                                    songs,
+                                    if (kind == "playlist") id else null,
+                                )
+                            },
+                            onDownloadSelected =
+                                if (!localMode) ({ songs ->
+                                    val pending = songs.filterNot {
+                                        container.downloadManager.isDownloaded(it.id)
+                                    }
+
+                                    pending.forEach {
+                                        container.downloadManager.downloadSong(it)
+                                    }
+
+                                    confirm(
+                                        if (pending.isEmpty()) {
+                                            "Selected tracks already downloaded"
+                                        } else {
+                                            "Downloading ${pending.size} tracks"
+                                        }
+                                    )
+                                }) else null,
+                            onSetSelectedLiked = { songs, liked ->
+                                songs.forEach { song ->
+                                    val currentlyLiked =
+                                        playerState.likedIds.contains(song.id)
+
+                                    if (currentlyLiked != liked) {
+                                        playerVM.toggleLike(song.id)
+                                    }
+                                }
+
+                                confirm(
+                                    if (liked) {
+                                        "Added ${songs.size} tracks to liked"
+                                    } else {
+                                        "Removed ${songs.size} tracks from liked"
+                                    }
+                                )
+                            },
+                            onAddSelectedToQueue = { songs ->
+                                songs.forEach { playerVM.addToQueue(it) }
+                                confirm("Added ${songs.size} tracks to queue")
+                            },
                             onPlayNext = { playerVM.playNext(it); confirm("Playing next") },
-onAddToPlaylist = { openPlaylistPicker(it) },
+onAddToPlaylist = {
+                                openPlaylistPicker(
+                                    it,
+                                    if (kind == "playlist") id else null,
+                                )
+                            },
                             onReorderGrab = {
                                 container.haptic()
                             },
@@ -646,6 +722,24 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                                             ordered.map { it.id },
                                         )
                                         if (!ok) confirm("Couldn't save playlist order")
+                                    }
+                                }) else null,
+                            onRemoveSelectedFromPlaylist =
+                                if (kind == "playlist") ({ songs ->
+                                    scope.launch {
+                                        val removed =
+                                            container.repository.removeFromPlaylist(
+                                                id,
+                                                songs.map { it.id },
+                                            )
+
+                                        confirm(
+                                            if (removed) {
+                                                "Removed ${songs.size} tracks from playlist"
+                                            } else {
+                                                "Couldn't remove selected tracks"
+                                            }
+                                        )
                                     }
                                 }) else null,
                             onRemoveFromPlaylist = if (kind == "playlist") ({ song ->

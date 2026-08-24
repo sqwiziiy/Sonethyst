@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
@@ -43,6 +44,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.TextField
@@ -87,6 +89,11 @@ fun DetailScreen(
     onPlayNext: (Song) -> Unit,
     onAddToPlaylist: (Song) -> Unit,
     onRemoveFromPlaylist: ((Song) -> Unit)? = null,
+    onRemoveSelectedFromPlaylist: ((List<Song>) -> Unit)? = null,
+    onAddSelectedToQueue: ((List<Song>) -> Unit)? = null,
+    onAddSelectedToPlaylist: ((List<Song>) -> Unit)? = null,
+    onDownloadSelected: ((List<Song>) -> Unit)? = null,
+    onSetSelectedLiked: ((List<Song>, Boolean) -> Unit)? = null,
     onReorderPlaylist: ((List<Song>) -> Unit)? = null,
     onReorderGrab: (() -> Unit)? = null,
     onToggleLike: (String) -> Unit,
@@ -142,6 +149,18 @@ fun DetailScreen(
             playlistOrder.clear()
             playlistOrder.addAll(tracks)
         }
+    }
+
+    var selectedTrackIds by remember {
+        mutableStateOf<Set<String>>(emptySet())
+    }
+
+    val selectionMode = selectedTrackIds.isNotEmpty()
+    var selectionMenuOpen by remember { mutableStateOf(false) }
+
+    androidx.compose.runtime.LaunchedEffect(tracks.map { it.id }) {
+        val validIds = tracks.map { it.id }.toSet()
+        selectedTrackIds = selectedTrackIds.intersect(validIds)
     }
 
     var draggingSongId by remember { mutableStateOf<String?>(null) }
@@ -294,20 +313,220 @@ fun DetailScreen(
                 Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    if (info.isArtist) "Popular" else "Tracks",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f),
-                )
-                if (tracks.size > 5) {
+                if (selectionMode) {
                     Icon(
-                        if (searchOpen) Icons.Filled.Close else Icons.Filled.Search,
-                        if (searchOpen) "Close search" else "Search tracks",
+                        Icons.Filled.Close,
+                        "Clear selection",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(40.dp).clip(CircleShape)
-                            .clickable { searchOpen = !searchOpen; if (!searchOpen) query = "" }.padding(8.dp),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .clickable { selectedTrackIds = emptySet() }
+                            .padding(8.dp),
                     )
+
+                    Spacer(Modifier.width(4.dp))
+
+                    Text(
+                        "${selectedTrackIds.size} selected",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f),
+                    )
+
+                    Icon(
+                        Icons.Filled.SelectAll,
+                        "Select all",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .clickable {
+                                selectedTrackIds =
+                                    (if (
+                                        itemKind == "playlist" &&
+                                        onReorderPlaylist != null
+                                    ) playlistOrder else tracks)
+                                        .map { it.id }
+                                        .toSet()
+                            }
+                            .padding(9.dp),
+                    )
+
+                    if (onAddSelectedToPlaylist != null) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.PlaylistAdd,
+                            "Add selected to playlist",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .clickable {
+                                    val selected =
+                                        (if (
+                                            itemKind == "playlist" &&
+                                            onReorderPlaylist != null
+                                        ) playlistOrder else tracks).filter {
+                                            it.id in selectedTrackIds
+                                        }
+
+                                    onAddSelectedToPlaylist(selected)
+                                    selectedTrackIds = emptySet()
+                                }
+                                .padding(9.dp),
+                        )
+                    }
+
+                    if (onAddSelectedToQueue != null) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.QueueMusic,
+                            "Add selected to queue",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .clickable {
+                                    val selected =
+                                        (if (
+                                            itemKind == "playlist" &&
+                                            onReorderPlaylist != null
+                                        ) playlistOrder else tracks).filter {
+                                            it.id in selectedTrackIds
+                                        }
+                                    onAddSelectedToQueue(selected)
+                                    selectedTrackIds = emptySet()
+                                }
+                                .padding(9.dp),
+                        )
+                    }
+
+                    if (
+                        itemKind == "playlist" &&
+                        onRemoveSelectedFromPlaylist != null
+                    ) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            "Remove selected from playlist",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .clickable {
+                                    val selected =
+                                        (if (
+                                            itemKind == "playlist" &&
+                                            onReorderPlaylist != null
+                                        ) playlistOrder else tracks).filter {
+                                            it.id in selectedTrackIds
+                                        }
+                                    onRemoveSelectedFromPlaylist(selected)
+                                    selectedTrackIds = emptySet()
+                                }
+                                .padding(9.dp),
+                        )
+                    }
+
+                    if (
+                        onDownloadSelected != null ||
+                        onSetSelectedLiked != null
+                    ) {
+                        Box {
+                            Icon(
+                                Icons.Filled.MoreVert,
+                                "More selected actions",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .clickable { selectionMenuOpen = true }
+                                    .padding(9.dp),
+                            )
+
+                            DropdownMenu(
+                                expanded = selectionMenuOpen,
+                                onDismissRequest = { selectionMenuOpen = false },
+                            ) {
+                                val selected =
+                                    (if (
+                                        itemKind == "playlist" &&
+                                        onReorderPlaylist != null
+                                    ) playlistOrder else tracks).filter {
+                                        it.id in selectedTrackIds
+                                    }
+
+                                if (onDownloadSelected != null) {
+                                    DropdownMenuItem(
+                                        text = { Text("Download selected") },
+                                        onClick = {
+                                            selectionMenuOpen = false
+                                            onDownloadSelected(selected)
+                                            selectedTrackIds = emptySet()
+                                        },
+                                        leadingIcon = {
+                                            Icon(Icons.Filled.Download, null)
+                                        },
+                                    )
+                                }
+
+                                if (onSetSelectedLiked != null) {
+                                    val allLiked =
+                                        selected.isNotEmpty() &&
+                                        selected.all { it.id in likedIds }
+
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                if (allLiked) {
+                                                    "Remove selected from liked"
+                                                } else {
+                                                    "Add selected to liked"
+                                                }
+                                            )
+                                        },
+                                        onClick = {
+                                            selectionMenuOpen = false
+                                            onSetSelectedLiked(
+                                                selected,
+                                                !allLiked,
+                                            )
+                                            selectedTrackIds = emptySet()
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                if (allLiked) {
+                                                    Icons.Filled.Favorite
+                                                } else {
+                                                    Icons.Filled.FavoriteBorder
+                                                },
+                                                null,
+                                            )
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Text(
+                        if (info.isArtist) "Popular" else "Tracks",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f),
+                    )
+
+                    if (tracks.size > 5) {
+                        Icon(
+                            if (searchOpen) Icons.Filled.Close else Icons.Filled.Search,
+                            if (searchOpen) "Close search" else "Search tracks",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(40.dp).clip(CircleShape)
+                                .clickable {
+                                    searchOpen = !searchOpen
+                                    if (!searchOpen) query = ""
+                                }
+                                .padding(8.dp),
+                        )
+                    }
                 }
             }
         }
@@ -354,12 +573,31 @@ fun DetailScreen(
         ) { i ->
             val s = shown[i]
             val isDragging = draggingSongId == s.id
+            val isSelected = s.id in selectedTrackIds
+
+            val toggleSelection = {
+                selectedTrackIds =
+                    if (isSelected) {
+                        selectedTrackIds - s.id
+                    } else {
+                        selectedTrackIds + s.id
+                    }
+            }
 
             SongRow(
                 song = s,
                 isPlaying = s.id == currentSongId && isPlaying,
                 isLiked = likedIds.contains(s.id),
-                onClick = { onPlayAll(shown, i) },
+                selected = isSelected,
+                onClick = {
+                    if (selectionMode) {
+                        toggleSelection()
+                    } else {
+                        onPlayAll(shown, i)
+                    }
+                },
+                onLongClick = toggleSelection,
+                onArtworkClick = toggleSelection,
                 onToggleLike = { onToggleLike(s.id) },
                 modifier = (
                     if (isDragging) {
@@ -380,7 +618,8 @@ fun DetailScreen(
                     if (
                         itemKind == "playlist" &&
                         onReorderPlaylist != null &&
-                        !searchOpen
+                        !searchOpen &&
+                        !selectionMode
                     ) {
                         Modifier
                             .size(52.dp)
