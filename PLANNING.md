@@ -21,16 +21,16 @@ Sonethyst is an independent Android music player fork based on Aurora.
 - [x] Bootstrap external libFLAC dependency
 - [x] Produce successful upstream debug build
 - [x] Remove hard dependency on unavailable Circular Std
-- [ ] Rename app to Sonethyst
-- [ ] Change application ID to `com.mentality.sonethyst`
-- [ ] Decide whether/when to migrate Kotlin namespace/packages
-- [ ] Replace Aurora-specific URI schemes and integration identifiers
-- [ ] Add Sonethyst branding and launcher icon
-- [ ] Adopt permanent open-source typography
+- [x] Rename app to Sonethyst
+- [x] Change application ID to `com.mentality.sonethyst`
+- [ ] Migrate Kotlin namespace/packages from `com.aurora.music` to `com.mentality.sonethyst`
+- [x] Replace Aurora-specific URI schemes and integration identifiers
+- [x] Add Sonethyst branding and launcher icon
+- [x] Adopt permanent open-source typography
 - [ ] Create secure release signing configuration
-- [ ] Ensure secrets/keystores are never committed
+- [x] Ensure secrets/keystores are never committed
 - [ ] Verify Aurora and Sonethyst can be installed side by side
-- [ ] Add build/setup documentation
+- [x] Add build/setup documentation
 
 ## Design principles
 
@@ -71,8 +71,8 @@ Sonethyst is an independent Android music player fork based on Aurora.
 ## Playlist / library performance
 
 - [x] Optimize scrolling performance for large song, album, artist and playlist lists
-- [ ] Use stable LazyColumn/LazyGrid item keys everywhere
-- [ ] Add appropriate `contentType` values for heterogeneous lazy lists
+- [x] Use stable LazyColumn/LazyGrid item keys everywhere
+- [x] Add appropriate `contentType` values for heterogeneous lazy lists
 - [ ] Minimize unnecessary Compose recompositions while scrolling
 - [ ] Avoid reloading complete library datasets when only one playlist/item changed
 - [x] Optimize album-art loading and caching for list thumbnails
