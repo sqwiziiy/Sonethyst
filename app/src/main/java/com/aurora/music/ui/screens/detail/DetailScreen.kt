@@ -88,6 +88,7 @@ fun DetailScreen(
     onAddToPlaylist: (Song) -> Unit,
     onRemoveFromPlaylist: ((Song) -> Unit)? = null,
     onReorderPlaylist: ((List<Song>) -> Unit)? = null,
+    onReorderGrab: (() -> Unit)? = null,
     onToggleLike: (String) -> Unit,
     onOpenDetail: (String, String) -> Unit,
     itemKind: String,
@@ -360,7 +361,13 @@ fun DetailScreen(
                 isLiked = likedIds.contains(s.id),
                 onClick = { onPlayAll(shown, i) },
                 onToggleLike = { onToggleLike(s.id) },
-                modifier = Modifier
+                modifier = (
+                    if (isDragging) {
+                        Modifier
+                    } else {
+                        Modifier.animateItem()
+                    }
+                )
                     .padding(horizontal = 8.dp)
                     .zIndex(if (isDragging) 1f else 0f)
                     .graphicsLayer {
@@ -382,6 +389,7 @@ fun DetailScreen(
                                     onDragStart = {
                                         draggingSongId = s.id
                                         dragOffsetY = 0f
+                                        onReorderGrab?.invoke()
                                     },
                                     onDragCancel = {
                                         draggingSongId = null

@@ -632,6 +632,9 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             onAddToQueue = { playerVM.addToQueue(it); confirm("Added to queue") },
                             onPlayNext = { playerVM.playNext(it); confirm("Playing next") },
 onAddToPlaylist = { openPlaylistPicker(it) },
+                            onReorderGrab = {
+                                container.haptic()
+                            },
                             onReorderPlaylist =
                                 if (
                                     kind == "playlist" &&
