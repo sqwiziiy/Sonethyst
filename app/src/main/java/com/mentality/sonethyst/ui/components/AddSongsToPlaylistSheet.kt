@@ -69,6 +69,10 @@ fun AddSongsToPlaylistSheet(
         songs.filter { it.id in selectedIds }
     }
 
+    val visibleIds = remember(visible) {
+        visible.mapTo(mutableSetOf()) { it.id }
+    }
+
     ModalBottomSheet(
         onDismissRequest = {
             if (!saving) onDismiss()
@@ -156,6 +160,13 @@ fun AddSongsToPlaylistSheet(
                             contentType = { "song-picker-row" },
                         ) { song ->
                             val selected = song.id in selectedIds
+                            val subtitle = remember(song.artist, song.album) {
+                                when {
+                                    song.artist.isBlank() -> song.album
+                                    song.album.isBlank() -> song.artist
+                                    else -> "${song.artist} • ${song.album}"
+                                }
+                            }
 
                             ListItem(
                                 headlineContent = {
@@ -167,12 +178,7 @@ fun AddSongsToPlaylistSheet(
                                 },
                                 supportingContent = {
                                     Text(
-                                        listOf(
-                                            song.artist,
-                                            song.album,
-                                        )
-                                            .filter { it.isNotBlank() }
-                                            .joinToString(" • "),
+                                        subtitle,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )
@@ -220,9 +226,6 @@ fun AddSongsToPlaylistSheet(
                 TextButton(
                     enabled = visible.isNotEmpty() && !saving,
                     onClick = {
-                        val visibleIds =
-                            visible.map { it.id }.toSet()
-
                         selectedIds =
                             if (
                                 visibleIds.all {

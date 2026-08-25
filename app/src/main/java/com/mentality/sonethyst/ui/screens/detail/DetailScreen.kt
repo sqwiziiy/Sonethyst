@@ -205,6 +205,25 @@ fun DetailScreen(
     var dragOffsetY by remember { mutableStateOf(0f) }
     val density = androidx.compose.ui.platform.LocalDensity.current
     val reorderStepPx = with(density) { 68.dp.toPx() }
+
+    val reorderEnabled =
+        itemKind == "playlist" && onReorderPlaylist != null
+
+    val shownTracks by remember(tracks, reorderEnabled) {
+        androidx.compose.runtime.derivedStateOf {
+            val baseTracks: List<Song> =
+                if (reorderEnabled) playlistOrder else tracks
+
+            if (query.isBlank() || !searchOpen) {
+                baseTracks
+            } else {
+                baseTracks.filter {
+                    it.title.contains(query, ignoreCase = true) ||
+                        it.artist.contains(query, ignoreCase = true)
+                }
+            }
+        }
+    }
     // artists often lack a server image fall back to enriched wiki photo
     val effectiveArt = info.artUrl.ifBlank { artistInfo?.imageUrl.orEmpty() }
     val accent by com.mentality.sonethyst.util.rememberDominantColor(effectiveArt, info.accent)
@@ -618,20 +637,12 @@ fun DetailScreen(
             }
         }
 
-        val baseTracks =
-            if (itemKind == "playlist" && onReorderPlaylist != null) playlistOrder
-            else tracks
-
-        val shown = if (query.isBlank() || !searchOpen) baseTracks
-            else baseTracks.filter {
-                it.title.contains(query, true) || it.artist.contains(query, true)
-            }
-
         items(
-            count = shown.size,
-            key = { i -> shown[i].id },
+            count = shownTracks.size,
+            key = { i -> shownTracks[i].id },
+            contentType = { "detail-song" },
         ) { i ->
-            val s = shown[i]
+            val s = shownTracks[i]
             val isDragging = draggingSongId == s.id
             val isSelected = s.id in selectedTrackIds
 
@@ -653,7 +664,7 @@ fun DetailScreen(
                     if (selectionMode) {
                         toggleSelection()
                     } else {
-                        onPlayAll(shown, i)
+                        onPlayAll(shownTracks, i)
                     }
                 },
                 onLongClick = toggleSelection,

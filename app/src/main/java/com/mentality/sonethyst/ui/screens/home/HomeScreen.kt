@@ -114,7 +114,10 @@ fun HomeScreen(
 
         if (data.newReleases.isNotEmpty() && HomeSection.HERO !in hidden) {
             item {
-                val heroItems = data.newReleases.take(5)
+                val heroItems =
+                    androidx.compose.runtime.remember(data.newReleases) {
+                        data.newReleases.take(5)
+                    }
                 val pagerState = rememberPagerState(pageCount = { heroItems.size })
                 Column {
                     HorizontalPager(
