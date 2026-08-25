@@ -8,7 +8,10 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.coroutines.resume
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.Tag
@@ -91,7 +94,7 @@ class TagEditor(private val context: Context) {
                 af.commit()
                 resolver.openOutputStream(uri, "wt")?.use { out -> tmp.inputStream().use { it.copyTo(out) } }
                     ?: return@withContext false
-                runCatching { MediaScannerConnection.scanFile(context, arrayOf(path), null, null) }
+                awaitMediaStoreRescan(path)
                 true
             } catch (t: Throwable) {
                 android.util.Log.e("TagEditor", "write($path) failed", t)
@@ -100,6 +103,24 @@ class TagEditor(private val context: Context) {
                 runCatching { tmp.delete() }
             }
         }
+
+    private suspend fun awaitMediaStoreRescan(path: String) {
+        if (path.isBlank()) return
+
+        withTimeoutOrNull(5_000L) {
+            suspendCancellableCoroutine { continuation ->
+                MediaScannerConnection.scanFile(
+                    context,
+                    arrayOf(path),
+                    null,
+                ) { _, _ ->
+                    if (continuation.isActive) {
+                        continuation.resume(Unit)
+                    }
+                }
+            }
+        }
+    }
 
     private fun Tag.firstOrEmpty(key: FieldKey): String = runCatching { getFirst(key) ?: "" }.getOrDefault("")
 

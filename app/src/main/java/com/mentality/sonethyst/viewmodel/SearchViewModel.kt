@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -33,7 +34,22 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         viewModelScope.launch {
-            container.offline.collect { if (_state.value.query.isNotBlank()) onQuery(_state.value.query) }
+            container.offline.collect {
+                refreshCurrentQuery()
+            }
+        }
+
+        viewModelScope.launch {
+            container.libraryReload.drop(1).collect {
+                refreshCurrentQuery()
+            }
+        }
+    }
+
+    private fun refreshCurrentQuery() {
+        val query = _state.value.query
+        if (query.isNotBlank()) {
+            onQuery(query)
         }
     }
 
