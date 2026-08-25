@@ -111,6 +111,7 @@ Sonethyst is an independent Android music player fork based on Aurora.
 - [ ] Metadata backup/restore
 - [ ] Lyrics editor
 - [ ] Synced-lyrics offset/editor
+- [ ] Refresh edited track metadata immediately across the UI without requiring screen re-entry
 - [x] Improve M3U matching for Unicode/non-Latin metadata
 - [x] Use local path/basename before fuzzy M3U matching where possible
 
