@@ -108,6 +108,10 @@ fun SonethystApp() {
     }
     val localMode = session?.type == com.mentality.sonethyst.data.ServerType.LOCAL
     val serverTagEditing = session?.let { container.repository.supportsServerTagEdit } ?: false
+    val supportsRatings =
+        session?.let {
+            container.repository.supportsRatings
+        } ?: false
     // pins scoped to the active connection
     val currentServer = session?.server ?: ""
     val allPins by container.settingsStore.pins.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -133,6 +137,39 @@ fun SonethystApp() {
             }
         }
     }
+
+    val onSetRating:
+        (com.mentality.sonethyst.model.Song, Int) -> Unit =
+        remember(
+            container,
+            supportsRatings,
+            confirm,
+            scope,
+        ) {
+            { song, rating ->
+                if (supportsRatings) {
+                    scope.launch {
+                        val updated =
+                            container.setSongRating(
+                                song.id,
+                                rating,
+                            )
+
+                        confirm(
+                            if (updated) {
+                                if (rating == 0) {
+                                    "Rating cleared"
+                                } else {
+                                    "Rated ${rating}/5"
+                                }
+                            } else {
+                                "Couldn't update rating"
+                            }
+                        )
+                    }
+                }
+            }
+        }
 
     val onDownload: (com.mentality.sonethyst.model.Song) -> Unit =
         remember(container, confirm) {
@@ -615,6 +652,12 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             onRemoveRecent = { searchVM.removeRecent(it) },
                             onClearRecents = { searchVM.clearRecents() },
                             onCommitSearch = { searchVM.commit() },
+                            onSetRating =
+                                if (supportsRatings) {
+                                    onSetRating
+                                } else {
+                                    null
+                                },
                         )
                     }
                     composable(Routes.LIBRARY) {
@@ -717,6 +760,12 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             pins = pins,
                             onEditTags = { song -> navController.navigate(Routes.tagEdit(song.id)) },
                             serverTagEditing = serverTagEditing,
+                            onSetRating =
+                                if (supportsRatings) {
+                                    onSetRating
+                                } else {
+                                    null
+                                },
                         )
                     }
                     composable(
@@ -996,6 +1045,12 @@ onAddToPlaylist = {
                             onEditTags = { song -> navController.navigate(Routes.tagEdit(song.id)) },
                             serverTagEditing = serverTagEditing,
                             artistInfo = detailState.artistInfo,
+                            onSetRating =
+                                if (supportsRatings) {
+                                    onSetRating
+                                } else {
+                                    null
+                                },
                         )
                     }
                     composable(

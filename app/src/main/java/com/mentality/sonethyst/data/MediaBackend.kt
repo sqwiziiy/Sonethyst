@@ -19,6 +19,14 @@ interface MediaBackend {
     val supportsGenres: Boolean get() = false
 
     suspend fun allGenres(): List<Genre> = emptyList()
+
+    val supportsRatings: Boolean get() = false
+
+    suspend fun setRating(
+        id: String,
+        rating: Int,
+    ): Boolean = false
+
     suspend fun allSongs(): List<Song>
 
     suspend fun songsByGenre(

@@ -51,6 +51,7 @@ class SubsonicBackend(
             bitDepth = bitDepth,
             replayGainTrack = replayGain?.trackGain?.toFloat() ?: 0f,
             replayGainAlbum = replayGain?.albumGain?.toFloat() ?: 0f,
+            rating = userRating.coerceIn(0, 5),
             path = path ?: "",
         )
         return localize(base)
@@ -116,6 +117,8 @@ class SubsonicBackend(
     }.getOrDefault(emptyList())
 
     override val supportsGenres: Boolean get() = true
+
+    override val supportsRatings: Boolean get() = true
 
     override suspend fun allGenres(): List<Genre> =
         runCatching {
@@ -183,6 +186,17 @@ class SubsonicBackend(
         c.api.search3("", artistCount = 0, albumCount = 0, songCount = limit)
             .response.searchResult3?.song?.map { it.toModel() }.orEmpty()
     }.getOrDefault(emptyList()).ifEmpty { allSongs() }
+
+    override suspend fun setRating(
+        id: String,
+        rating: Int,
+    ): Boolean =
+        runCatching {
+            c.api.setRating(
+                id = id,
+                rating = rating.coerceIn(0, 5),
+            ).response.isOk
+        }.getOrDefault(false)
 
     override suspend fun starredSongs(): List<Song> = runCatching {
         c.api.getStarred2().response.starred2?.song?.map { it.toModel() }.orEmpty()

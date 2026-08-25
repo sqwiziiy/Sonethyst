@@ -126,6 +126,7 @@ fun LibraryScreen(
     pins: List<com.mentality.sonethyst.data.Pin> = emptyList(),
     onEditTags: ((Song) -> Unit)? = null,
     serverTagEditing: Boolean = false,
+    onSetRating: ((Song, Int) -> Unit)? = null,
 ) {
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     var showCreate by remember { mutableStateOf(false) }
@@ -333,6 +334,12 @@ fun LibraryScreen(
                         onRemoveDownload = if (canDownload) ({ onRemoveDownload(s.id) }) else null,
                         onEditTags = onEditTags?.let { cb -> { cb(s) } },
                         serverTagEditing = serverTagEditing,
+                        onSetRating =
+                            onSetRating?.let { cb ->
+                                { rating ->
+                                    cb(s, rating)
+                                }
+                            },
                     )
                 }
 

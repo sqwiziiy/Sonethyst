@@ -124,6 +124,7 @@ fun DetailScreen(
     onEditTags: ((Song) -> Unit)? = null,
     serverTagEditing: Boolean = false,
     artistInfo: com.mentality.sonethyst.data.remote.ArtistInfo? = null,
+    onSetRating: ((Song, Int) -> Unit)? = null,
 ) {
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     var headerMenu by remember { mutableStateOf(false) }
@@ -183,10 +184,16 @@ fun DetailScreen(
         androidx.compose.runtime.mutableStateListOf<Song>()
     }
 
-    androidx.compose.runtime.LaunchedEffect(trackIds) {
+    androidx.compose.runtime.LaunchedEffect(tracks) {
         if (playlistOrder.map { it.id } != trackIds) {
             playlistOrder.clear()
             playlistOrder.addAll(tracks)
+        } else {
+            tracks.forEachIndexed { index, track ->
+                if (playlistOrder[index] != track) {
+                    playlistOrder[index] = track
+                }
+            }
         }
     }
 
@@ -758,6 +765,12 @@ fun DetailScreen(
                 onRemoveDownload = if (canDownload) ({ onRemoveDownload(s.id) }) else null,
                 onEditTags = onEditTags?.let { cb -> { cb(s) } },
                 serverTagEditing = serverTagEditing,
+                onSetRating =
+                    onSetRating?.let { cb ->
+                        { rating ->
+                            cb(s, rating)
+                        }
+                    },
             )
         }
 

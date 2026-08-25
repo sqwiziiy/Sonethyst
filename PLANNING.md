@@ -85,7 +85,7 @@ Sonethyst is an independent Android music player fork based on Aurora.
 ## Phase 2 — Library
 
 - [x] Genres
-- [ ] Ratings
+- [x] Ratings
 - [ ] Custom tags
 - [ ] Hide tracks/albums
 - [x] Local music folder management in Settings

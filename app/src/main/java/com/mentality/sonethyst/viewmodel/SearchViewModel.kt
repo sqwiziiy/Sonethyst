@@ -44,6 +44,33 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
                 refreshCurrentQuery()
             }
         }
+        viewModelScope.launch {
+            container.ratingChanges.collect { change ->
+                _state.update { current ->
+                    current.copy(
+                        results =
+                            current.results.copy(
+                                songs =
+                                    current.results.songs.map {
+                                        song ->
+                                        if (
+                                            song.id ==
+                                                change.songId
+                                        ) {
+                                            song.copy(
+                                                rating =
+                                                    change.rating
+                                            )
+                                        } else {
+                                            song
+                                        }
+                                    }
+                            )
+                    )
+                }
+            }
+        }
+
     }
 
     private fun refreshCurrentQuery() {

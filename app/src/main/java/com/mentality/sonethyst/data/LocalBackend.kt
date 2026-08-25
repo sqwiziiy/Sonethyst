@@ -17,6 +17,19 @@ class LocalBackend(
     override val session: Session,
 ) : MediaBackend {
 
+    private fun Song.withRating(): Song {
+        val stored = store.rating(id)
+
+        return if (rating == stored) {
+            this
+        } else {
+            copy(rating = stored)
+        }
+    }
+
+    private fun List<Song>.withRatings(): List<Song> =
+        map { song -> song.withRating() }
+
     private fun collageCover(tracks: List<Song>): String {
         val artwork = tracks
             .map { it.artworkUrl }
@@ -109,6 +122,8 @@ class LocalBackend(
 
     override val supportsGenres: Boolean get() = true
 
+    override val supportsRatings: Boolean get() = true
+
     override suspend fun allGenres(): List<Genre> {
         library.ensureLoaded()
         return library.genres
@@ -123,6 +138,7 @@ class LocalBackend(
         return library.songsByGenre(genreId)
             .drop(offset.coerceAtLeast(0))
             .take(limit.coerceAtLeast(0))
+            .withRatings()
     }
 
     override suspend fun genreSongCount(
@@ -133,25 +149,32 @@ class LocalBackend(
     }
     override suspend fun allSongs(): List<Song> {
         library.ensureLoaded()
-        return library.songs
+        return library.songs.withRatings()
     }
 
     override suspend fun librarySongs(limit: Int): List<Song> {
         library.ensureLoaded()
-        return library.songs.take(limit.coerceAtLeast(0))
+        return library.songs
+            .take(limit.coerceAtLeast(0))
+            .withRatings()
     }
 
     override suspend fun starredSongs(): List<Song> {
         library.ensureLoaded()
         val liked = store.likedIds()
-        return library.songs.filter { it.id in liked }
+        return library.songs
+            .filter { it.id in liked }
+            .withRatings()
     }
 
     override suspend fun starredCount(): Int = starredSongs().size
 
     override suspend fun starredIds(): Set<String> = store.likedIds()
 
-    override suspend fun songFor(id: String): Song? { library.ensureLoaded(); return library.song(id) }
+    override suspend fun songFor(id: String): Song? {
+        library.ensureLoaded()
+        return library.song(id)?.withRating()
+    }
 
     override suspend fun likedSongIds(ids: List<String>): Set<String> {
         val liked = store.likedIds()
@@ -163,7 +186,15 @@ class LocalBackend(
         val q = query.trim()
         if (q.isBlank()) return SearchResults()
         return SearchResults(
-            songs = library.songs.filter { it.title.contains(q, true) || it.artist.contains(q, true) || it.album.contains(q, true) }.take(60),
+            songs =
+                library.songs
+                    .filter {
+                        it.title.contains(q, true) ||
+                            it.artist.contains(q, true) ||
+                            it.album.contains(q, true)
+                    }
+                    .take(60)
+                    .withRatings(),
             albums = library.albums.filter { it.title.contains(q, true) || it.artist.contains(q, true) }.take(30),
             artists = library.artists.filter { it.name.contains(q, true) }.take(30),
             playlists = store.playlists().map { it.toPlaylist() }.filter { it.title.contains(q, true) }.take(20),
@@ -177,14 +208,16 @@ class LocalBackend(
         val seed = library.song(seedId)
         val sameArtist = seed?.let { s -> library.songsByArtistId(s.artistId).filter { it.id != seedId } }.orEmpty()
         val rest = library.songs.filter { it.id != seedId && it !in sameArtist }.shuffled()
-        return (sameArtist.shuffled() + rest).take(40)
+        return (sameArtist.shuffled() + rest)
+            .take(40)
+            .withRatings()
     }
 
     override suspend fun detail(kind: String, id: String): DetailData? {
         library.ensureLoaded()
         return when (kind) {
             "album" -> {
-                val tracks = library.songsByAlbumId(id)
+                val tracks = library.songsByAlbumId(id).withRatings()
                 val album = library.albums.firstOrNull { it.id == id } ?: return null
                 DetailData(
                     info = DetailInfo(album.title, album.artist, album.artworkUrl, accentFor(id), false, tracks.size, "Album"),
@@ -193,7 +226,7 @@ class LocalBackend(
             }
             "artist" -> {
                 val artist = library.artists.firstOrNull { it.id == id } ?: return null
-                val tracks = library.songsByArtistId(id)
+                val tracks = library.songsByArtistId(id).withRatings()
                 val albums = library.albumsByArtistId(id)
                 DetailData(
                     info = DetailInfo(artist.name, "${tracks.size} song${if (tracks.size == 1) "" else "s"}", artist.imageUrl, accentFor(id), true, tracks.size, "Artist"),
@@ -203,7 +236,10 @@ class LocalBackend(
             }
             "playlist" -> {
                 val pl = store.playlist(id) ?: return null
-                val tracks = pl.trackIds.orEmpty().mapNotNull { library.song(it) }
+                val tracks =
+                    pl.trackIds.orEmpty()
+                        .mapNotNull { library.song(it) }
+                        .withRatings()
                 DetailData(
                     info = DetailInfo(
                         pl.title ?: "",
@@ -228,6 +264,15 @@ class LocalBackend(
             else -> null
         }
     }
+
+    override suspend fun setRating(
+        id: String,
+        rating: Int,
+    ): Boolean =
+        store.setRating(
+            id,
+            rating.coerceIn(0, 5),
+        )
 
     override suspend fun setStarred(id: String, starred: Boolean, kind: String): Boolean = store.setLiked(id, starred)
 
@@ -278,7 +323,7 @@ class LocalBackend(
             id = base,
             title = if (folderId.isBlank()) "Folders" else base.substringAfterLast('/'),
             folders = subdirs.map { FolderNode("$base/$it", it) },
-            songs = tracks,
+            songs = tracks.withRatings(),
         )
     }
 

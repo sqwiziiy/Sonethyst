@@ -22,6 +22,7 @@ data class Song(
     val replayGainTrack: Float = 0f,
     val replayGainAlbum: Float = 0f,
     val genres: List<String> = emptyList(),
+    val rating: Int = 0,            // 0 = unrated, 1..5 = personal rating
     val path: String = "",   // source file path when the backend exposes one (M3U export)
 )
 

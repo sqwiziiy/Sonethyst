@@ -13,7 +13,15 @@ data class ItemsResult(
 )
 
 data class NameIdPair(val Id: String? = null, val Name: String? = null)
-data class UserDataDto(val IsFavorite: Boolean = false, val PlayCount: Int = 0)
+data class UserDataDto(
+    val IsFavorite: Boolean = false,
+    val PlayCount: Int = 0,
+    val Rating: Double? = null,
+)
+
+data class UpdateUserItemDataDto(
+    val Rating: Double? = null,
+)
 
 data class MediaStreamDto(
     val Type: String? = null,

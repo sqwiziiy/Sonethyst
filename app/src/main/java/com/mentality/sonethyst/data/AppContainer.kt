@@ -17,12 +17,18 @@ import com.mentality.sonethyst.model.Song
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 // bitPerfect true only when samples reach output untouched float passthrough no dsp/mixing
+data class SongRatingChange(
+    val songId: String,
+    val rating: Int,
+)
+
 data class SignalPath(
     val active: Boolean = false,
     val codec: String = "",
@@ -274,6 +280,14 @@ class AppContainer(context: Context) {
     // Playlist-only mutations must not force albums/artists/songs to reload.
     private val _playlistReload = MutableStateFlow(0)
     val playlistReload: StateFlow<Int> = _playlistReload.asStateFlow()
+
+    // Rating mutations patch already-loaded Song objects in place instead of
+    // forcing complete library/search/detail reloads.
+    private val _ratingChanges =
+        MutableSharedFlow<SongRatingChange>(
+            extraBufferCapacity = 16,
+        )
+    val ratingChanges = _ratingChanges.asSharedFlow()
     @Volatile private var lastAccountKey: String? = null
     private fun accountKey(s: Session?): String = s?.accountKey() ?: ""
 
@@ -298,6 +312,30 @@ class AppContainer(context: Context) {
         smartEngine = smartEngine,
         onPlaylistChanged = { _playlistReload.value++ },
     )
+
+    suspend fun setSongRating(
+        songId: String,
+        rating: Int,
+    ): Boolean {
+        val safe = rating.coerceIn(0, 5)
+
+        val updated =
+            repository.setRating(
+                songId,
+                safe,
+            )
+
+        if (updated) {
+            _ratingChanges.emit(
+                SongRatingChange(
+                    songId = songId,
+                    rating = safe,
+                )
+            )
+        }
+
+        return updated
+    }
 
     suspend fun refreshLocalLibrary() {
         localLibrary.refresh()

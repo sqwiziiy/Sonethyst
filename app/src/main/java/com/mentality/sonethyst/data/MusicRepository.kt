@@ -128,6 +128,11 @@ class MusicRepository(
             !offline &&
                 backend?.supportsGenres == true
 
+    val supportsRatings: Boolean
+        get() =
+            !offline &&
+                backend?.supportsRatings == true
+
     suspend fun allGenres(): List<Genre> =
         if (offline) {
             emptyList()
@@ -476,6 +481,18 @@ class MusicRepository(
 
     suspend fun deletePlaylist(id: String): Boolean =
         playlistMutationResult(backend?.deletePlaylist(id) ?: false)
+
+    suspend fun setRating(
+        id: String,
+        rating: Int,
+    ): Boolean {
+        if (offline) return false
+
+        return backend?.setRating(
+            id,
+            rating.coerceIn(0, 5),
+        ) ?: false
+    }
 
     // playlists arent server-starrable handled locally by the caller
     suspend fun setStarred(id: String, starred: Boolean, kind: String = "song"): Boolean =

@@ -47,6 +47,35 @@ class DetailViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
+        viewModelScope.launch {
+            container.ratingChanges.collect { change ->
+                _state.update { current ->
+                    val data = current.data
+                        ?: return@update current
+
+                    current.copy(
+                        data =
+                            data.copy(
+                                tracks =
+                                    data.tracks.map { song ->
+                                        if (
+                                            song.id ==
+                                                change.songId
+                                        ) {
+                                            song.copy(
+                                                rating =
+                                                    change.rating
+                                            )
+                                        } else {
+                                            song
+                                        }
+                                    }
+                            )
+                    )
+                }
+            }
+        }
+
     }
 
     private var loadedKey: String? = null

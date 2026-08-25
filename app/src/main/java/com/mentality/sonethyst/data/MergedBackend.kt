@@ -109,6 +109,9 @@ class MergedBackend(
     override val supportsGenres: Boolean
         get() = sources.any { it.supportsGenres }
 
+    override val supportsRatings: Boolean
+        get() = sources.any { it.supportsRatings }
+
     override suspend fun allGenres(): List<Genre> {
         val merged = linkedMapOf<String, Genre>()
 
@@ -246,6 +249,17 @@ class MergedBackend(
     override suspend fun songFor(id: String): Song? = route(id) { src, i, oid -> src.songFor(oid)?.wrap(i) }
     override suspend fun radio(seedId: String): List<Song> = route(seedId) { src, i, oid -> src.radio(oid).map { it.wrap(i) } } ?: emptyList()
     override suspend fun scrobble(id: String) { route(id) { src, _, oid -> src.scrobble(oid) } }
+    override suspend fun setRating(
+        id: String,
+        rating: Int,
+    ): Boolean =
+        route(id) { src, _, oid ->
+            src.setRating(
+                oid,
+                rating.coerceIn(0, 5),
+            )
+        } ?: false
+
     override suspend fun setStarred(id: String, starred: Boolean, kind: String): Boolean =
         route(id) { src, _, oid -> src.setStarred(oid, starred, kind) } ?: false
 

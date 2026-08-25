@@ -59,6 +59,14 @@ interface JellyfinApi {
     @POST("Users/{userId}/PlayedItems/{id}")
     suspend fun markPlayed(@Path("userId") userId: String, @Path("id") id: String): Response<Unit>
 
+    @POST("UserItems/{id}/UserData")
+    suspend fun updateUserData(
+        @Path("id") id: String,
+        @Query("userId") userId: String,
+        @Body body: UpdateUserItemDataDto,
+    ): Response<UserDataDto>
+
+
     @POST("Playlists")
     suspend fun createPlaylist(@Body body: CreatePlaylistRequest): CreatePlaylistResult
 

@@ -87,6 +87,12 @@ interface SubsonicApi {
         @Query("songCount") songCount: Int = 30,
     ): SubsonicEnvelope
 
+    @GET("rest/setRating.view")
+    suspend fun setRating(
+        @Query("id") id: String,
+        @Query("rating") rating: Int,
+    ): SubsonicEnvelope
+
     @GET("rest/star.view")
     suspend fun star(
         @Query("id") id: String? = null,

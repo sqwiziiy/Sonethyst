@@ -57,6 +57,12 @@ class JellyfinBackend(
             bitrateKbps = (source?.Bitrate ?: 0) / 1000,
             sampleRateHz = audioStream?.SampleRate ?: 0,
             bitDepth = audioStream?.BitDepth ?: 0,
+            rating =
+                kotlin.math.round(
+                    (UserData?.Rating ?: 0.0) / 2.0
+                )
+                    .toInt()
+                    .coerceIn(0, 5),
             path = Path ?: "",
         )
         return localize(base)
@@ -120,6 +126,8 @@ class JellyfinBackend(
         items(mapOf("IncludeItemTypes" to "Playlist", "Recursive" to "true", "SortBy" to "SortName")).map { it.toPlaylist() }
 
     override val supportsGenres: Boolean get() = true
+
+    override val supportsRatings: Boolean get() = true
 
     override suspend fun allGenres(): List<Genre> =
         runCatching {
@@ -192,6 +200,26 @@ class JellyfinBackend(
 
     override suspend fun librarySongs(limit: Int): List<Song> =
         items(mapOf("IncludeItemTypes" to "Audio", "Recursive" to "true", "SortBy" to "SortName", "Limit" to "$limit", "Fields" to "MediaSources,Path,Genres")).map { it.toSong() }
+
+    override suspend fun setRating(
+        id: String,
+        rating: Int,
+    ): Boolean =
+        runCatching {
+            client.api.updateUserData(
+                id = id,
+                userId = uid,
+                body =
+                    com.mentality.sonethyst.data.remote
+                        .UpdateUserItemDataDto(
+                            Rating =
+                                rating
+                                    .coerceIn(0, 5)
+                                    .times(2)
+                                    .toDouble(),
+                        ),
+            ).isSuccessful
+        }.getOrDefault(false)
 
     override suspend fun starredSongs(): List<Song> =
         items(mapOf("IncludeItemTypes" to "Audio", "Recursive" to "true", "Filters" to "IsFavorite", "Fields" to "MediaSources")).map { it.toSong() }

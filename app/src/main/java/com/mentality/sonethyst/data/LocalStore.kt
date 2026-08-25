@@ -19,6 +19,7 @@ data class LocalPlaylist(
 private data class LocalState(
     val playlists: List<LocalPlaylist>? = emptyList(),
     val likedIds: List<String>? = emptyList(),
+    val ratings: Map<String, Int>? = emptyMap(),
 )
 
 class LocalStore(context: Context) {
@@ -111,6 +112,32 @@ class LocalStore(context: Context) {
         runCatching { gson.fromJson(json, object : TypeToken<LocalState>() {}.type) as? LocalState }.getOrNull()?.let {
             state = it; persist()
         }
+    }
+
+    fun rating(id: String): Int =
+        state.ratings
+            .orEmpty()[id]
+            ?.coerceIn(0, 5)
+            ?: 0
+
+    fun setRating(
+        id: String,
+        rating: Int,
+    ): Boolean = synchronized(lock) {
+        val safe = rating.coerceIn(0, 5)
+        val ratings =
+            state.ratings.orEmpty()
+                .toMutableMap()
+
+        if (safe == 0) {
+            ratings.remove(id)
+        } else {
+            ratings[id] = safe
+        }
+
+        state = state.copy(ratings = ratings)
+        persist()
+        true
     }
 
     fun likedIds(): Set<String> = state.likedIds.orEmpty().toSet()

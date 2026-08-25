@@ -81,6 +81,7 @@ data class SongDto(
     val suffix: String? = null,
     val contentType: String? = null,
     val starred: String? = null,
+    val userRating: Int = 0,
     val explicitStatus: String? = null,
     val replayGain: ReplayGainDto? = null,
     val isDir: Boolean = false,           // primitive keeps it gson-safe

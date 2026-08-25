@@ -81,6 +81,25 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         viewModelScope.launch {
+            container.ratingChanges.collect { change ->
+                _state.update { current ->
+                    current.copy(
+                        songs =
+                            current.songs.map { song ->
+                                if (song.id == change.songId) {
+                                    song.copy(
+                                        rating = change.rating
+                                    )
+                                } else {
+                                    song
+                                }
+                            }
+                    )
+                }
+            }
+        }
+
+        viewModelScope.launch {
             container.downloadManager.downloads.collect {
                 _state.update { s -> s.copy(downloadedRows = container.repository.downloadedLibrary()) }
             }

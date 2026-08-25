@@ -30,14 +30,18 @@ import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QueuePlayNext
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Explicit
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -79,8 +83,12 @@ fun SongRow(
     onRemoveDownload: (() -> Unit)? = null,
     onEditTags: (() -> Unit)? = null,
     serverTagEditing: Boolean = false,
+    onSetRating: ((Int) -> Unit)? = null,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
+    var ratingOpen by remember(song.id) {
+        mutableStateOf(false)
+    }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -231,6 +239,33 @@ fun SongRow(
                     onClick = { menuOpen = false; onToggleLike() },
                     leadingIcon = { Icon(if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, null) },
                 )
+                if (onSetRating != null) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                if (song.rating > 0) {
+                                    "Rating: ${song.rating}/5"
+                                } else {
+                                    "Rate"
+                                }
+                            )
+                        },
+                        onClick = {
+                            menuOpen = false
+                            ratingOpen = true
+                        },
+                        leadingIcon = {
+                            Icon(
+                                if (song.rating > 0) {
+                                    Icons.Filled.Star
+                                } else {
+                                    Icons.Outlined.StarBorder
+                                },
+                                null,
+                            )
+                        },
+                    )
+                }
                 if (isDownloaded && onRemoveDownload != null) DropdownMenuItem(
                     text = { Text("Remove download") },
                     onClick = { menuOpen = false; onRemoveDownload() },
@@ -259,6 +294,109 @@ fun SongRow(
             }
         }
     }
+
+    if (
+        ratingOpen &&
+        onSetRating != null
+    ) {
+        SongRatingDialog(
+            song = song,
+            onSelect = { rating ->
+                ratingOpen = false
+                onSetRating(rating)
+            },
+            onDismiss = {
+                ratingOpen = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun SongRatingDialog(
+    song: Song,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Rate ${song.title}")
+        },
+        text = {
+            Column {
+                Text(
+                    if (song.rating > 0) {
+                        "Current rating: ${song.rating}/5"
+                    } else {
+                        "Choose a rating"
+                    },
+                    color =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant,
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.SpaceEvenly,
+                    verticalAlignment =
+                        Alignment.CenterVertically,
+                ) {
+                    (1..5).forEach { value ->
+                        Icon(
+                            imageVector =
+                                if (value <= song.rating) {
+                                    Icons.Filled.Star
+                                } else {
+                                    Icons.Outlined.StarBorder
+                                },
+                            contentDescription =
+                                "$value stars",
+                            tint =
+                                if (value <= song.rating) {
+                                    MaterialTheme
+                                        .colorScheme
+                                        .primary
+                                } else {
+                                    MaterialTheme
+                                        .colorScheme
+                                        .onSurfaceVariant
+                                },
+                            modifier =
+                                Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .clickable {
+                                        onSelect(value)
+                                    }
+                                    .padding(7.dp),
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss,
+            ) {
+                Text("Cancel")
+            }
+        },
+        dismissButton = {
+            if (song.rating > 0) {
+                TextButton(
+                    onClick = {
+                        onSelect(0)
+                    },
+                ) {
+                    Text("Clear rating")
+                }
+            }
+        },
+    )
 }
 
 @Composable
