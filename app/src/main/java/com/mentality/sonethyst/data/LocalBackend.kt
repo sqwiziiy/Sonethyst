@@ -105,7 +105,15 @@ class LocalBackend(
     override suspend fun allAlbums(): List<Album> { library.ensureLoaded(); return library.albums }
     override suspend fun allArtists(): List<Artist> { library.ensureLoaded(); return library.artists }
     override suspend fun allPlaylists(): List<Playlist> = store.playlists().map { it.toPlaylist() }
-    override suspend fun allSongs(): List<Song> { library.ensureLoaded(); return library.songs }
+    override suspend fun allSongs(): List<Song> {
+        library.ensureLoaded()
+        return library.songs
+    }
+
+    override suspend fun librarySongs(limit: Int): List<Song> {
+        library.ensureLoaded()
+        return library.songs.take(limit.coerceAtLeast(0))
+    }
 
     override suspend fun starredSongs(): List<Song> {
         library.ensureLoaded()

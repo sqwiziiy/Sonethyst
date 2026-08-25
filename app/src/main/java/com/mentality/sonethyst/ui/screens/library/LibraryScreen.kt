@@ -94,6 +94,7 @@ fun LibraryScreen(
     currentSongId: String,
     isPlaying: Boolean,
     onFilter: (LibraryFilter) -> Unit,
+    onLoadMoreSongs: () -> Unit,
     onSort: (LibrarySort) -> Unit,
     onToggleLayout: () -> Unit,
     onOpenDrawer: () -> Unit,
@@ -260,10 +261,36 @@ fun LibraryScreen(
                 sortedSongs(state.songs, sort)
             }
 
+            val songsListState =
+                androidx.compose.foundation.lazy.rememberLazyListState()
+
+            androidx.compose.runtime.LaunchedEffect(
+                songsListState,
+                state.canLoadMoreSongs,
+                state.songsLoadingMore,
+            ) {
+                androidx.compose.runtime.snapshotFlow {
+                    val layout = songsListState.layoutInfo
+                    val last =
+                        layout.visibleItemsInfo.lastOrNull()?.index ?: -1
+                    last to layout.totalItemsCount
+                }.collect { (last, count) ->
+                    if (
+                        state.canLoadMoreSongs &&
+                        !state.songsLoadingMore &&
+                        count > 0 &&
+                        last >= count - 12
+                    ) {
+                        onLoadMoreSongs()
+                    }
+                }
+            }
+
             LazyColumn(
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp),
+                state = songsListState,
                 contentPadding = PaddingValues(bottom = bottom),
             ) {
                 items(
@@ -285,6 +312,24 @@ fun LibraryScreen(
                         onEditTags = onEditTags?.let { cb -> { cb(s) } },
                         serverTagEditing = serverTagEditing,
                     )
+                }
+
+                if (state.songsLoadingMore) {
+                    item(
+                        key = "songs-loading-more",
+                        contentType = "songs-loading",
+                    ) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            com.mentality.sonethyst.ui.components.LottieLoader(
+                                modifier = Modifier.size(44.dp),
+                            )
+                        }
+                    }
                 }
             }
             return@Column

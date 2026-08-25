@@ -27,6 +27,8 @@ data class LibraryUiState(
     val artists: List<Artist> = emptyList(),
     val playlists: List<Playlist> = emptyList(),
     val songs: List<Song> = emptyList(),
+    val songsLoadingMore: Boolean = false,
+    val canLoadMoreSongs: Boolean = false,
     val downloadedRows: List<com.mentality.sonethyst.data.DownloadRow> = emptyList(),
     val likedSongCount: Int = 0,
     val likedCover: String = "",
@@ -39,9 +41,21 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow(LibraryUiState())
     val state: StateFlow<LibraryUiState> = _state.asStateFlow()
 
+    private var songLimit = INITIAL_SONG_LIMIT
+
     init {
-        viewModelScope.launch { container.offline.collect { load() } }
-        viewModelScope.launch { container.accountEpoch.drop(1).collect { load() } }
+        viewModelScope.launch {
+            container.offline.collect {
+                resetSongWindow()
+                load()
+            }
+        }
+        viewModelScope.launch {
+            container.accountEpoch.drop(1).collect {
+                resetSongWindow()
+                load()
+            }
+        }
         viewModelScope.launch { container.libraryReload.drop(1).collect { load() } }
         viewModelScope.launch {
             container.playlistReload.drop(1).collect {
@@ -71,12 +85,70 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             val playlists = container.repository.allPlaylists()
             val albums = container.repository.allAlbums()
             val artists = container.repository.allArtists()
-            val songs = container.repository.allSongs()
+            val songs = container.repository.librarySongs(songLimit)
             val likedCount = container.repository.starredCount()
             _state.update {
-                it.copy(loading = false, playlists = playlists, albums = albums, artists = artists, songs = songs, downloadedRows = container.repository.downloadedLibrary(), likedSongCount = likedCount, likedCover = songs.firstOrNull()?.artworkUrl ?: "", supportsFolders = container.repository.supportsFolders)
+                it.copy(
+                    loading = false,
+                    playlists = playlists,
+                    albums = albums,
+                    artists = artists,
+                    songs = songs,
+                    songsLoadingMore = false,
+                    canLoadMoreSongs = songs.size >= songLimit,
+                    downloadedRows = container.repository.downloadedLibrary(),
+                    likedSongCount = likedCount,
+                    likedCover = songs.firstOrNull()?.artworkUrl ?: "",
+                    supportsFolders = container.repository.supportsFolders,
+                )
             }
         }
+    }
+
+    fun loadMoreSongs() {
+        val current = _state.value
+
+        if (
+            current.loading ||
+            current.songsLoadingMore ||
+            !current.canLoadMoreSongs
+        ) {
+            return
+        }
+
+        val nextLimit = songLimit + SONG_PAGE_SIZE
+
+        _state.update {
+            it.copy(songsLoadingMore = true)
+        }
+
+        viewModelScope.launch {
+            val songs =
+                container.repository.librarySongs(nextLimit)
+
+            // Do not destroy an already visible list if an incremental
+            // backend request transiently fails and returns no rows.
+            if (songs.isEmpty() && current.songs.isNotEmpty()) {
+                _state.update {
+                    it.copy(songsLoadingMore = false)
+                }
+                return@launch
+            }
+
+            songLimit = nextLimit
+
+            _state.update {
+                it.copy(
+                    songs = songs,
+                    songsLoadingMore = false,
+                    canLoadMoreSongs = songs.size >= nextLimit,
+                )
+            }
+        }
+    }
+
+    private fun resetSongWindow() {
+        songLimit = INITIAL_SONG_LIMIT
     }
 
     private fun refreshPlaylists() {
@@ -84,6 +156,11 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             val playlists = container.repository.allPlaylists()
             _state.update { it.copy(playlists = playlists) }
         }
+    }
+
+    private companion object {
+        const val INITIAL_SONG_LIMIT = 200
+        const val SONG_PAGE_SIZE = 500
     }
 
     fun setFilter(f: LibraryFilter) = _state.update { it.copy(filter = f) }
