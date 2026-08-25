@@ -35,6 +35,12 @@ interface JellyfinApi {
     @GET("Artists")
     suspend fun artists(@QueryMap params: Map<String, String>): ItemsResult
 
+    @GET("Genres")
+    suspend fun genres(
+        @QueryMap params: Map<String, String>,
+    ): ItemsResult
+
+
     @GET("Playlists/{id}/Items")
     suspend fun playlistItems(@Path("id") id: String, @QueryMap params: Map<String, String>): ItemsResult
 

@@ -3,6 +3,7 @@ package com.mentality.sonethyst.data
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
 import com.mentality.sonethyst.model.DetailInfo
+import com.mentality.sonethyst.model.Genre
 import android.net.Uri
 import androidx.compose.ui.graphics.Color
 import com.mentality.sonethyst.model.Playlist
@@ -121,6 +122,18 @@ class MusicRepository(
 
     suspend fun allArtists(): List<Artist> =
         if (offline) emptyList() else backend?.allArtists().orEmpty()
+
+    val supportsGenres: Boolean
+        get() =
+            !offline &&
+                backend?.supportsGenres == true
+
+    suspend fun allGenres(): List<Genre> =
+        if (offline) {
+            emptyList()
+        } else {
+            backend?.allGenres().orEmpty()
+        }
 
     suspend fun allPlaylists(): List<Playlist> =
         if (offline) emptyList() else backend?.allPlaylists().orEmpty()
@@ -469,6 +482,42 @@ class MusicRepository(
         backend?.setStarred(id, starred, kind) ?: false
 
     suspend fun detail(kind: String, id: String): DetailData? {
+        if (kind == "genre") {
+            if (offline) return null
+
+            val b = backend ?: return null
+
+            val tracks =
+                b.songsByGenre(
+                    genreId = id,
+                    limit = 200,
+                    offset = 0,
+                )
+
+            val total =
+                b.genreSongCount(id)
+                    ?.coerceAtLeast(tracks.size)
+                    ?: tracks.size
+
+            return DetailData(
+                info =
+                    DetailInfo(
+                        title = id,
+                        subtitle =
+                            "$total song${if (total == 1) "" else "s"}",
+                        artUrl =
+                            tracks.firstOrNull()
+                                ?.artworkUrl
+                                .orEmpty(),
+                        accent = accentFor("genre:$id"),
+                        isArtist = false,
+                        songCount = total,
+                        typeLabel = "Genre",
+                    ),
+                tracks = tracks,
+            )
+        }
+
         if (kind == "smart") {
             val sp = smartPlaylistsProvider().firstOrNull { it.id == id } ?: return null
             val tracks = smartEngine?.evaluate(sp, librarySongs()).orEmpty()
@@ -498,8 +547,27 @@ class MusicRepository(
         return backend?.detail(kind, id)
     }
 
-    suspend fun detailPage(kind: String, id: String, offset: Int): List<Song> =
-        if (offline) emptyList() else backend?.detailPage(kind, id, offset).orEmpty()
+    suspend fun detailPage(
+        kind: String,
+        id: String,
+        offset: Int,
+    ): List<Song> {
+        if (offline) return emptyList()
+
+        return if (kind == "genre") {
+            backend?.songsByGenre(
+                genreId = id,
+                limit = 200,
+                offset = offset,
+            ).orEmpty()
+        } else {
+            backend?.detailPage(
+                kind,
+                id,
+                offset,
+            ).orEmpty()
+        }
+    }
 
     val supportsFolders: Boolean get() = !offline && backend?.supportsFolders == true
 

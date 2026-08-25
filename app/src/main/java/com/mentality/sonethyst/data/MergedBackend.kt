@@ -3,6 +3,7 @@ package com.mentality.sonethyst.data
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
 import com.mentality.sonethyst.model.DetailInfo
+import com.mentality.sonethyst.model.Genre
 import com.mentality.sonethyst.model.Playlist
 import com.mentality.sonethyst.model.Song
 import com.mentality.sonethyst.util.TrackMatch
@@ -104,6 +105,81 @@ class MergedBackend(
     override suspend fun allAlbums(): List<Album> = dedupAlbums(wrapAll(fanOut { it.allAlbums() }) { a, i -> a.wrap(i) })
     override suspend fun allArtists(): List<Artist> = dedupArtists(wrapAll(fanOut { it.allArtists() }) { a, i -> a.wrap(i) })
     override suspend fun allPlaylists(): List<Playlist> = wrapAll(fanOut { it.allPlaylists() }) { p, i -> p.wrap(i) }
+
+    override val supportsGenres: Boolean
+        get() = sources.any { it.supportsGenres }
+
+    override suspend fun allGenres(): List<Genre> {
+        val merged = linkedMapOf<String, Genre>()
+
+        fanOut { it.allGenres() }
+            .flatten()
+            .forEach { genre ->
+                val key = TrackMatch.norm(genre.name)
+                if (key.isBlank()) return@forEach
+
+                val previous = merged[key]
+                merged[key] =
+                    if (previous == null) {
+                        genre.copy(id = genre.name)
+                    } else {
+                        previous.copy(
+                            songCount =
+                                previous.songCount +
+                                    genre.songCount,
+                        )
+                    }
+            }
+
+        return merged.values.sortedBy {
+            it.name.lowercase()
+        }
+    }
+
+    override suspend fun songsByGenre(
+        genreId: String,
+        limit: Int,
+        offset: Int,
+    ): List<Song> {
+        val requested =
+            (offset.coerceAtLeast(0) +
+                limit.coerceAtLeast(1))
+
+        val all =
+            wrapAll(
+                fanOut {
+                    it.songsByGenre(
+                        genreId = genreId,
+                        limit = requested,
+                        offset = 0,
+                    )
+                }
+            ) { song, index ->
+                song.wrap(index)
+            }
+
+        return dedupSongs(all)
+            .drop(offset.coerceAtLeast(0))
+            .take(limit.coerceAtLeast(0))
+    }
+
+    override suspend fun genreSongCount(
+        genreId: String,
+    ): Int? = coroutineScope {
+        val counts =
+            sources.map { source ->
+                async {
+                    runCatching {
+                        source.genreSongCount(genreId)
+                    }.getOrNull()
+                }
+            }.awaitAll()
+
+        val known = counts.filterNotNull()
+
+        if (known.isEmpty()) null
+        else known.sum()
+    }
     override suspend fun allSongs(): List<Song> = dedupSongs(wrapAll(fanOut { it.allSongs() }) { s, i -> s.wrap(i) })
     override suspend fun librarySongs(limit: Int): List<Song> = dedupSongs(wrapAll(fanOut { it.librarySongs(limit) }) { s, i -> s.wrap(i) })
     override suspend fun starredSongs(): List<Song> = dedupSongs(wrapAll(fanOut { it.starredSongs() }) { s, i -> s.wrap(i) })

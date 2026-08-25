@@ -25,6 +25,8 @@ data class SubsonicResponse(
     val randomSongs: RandomSongsDto? = null,
     val similarSongs2: SimilarSongs2Dto? = null,
     val lyricsList: LyricsListDto? = null,
+    val genres: GenresDto? = null,
+    val songsByGenre: SongsDto? = null,
     val musicFolders: MusicFoldersDto? = null,
     val indexes: IndexesDto? = null,
     val directory: DirectoryDto? = null,
@@ -83,6 +85,20 @@ data class SongDto(
     val replayGain: ReplayGainDto? = null,
     val isDir: Boolean = false,           // primitive keeps it gson-safe
     val path: String? = null,
+)
+
+data class GenresDto(
+    val genre: List<GenreDto> = emptyList(),
+)
+
+data class GenreDto(
+    val songCount: Int = 0,
+    val albumCount: Int = 0,
+    val value: String = "",
+)
+
+data class SongsDto(
+    val song: List<SongDto> = emptyList(),
 )
 
 data class MusicFoldersDto(val musicFolder: List<MusicFolderDto> = emptyList())

@@ -7,6 +7,7 @@ import android.os.Build
 import android.provider.MediaStore
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
+import com.mentality.sonethyst.model.Genre
 import com.mentality.sonethyst.model.Song
 import com.mentality.sonethyst.util.TrackMatch
 import com.mentality.sonethyst.util.accentFor
@@ -28,6 +29,7 @@ class LocalLibrary(
     @Volatile var songs: List<Song> = emptyList(); private set
     @Volatile var albums: List<Album> = emptyList(); private set
     @Volatile var artists: List<Artist> = emptyList(); private set
+    @Volatile var genres: List<Genre> = emptyList(); private set
     private var byId: Map<String, Song> = emptyMap()
 
     @Volatile private var matchIndex: Map<String, List<Song>> = emptyMap()
@@ -139,6 +141,13 @@ class LocalLibrary(
     fun songsIn(album: Album): List<Song> = songs.filter { it.albumId == album.id }
     fun songsByAlbumId(albumId: String): List<Song> = songs.filter { it.albumId == albumId }
     fun songsByArtistId(artistId: String): List<Song> = songs.filter { it.artistId == artistId }
+
+    fun songsByGenre(genre: String): List<Song> =
+        songs.filter { song ->
+            song.genres.any {
+                it.equals(genre, ignoreCase = true)
+            }
+        }
     fun albumsByArtistId(artistId: String): List<Album> =
         songs.filter { it.artistId == artistId }.map { it.albumId }.distinct()
             .mapNotNull { aid -> albums.firstOrNull { it.id == aid } }
@@ -161,6 +170,53 @@ class LocalLibrary(
         }
     }
 
+    private fun splitGenres(raw: String?): List<String> =
+        raw.orEmpty()
+            .split(';')
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase() }
+
+    private fun legacyGenresForAudioId(id: Long): List<String> {
+        if (Build.VERSION.SDK_INT >= 30) {
+            return emptyList()
+        }
+
+        return runCatching {
+            val uri =
+                MediaStore.Audio.Genres.getContentUriForAudioId(
+                    "external",
+                    id.toInt(),
+                )
+
+            context.contentResolver.query(
+                uri,
+                arrayOf(MediaStore.Audio.Genres.NAME),
+                null,
+                null,
+                null,
+            )?.use { cursor ->
+                val nameCol =
+                    cursor.getColumnIndex(
+                        MediaStore.Audio.Genres.NAME
+                    )
+
+                if (nameCol < 0) {
+                    emptyList()
+                } else {
+                    buildList {
+                        while (cursor.moveToNext()) {
+                            cursor.getString(nameCol)
+                                ?.trim()
+                                ?.takeIf { it.isNotBlank() }
+                                ?.let(::add)
+                        }
+                    }.distinctBy { it.lowercase() }
+                }
+            }.orEmpty()
+        }.getOrDefault(emptyList())
+    }
+
     private suspend fun scan() = withContext(Dispatchers.IO) {
         val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         val cols = arrayListOf(
@@ -178,7 +234,10 @@ class LocalLibrary(
             MediaStore.Audio.Media.MIME_TYPE,
             @Suppress("DEPRECATION") MediaStore.Audio.Media.DATA,
         )
-        if (Build.VERSION.SDK_INT >= 30) cols.add(MediaStore.Audio.Media.BITRATE) // column absent pre-30
+        if (Build.VERSION.SDK_INT >= 30) {
+            cols.add(MediaStore.Audio.Media.BITRATE)
+            cols.add(MediaStore.Audio.Media.GENRE)
+        }
         val projection = cols.toTypedArray()
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
         val sort = "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC"
@@ -202,6 +261,7 @@ class LocalLibrary(
                 val nameCol = c.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME)
                 val mimeCol = c.getColumnIndex(MediaStore.Audio.Media.MIME_TYPE)
                 val bitrateCol = c.getColumnIndex(MediaStore.Audio.Media.BITRATE)
+                val genreCol = c.getColumnIndex(MediaStore.Audio.Media.GENRE)
                 @Suppress("DEPRECATION") val dataCol = c.getColumnIndex(MediaStore.Audio.Media.DATA)
                 while (c.moveToNext()) {
                     val id = c.getLong(idCol)
@@ -217,6 +277,12 @@ class LocalLibrary(
                     val mime = if (mimeCol >= 0) c.getString(mimeCol) else null
                     val suffix = suffixFrom(display, mime)
                     val bitrateKbps = if (bitrateCol >= 0) (runCatching { c.getInt(bitrateCol) }.getOrDefault(0) / 1000) else 0
+                    val genres =
+                        if (genreCol >= 0) {
+                            splitGenres(c.getString(genreCol))
+                        } else {
+                            legacyGenresForAudioId(id)
+                        }
                     val art = albumArtUri(albumId)
                     val uri = ContentUris.withAppendedId(collection, id).toString()
                     val data =
@@ -274,6 +340,7 @@ class LocalLibrary(
                         path = data,
                         replayGainTrack = rg?.first ?: 0f,
                         replayGainAlbum = rg?.second ?: 0f,
+                        genres = genres,
                     )
                 }
             }
@@ -288,6 +355,39 @@ class LocalLibrary(
                 )
 
         songs = out
+
+        val genreBuckets =
+            linkedMapOf<
+                String,
+                Pair<String, MutableSet<String>>,
+            >()
+
+        out.forEach { song ->
+            song.genres.forEach { rawGenre ->
+                val name = rawGenre.trim()
+                if (name.isBlank()) return@forEach
+
+                val key = name.lowercase()
+                val bucket =
+                    genreBuckets.getOrPut(key) {
+                        name to linkedSetOf()
+                    }
+
+                bucket.second += song.id
+            }
+        }
+
+        genres =
+            genreBuckets.values
+                .map { (name, songIds) ->
+                    Genre(
+                        id = name,
+                        name = name,
+                        songCount = songIds.size,
+                    )
+                }
+                .sortedBy { it.name.lowercase() }
+
         byId = out.associateBy { it.id }
         matchIndex = out.groupBy { TrackMatch.key(it.artist, it.title) }
         dirOf = dirs

@@ -38,6 +38,7 @@ data class BaseItemDto(
     val AlbumId: String? = null,
     val AlbumArtist: String? = null,
     val Artists: List<String>? = null,
+    val Genres: List<String>? = null,
     val ArtistItems: List<NameIdPair>? = null,
     val AlbumArtists: List<NameIdPair>? = null,
     val RunTimeTicks: Long? = null,      // 10,000,000 ticks per second

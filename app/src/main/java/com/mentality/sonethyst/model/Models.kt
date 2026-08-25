@@ -21,6 +21,7 @@ data class Song(
     val bitDepth: Int = 0,
     val replayGainTrack: Float = 0f,
     val replayGainAlbum: Float = 0f,
+    val genres: List<String> = emptyList(),
     val path: String = "",   // source file path when the backend exposes one (M3U export)
 )
 
@@ -38,6 +39,12 @@ data class Artist(
     val name: String,
     val imageUrl: String,
     val monthlyListeners: Long,
+)
+
+data class Genre(
+    val id: String,
+    val name: String,
+    val songCount: Int = 0,
 )
 
 data class Playlist(
@@ -67,6 +74,7 @@ enum class LibraryFilter(val label: String) {
     PLAYLISTS("Playlists"),
     ALBUMS("Albums"),
     ARTISTS("Artists"),
+    GENRES("Genres"),
     SONGS("Songs"),
     DOWNLOADED("Downloaded"),
 }

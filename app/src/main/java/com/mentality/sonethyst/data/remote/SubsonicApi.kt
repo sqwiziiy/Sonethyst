@@ -28,6 +28,16 @@ interface SubsonicApi {
     @GET("rest/getArtists.view")
     suspend fun getArtists(): SubsonicEnvelope
 
+    @GET("rest/getGenres.view")
+    suspend fun getGenres(): SubsonicEnvelope
+
+    @GET("rest/getSongsByGenre.view")
+    suspend fun getSongsByGenre(
+        @Query("genre") genre: String,
+        @Query("count") count: Int = 200,
+        @Query("offset") offset: Int = 0,
+    ): SubsonicEnvelope
+
     @GET("rest/getMusicFolders.view")
     suspend fun getMusicFolders(): SubsonicEnvelope
 

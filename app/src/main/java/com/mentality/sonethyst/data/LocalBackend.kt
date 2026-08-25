@@ -5,6 +5,7 @@ import android.util.Base64
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
 import com.mentality.sonethyst.model.DetailInfo
+import com.mentality.sonethyst.model.Genre
 import com.mentality.sonethyst.model.Playlist
 import com.mentality.sonethyst.model.Song
 import com.mentality.sonethyst.util.accentFor
@@ -105,6 +106,31 @@ class LocalBackend(
     override suspend fun allAlbums(): List<Album> { library.ensureLoaded(); return library.albums }
     override suspend fun allArtists(): List<Artist> { library.ensureLoaded(); return library.artists }
     override suspend fun allPlaylists(): List<Playlist> = store.playlists().map { it.toPlaylist() }
+
+    override val supportsGenres: Boolean get() = true
+
+    override suspend fun allGenres(): List<Genre> {
+        library.ensureLoaded()
+        return library.genres
+    }
+
+    override suspend fun songsByGenre(
+        genreId: String,
+        limit: Int,
+        offset: Int,
+    ): List<Song> {
+        library.ensureLoaded()
+        return library.songsByGenre(genreId)
+            .drop(offset.coerceAtLeast(0))
+            .take(limit.coerceAtLeast(0))
+    }
+
+    override suspend fun genreSongCount(
+        genreId: String,
+    ): Int {
+        library.ensureLoaded()
+        return library.songsByGenre(genreId).size
+    }
     override suspend fun allSongs(): List<Song> {
         library.ensureLoaded()
         return library.songs

@@ -43,7 +43,8 @@ object Routes {
         "podcast?feed=${android.net.Uri.encode(feed)}&title=${android.net.Uri.encode(title)}" +
             "&image=${android.net.Uri.encode(image)}&author=${android.net.Uri.encode(author)}"
     const val DETAIL = "detail/{kind}/{id}"
-    fun detail(kind: String, id: String) = "detail/$kind/$id"
+    fun detail(kind: String, id: String) =
+        "detail/${android.net.Uri.encode(kind)}/${android.net.Uri.encode(id)}"
 
     // folder ids contain slashes so ride as encoded query params
     const val FOLDERS = "folders?fid={fid}&title={title}"

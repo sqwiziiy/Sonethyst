@@ -8,6 +8,7 @@ import com.mentality.sonethyst.data.remote.SubsonicClient
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
 import com.mentality.sonethyst.model.DetailInfo
+import com.mentality.sonethyst.model.Genre
 import com.mentality.sonethyst.model.LyricLine
 import com.mentality.sonethyst.model.Playlist
 import com.mentality.sonethyst.model.Song
@@ -38,6 +39,12 @@ class SubsonicBackend(
             streamUrl = streamUrl(id, bitrate, bitrate == 0),
             albumId = albumId ?: parent ?: "",
             artistId = artistId ?: "",
+            genres =
+                genre.orEmpty()
+                    .split(';')
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+                    .distinct(),
             suffix = suffix ?: "",
             bitrateKbps = bitRate,
             sampleRateHz = samplingRate,
@@ -107,6 +114,65 @@ class SubsonicBackend(
     override suspend fun allPlaylists(): List<Playlist> = runCatching {
         c.api.getPlaylists().response.playlists?.playlist?.map { it.toModel() }.orEmpty()
     }.getOrDefault(emptyList())
+
+    override val supportsGenres: Boolean get() = true
+
+    override suspend fun allGenres(): List<Genre> =
+        runCatching {
+            c.api.getGenres()
+                .response
+                .genres
+                ?.genre
+                .orEmpty()
+                .mapNotNull { genre ->
+                    genre.value
+                        .trim()
+                        .takeIf { it.isNotBlank() }
+                        ?.let { name ->
+                            Genre(
+                                id = name,
+                                name = name,
+                                songCount = genre.songCount,
+                            )
+                        }
+                }
+                .sortedBy { it.name.lowercase() }
+        }.getOrDefault(emptyList())
+
+    override suspend fun songsByGenre(
+        genreId: String,
+        limit: Int,
+        offset: Int,
+    ): List<Song> =
+        runCatching {
+            c.api.getSongsByGenre(
+                genre = genreId,
+                count = limit.coerceIn(1, 500),
+                offset = offset.coerceAtLeast(0),
+            )
+                .response
+                .songsByGenre
+                ?.song
+                .orEmpty()
+                .map { it.toModel() }
+        }.getOrDefault(emptyList())
+
+    override suspend fun genreSongCount(
+        genreId: String,
+    ): Int? =
+        runCatching {
+            c.api.getGenres()
+                .response
+                .genres
+                ?.genre
+                ?.firstOrNull {
+                    it.value.equals(
+                        genreId,
+                        ignoreCase = true,
+                    )
+                }
+                ?.songCount
+        }.getOrNull()
 
     override suspend fun allSongs(): List<Song> = runCatching {
         c.api.getRandomSongs(200).response.randomSongs?.song?.map { it.toModel() }.orEmpty()

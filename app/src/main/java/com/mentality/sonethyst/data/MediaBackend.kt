@@ -2,6 +2,7 @@ package com.mentality.sonethyst.data
 
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
+import com.mentality.sonethyst.model.Genre
 import com.mentality.sonethyst.model.Playlist
 import com.mentality.sonethyst.model.Song
 
@@ -15,7 +16,20 @@ interface MediaBackend {
     suspend fun allAlbums(): List<Album>
     suspend fun allArtists(): List<Artist>
     suspend fun allPlaylists(): List<Playlist>
+    val supportsGenres: Boolean get() = false
+
+    suspend fun allGenres(): List<Genre> = emptyList()
     suspend fun allSongs(): List<Song>
+
+    suspend fun songsByGenre(
+        genreId: String,
+        limit: Int = 200,
+        offset: Int = 0,
+    ): List<Song> = emptyList()
+
+    suspend fun genreSongCount(
+        genreId: String,
+    ): Int? = null
 
     suspend fun librarySongs(limit: Int = 2000): List<Song> = allSongs()
     suspend fun starredSongs(): List<Song>

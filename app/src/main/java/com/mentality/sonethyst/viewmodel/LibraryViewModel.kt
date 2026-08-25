@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
+import com.mentality.sonethyst.model.Genre
 import com.mentality.sonethyst.model.LibraryFilter
 import com.mentality.sonethyst.model.LibraryLayout
 import com.mentality.sonethyst.model.LibrarySort
@@ -25,6 +26,10 @@ data class LibraryUiState(
     val loading: Boolean = true,
     val albums: List<Album> = emptyList(),
     val artists: List<Artist> = emptyList(),
+    val genres: List<Genre> = emptyList(),
+    val genresLoading: Boolean = false,
+    val genresLoaded: Boolean = false,
+    val supportsGenres: Boolean = false,
     val playlists: List<Playlist> = emptyList(),
     val songs: List<Song> = emptyList(),
     val songsLoadingMore: Boolean = false,
@@ -47,16 +52,29 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             container.offline.collect {
                 resetSongWindow()
+                resetGenres()
                 load()
             }
         }
         viewModelScope.launch {
             container.accountEpoch.drop(1).collect {
                 resetSongWindow()
+                resetGenres()
                 load()
             }
         }
-        viewModelScope.launch { container.libraryReload.drop(1).collect { load() } }
+        viewModelScope.launch {
+            container.libraryReload.drop(1).collect {
+                val refreshGenres =
+                    _state.value.genresLoaded
+
+                load()
+
+                if (refreshGenres) {
+                    refreshGenres(force = true)
+                }
+            }
+        }
         viewModelScope.launch {
             container.playlistReload.drop(1).collect {
                 refreshPlaylists()
@@ -100,6 +118,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                     likedSongCount = likedCount,
                     likedCover = songs.firstOrNull()?.artworkUrl ?: "",
                     supportsFolders = container.repository.supportsFolders,
+                    supportsGenres = container.repository.supportsGenres,
                 )
             }
         }
@@ -151,6 +170,49 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         songLimit = INITIAL_SONG_LIMIT
     }
 
+    private fun refreshGenres(
+        force: Boolean = false,
+    ) {
+        val current = _state.value
+
+        if (
+            !container.repository.supportsGenres ||
+            current.genresLoading ||
+            (!force && current.genresLoaded)
+        ) {
+            return
+        }
+
+        _state.update {
+            it.copy(genresLoading = true)
+        }
+
+        viewModelScope.launch {
+            val genres =
+                runCatching {
+                    container.repository.allGenres()
+                }.getOrDefault(emptyList())
+
+            _state.update {
+                it.copy(
+                    genres = genres,
+                    genresLoading = false,
+                    genresLoaded = true,
+                )
+            }
+        }
+    }
+
+    private fun resetGenres() {
+        _state.update {
+            it.copy(
+                genres = emptyList(),
+                genresLoading = false,
+                genresLoaded = false,
+            )
+        }
+    }
+
     private fun refreshPlaylists() {
         viewModelScope.launch {
             val playlists = container.repository.allPlaylists()
@@ -163,7 +225,15 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         const val SONG_PAGE_SIZE = 500
     }
 
-    fun setFilter(f: LibraryFilter) = _state.update { it.copy(filter = f) }
+    fun setFilter(f: LibraryFilter) {
+        _state.update {
+            it.copy(filter = f)
+        }
+
+        if (f == LibraryFilter.GENRES) {
+            refreshGenres()
+        }
+    }
     fun setSort(s: LibrarySort) = _state.update { it.copy(sort = s) }
     fun toggleLayout() = _state.update {
         it.copy(layout = if (it.layout == LibraryLayout.LIST) LibraryLayout.GRID else LibraryLayout.LIST)

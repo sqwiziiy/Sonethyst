@@ -158,9 +158,15 @@ fun LibraryScreen(
         )
     }
 
-    val visibleFilters = remember(canDownload) {
+    val visibleFilters = remember(
+        canDownload,
+        state.supportsGenres,
+    ) {
         LibraryFilter.entries.filter {
-            canDownload || it != LibraryFilter.DOWNLOADED
+            (canDownload ||
+                it != LibraryFilter.DOWNLOADED) &&
+                (state.supportsGenres ||
+                    it != LibraryFilter.GENRES)
         }
     }
 
@@ -252,6 +258,22 @@ fun LibraryScreen(
         if (state.loading && state.albums.isEmpty() && state.playlists.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 com.mentality.sonethyst.ui.components.LottieLoader(modifier = Modifier.size(72.dp))
+            }
+            return@Column
+        }
+
+        if (
+            filter == LibraryFilter.GENRES &&
+            state.genresLoading &&
+            state.genres.isEmpty()
+        ) {
+            Box(
+                Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                com.mentality.sonethyst.ui.components.LottieLoader(
+                    modifier = Modifier.size(72.dp)
+                )
             }
             return@Column
         }
@@ -420,6 +442,14 @@ fun LibraryScreen(
 
             LibraryFilter.ARTISTS -> remember(
                 state.artists,
+                filter,
+                sort,
+            ) {
+                buildRows(state, filter, sort, pins)
+            }
+
+            LibraryFilter.GENRES -> remember(
+                state.genres,
                 filter,
                 sort,
             ) {
@@ -610,6 +640,22 @@ private fun buildRows(
             )
         }
 
+        LibraryFilter.GENRES -> state.genres.map {
+            LibRow(
+                it.name,
+                if (it.songCount > 0) {
+                    "Genre • ${it.songCount} song${if (it.songCount == 1) "" else "s"}"
+                } else {
+                    "Genre"
+                },
+                "",
+                accentFor("genre:${it.name}"),
+                it.id,
+                "genre",
+                menu = false,
+            )
+        }
+
         else -> return emptyList()
     }
 
@@ -619,7 +665,11 @@ private fun buildRows(
         else -> base
     }
 
-    if (filter == LibraryFilter.ALBUMS || filter == LibraryFilter.ARTISTS) {
+    if (
+        filter == LibraryFilter.ALBUMS ||
+        filter == LibraryFilter.ARTISTS ||
+        filter == LibraryFilter.GENRES
+    ) {
         return sorted
     }
 

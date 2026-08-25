@@ -6,6 +6,7 @@ import com.mentality.sonethyst.data.remote.JellyfinClient
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
 import com.mentality.sonethyst.model.DetailInfo
+import com.mentality.sonethyst.model.Genre
 import com.mentality.sonethyst.model.LyricLine
 import com.mentality.sonethyst.model.Playlist
 import com.mentality.sonethyst.model.Song
@@ -47,6 +48,11 @@ class JellyfinBackend(
             streamUrl = client.streamUrl(Id, bitrate, bitrate == 0),
             albumId = AlbumId ?: "",
             artistId = ArtistItems?.firstOrNull()?.Id ?: AlbumArtists?.firstOrNull()?.Id ?: "",
+            genres =
+                Genres.orEmpty()
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+                    .distinct(),
             suffix = source?.Container ?: "",
             bitrateKbps = (source?.Bitrate ?: 0) / 1000,
             sampleRateHz = audioStream?.SampleRate ?: 0,
@@ -113,11 +119,79 @@ class JellyfinBackend(
     override suspend fun allPlaylists(): List<Playlist> =
         items(mapOf("IncludeItemTypes" to "Playlist", "Recursive" to "true", "SortBy" to "SortName")).map { it.toPlaylist() }
 
+    override val supportsGenres: Boolean get() = true
+
+    override suspend fun allGenres(): List<Genre> =
+        runCatching {
+            client.api.genres(
+                mapOf(
+                    "UserId" to uid,
+                    "IncludeItemTypes" to "Audio",
+                    "SortBy" to "SortName",
+                    "SortOrder" to "Ascending",
+                    "EnableTotalRecordCount" to "true",
+                    "Limit" to "1000",
+                )
+            ).Items
+                .mapNotNull { item ->
+                    item.Name
+                        ?.trim()
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { name ->
+                            Genre(
+                                id = name,
+                                name = name,
+                                songCount = item.ChildCount ?: 0,
+                            )
+                        }
+                }
+        }.getOrDefault(emptyList())
+
+    override suspend fun songsByGenre(
+        genreId: String,
+        limit: Int,
+        offset: Int,
+    ): List<Song> =
+        runCatching {
+            client.api.items(
+                uid,
+                mapOf(
+                    "IncludeItemTypes" to "Audio",
+                    "Recursive" to "true",
+                    "Genres" to genreId,
+                    "SortBy" to "SortName",
+                    "SortOrder" to "Ascending",
+                    "StartIndex" to
+                        offset.coerceAtLeast(0).toString(),
+                    "Limit" to
+                        limit.coerceAtLeast(1).toString(),
+                    "Fields" to
+                        "MediaSources,Path,Genres",
+                ),
+            ).Items.map { it.toSong() }
+        }.getOrDefault(emptyList())
+
+    override suspend fun genreSongCount(
+        genreId: String,
+    ): Int? =
+        runCatching {
+            client.api.items(
+                uid,
+                mapOf(
+                    "IncludeItemTypes" to "Audio",
+                    "Recursive" to "true",
+                    "Genres" to genreId,
+                    "Limit" to "1",
+                    "EnableTotalRecordCount" to "true",
+                ),
+            ).TotalRecordCount
+        }.getOrNull()
+
     override suspend fun allSongs(): List<Song> =
         items(mapOf("IncludeItemTypes" to "Audio", "Recursive" to "true", "SortBy" to "Random", "Limit" to "200")).map { it.toSong() }
 
     override suspend fun librarySongs(limit: Int): List<Song> =
-        items(mapOf("IncludeItemTypes" to "Audio", "Recursive" to "true", "SortBy" to "SortName", "Limit" to "$limit", "Fields" to "MediaSources,Path")).map { it.toSong() }
+        items(mapOf("IncludeItemTypes" to "Audio", "Recursive" to "true", "SortBy" to "SortName", "Limit" to "$limit", "Fields" to "MediaSources,Path,Genres")).map { it.toSong() }
 
     override suspend fun starredSongs(): List<Song> =
         items(mapOf("IncludeItemTypes" to "Audio", "Recursive" to "true", "Filters" to "IsFavorite", "Fields" to "MediaSources")).map { it.toSong() }
@@ -221,7 +295,7 @@ class JellyfinBackend(
             val roots = music.ifEmpty { views.filter { it.IsFolder == true } }
             FolderContent("", "Folders", roots.map { FolderNode(it.Id, it.Name ?: "Folder") })
         } else {
-            val children = items(mapOf("ParentId" to folderId, "SortBy" to "IsFolder,SortName", "Fields" to "MediaSources,Path"))
+            val children = items(mapOf("ParentId" to folderId, "SortBy" to "IsFolder,SortName", "Fields" to "MediaSources,Path,Genres"))
             val name = runCatching { client.api.item(uid, folderId).Name }.getOrNull() ?: "Folder"
             FolderContent(
                 id = folderId,
