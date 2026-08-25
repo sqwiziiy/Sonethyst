@@ -337,19 +337,51 @@ fun LibraryScreen(
             return@Column
         }
 
-        val rows = remember(
-            state.smartPlaylists,
-            state.playlists,
-            state.albums,
-            state.artists,
-            state.likedSongCount,
-            state.likedCover,
-            state.supportsFolders,
-            filter,
-            sort,
-            pins,
-        ) {
-            buildRows(state, filter, sort, pins)
+        val rows = when (filter) {
+            LibraryFilter.ALL -> remember(
+                state.smartPlaylists,
+                state.playlists,
+                state.albums,
+                state.artists,
+                state.likedSongCount,
+                state.likedCover,
+                state.supportsFolders,
+                filter,
+                sort,
+                pins,
+            ) {
+                buildRows(state, filter, sort, pins)
+            }
+
+            LibraryFilter.PLAYLISTS -> remember(
+                state.smartPlaylists,
+                state.playlists,
+                state.likedSongCount,
+                state.likedCover,
+                filter,
+                sort,
+                pins,
+            ) {
+                buildRows(state, filter, sort, pins)
+            }
+
+            LibraryFilter.ALBUMS -> remember(
+                state.albums,
+                filter,
+                sort,
+            ) {
+                buildRows(state, filter, sort, pins)
+            }
+
+            LibraryFilter.ARTISTS -> remember(
+                state.artists,
+                filter,
+                sort,
+            ) {
+                buildRows(state, filter, sort, pins)
+            }
+
+            else -> emptyList()
         }
 
         val openRow: (LibRow) -> Unit = remember(
@@ -411,44 +443,222 @@ private fun sortedSongs(songs: List<Song>, sort: LibrarySort): List<Song> = when
     else -> songs
 }
 
-private fun buildRows(state: LibraryUiState, filter: LibraryFilter, sort: LibrarySort, pins: List<com.mentality.sonethyst.data.Pin>): List<LibRow> {
-    val smart = state.smartPlaylists.map {
-        val n = it.rules.orEmpty().size
-        LibRow(it.name ?: "Smart playlist", "Smart playlist • $n rule${if (n == 1) "" else "s"}", "", accentFor(it.id ?: "smart"), it.id ?: "", "smart")
+private fun buildRows(
+    state: LibraryUiState,
+    filter: LibraryFilter,
+    sort: LibrarySort,
+    pins: List<com.mentality.sonethyst.data.Pin>,
+): List<LibRow> {
+    val base: List<LibRow> = when (filter) {
+        LibraryFilter.ALL -> buildList<LibRow>(
+            state.smartPlaylists.size +
+                state.playlists.size +
+                state.albums.size +
+                state.artists.size
+        ) {
+            state.smartPlaylists.forEach {
+                val n = it.rules.orEmpty().size
+                add(
+                    LibRow(
+                        it.name ?: "Smart playlist",
+                        "Smart playlist • $n rule${if (n == 1) "" else "s"}",
+                        "",
+                        accentFor(it.id ?: "smart"),
+                        it.id ?: "",
+                        "smart",
+                    )
+                )
+            }
+
+            state.playlists.forEach {
+                add(
+                    LibRow(
+                        it.title,
+                        "Playlist • ${it.songCount} songs",
+                        it.coverUrl,
+                        it.accent,
+                        it.id,
+                        "playlist",
+                    )
+                )
+            }
+
+            state.albums.forEach {
+                add(
+                    LibRow(
+                        it.title,
+                        "Album • ${it.artist}",
+                        it.artworkUrl,
+                        accentFor(it.id),
+                        it.id,
+                        "album",
+                    )
+                )
+            }
+
+            state.artists.forEach {
+                add(
+                    LibRow(
+                        it.name,
+                        "Artist",
+                        it.imageUrl,
+                        accentFor(it.id),
+                        it.id,
+                        "artist",
+                        circle = true,
+                    )
+                )
+            }
+        }
+
+        LibraryFilter.PLAYLISTS -> buildList<LibRow>(
+            state.smartPlaylists.size + state.playlists.size
+        ) {
+            state.smartPlaylists.forEach {
+                val n = it.rules.orEmpty().size
+                add(
+                    LibRow(
+                        it.name ?: "Smart playlist",
+                        "Smart playlist • $n rule${if (n == 1) "" else "s"}",
+                        "",
+                        accentFor(it.id ?: "smart"),
+                        it.id ?: "",
+                        "smart",
+                    )
+                )
+            }
+
+            state.playlists.forEach {
+                add(
+                    LibRow(
+                        it.title,
+                        "Playlist • ${it.songCount} songs",
+                        it.coverUrl,
+                        it.accent,
+                        it.id,
+                        "playlist",
+                    )
+                )
+            }
+        }
+
+        LibraryFilter.ALBUMS -> state.albums.map {
+            LibRow(
+                it.title,
+                "Album • ${it.artist}",
+                it.artworkUrl,
+                accentFor(it.id),
+                it.id,
+                "album",
+            )
+        }
+
+        LibraryFilter.ARTISTS -> state.artists.map {
+            LibRow(
+                it.name,
+                "Artist",
+                it.imageUrl,
+                accentFor(it.id),
+                it.id,
+                "artist",
+                circle = true,
+            )
+        }
+
+        else -> return emptyList()
     }
-    val playlists = smart + state.playlists.map { LibRow(it.title, "Playlist • ${it.songCount} songs", it.coverUrl, it.accent, it.id, "playlist") }
-    val albums = state.albums.map { LibRow(it.title, "Album • ${it.artist}", it.artworkUrl, accentFor(it.id), it.id, "album") }
-    val artists = state.artists.map { LibRow(it.name, "Artist", it.imageUrl, accentFor(it.id), it.id, "artist", circle = true) }
-    val base = when (filter) {
-        LibraryFilter.ALL -> playlists + albums + artists
-        LibraryFilter.PLAYLISTS -> playlists
-        LibraryFilter.ALBUMS -> albums
-        LibraryFilter.ARTISTS -> artists
-        else -> emptyList()
-    }
-    val sorted = when (sort) {
+
+    val sorted: List<LibRow> = when (sort) {
         LibrarySort.ALPHABETICAL -> base.sortedBy { it.title }
         LibrarySort.CREATOR -> base.sortedBy { it.subtitle }
         else -> base
     }
-    if (filter != LibraryFilter.ALL && filter != LibraryFilter.PLAYLISTS) return sorted
 
-    // pinned sit above everything de-dupe out of normal rows below
-    val pinRows = if (filter == LibraryFilter.ALL) pins.map {
-        LibRow(it.title, "Pinned • ${it.kind.replaceFirstChar { c -> c.uppercase() }}", it.coverUrl, accentFor(it.id), it.id, it.kind, circle = it.kind == "artist")
-    } else emptyList()
-    val pinned = pins.map { it.kind to it.id }.toSet()
-    val deduped = sorted.filterNot { (it.kind to it.id) in pinned }
-    val liked = LibRow("Liked Songs", "Playlist • ${state.likedSongCount} songs", state.likedCover, accentFor("liked"), "liked", "liked")
-    // virtual row only on backends that expose a tree
-    val folders = if (filter == LibraryFilter.ALL && state.supportsFolders)
-        listOf(LibRow("Folders", "Browse by folder", "", accentFor("folders"), "", "folders", menu = false))
-    else emptyList()
-    val streaming = if (filter == LibraryFilter.ALL) listOf(
-        LibRow("Radio", "Live internet stations", "", accentFor("radio"), "", "radio", menu = false),
-        LibRow("Podcasts", "Shows & episodes", "", accentFor("podcasts"), "", "podcasts", menu = false),
-    ) else emptyList()
-    return pinRows + listOf(liked) + folders + streaming + deduped
+    if (filter == LibraryFilter.ALBUMS || filter == LibraryFilter.ARTISTS) {
+        return sorted
+    }
+
+    val pinned: Set<Pair<String, String>> = if (pins.isEmpty()) {
+        emptySet()
+    } else {
+        pins.mapTo(mutableSetOf()) { it.kind to it.id }
+    }
+
+    val deduped = if (pinned.isEmpty()) {
+        sorted
+    } else {
+        sorted.filterNot { (it.kind to it.id) in pinned }
+    }
+
+    return buildList<LibRow> {
+        if (filter == LibraryFilter.ALL) {
+            pins.forEach {
+                add(
+                    LibRow(
+                        it.title,
+                        "Pinned • ${it.kind.replaceFirstChar { c -> c.uppercase() }}",
+                        it.coverUrl,
+                        accentFor(it.id),
+                        it.id,
+                        it.kind,
+                        circle = it.kind == "artist",
+                    )
+                )
+            }
+        }
+
+        add(
+            LibRow(
+                "Liked Songs",
+                "Playlist • ${state.likedSongCount} songs",
+                state.likedCover,
+                accentFor("liked"),
+                "liked",
+                "liked",
+            )
+        )
+
+        if (filter == LibraryFilter.ALL && state.supportsFolders) {
+            add(
+                LibRow(
+                    "Folders",
+                    "Browse by folder",
+                    "",
+                    accentFor("folders"),
+                    "",
+                    "folders",
+                    menu = false,
+                )
+            )
+        }
+
+        if (filter == LibraryFilter.ALL) {
+            add(
+                LibRow(
+                    "Radio",
+                    "Live internet stations",
+                    "",
+                    accentFor("radio"),
+                    "",
+                    "radio",
+                    menu = false,
+                )
+            )
+            add(
+                LibRow(
+                    "Podcasts",
+                    "Shows & episodes",
+                    "",
+                    accentFor("podcasts"),
+                    "",
+                    "podcasts",
+                    menu = false,
+                )
+            )
+        }
+
+        addAll(deduped)
+    }
 }
 
 @Composable
