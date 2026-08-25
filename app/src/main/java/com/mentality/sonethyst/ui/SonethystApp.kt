@@ -103,13 +103,17 @@ fun SonethystApp() {
     val session by container.settingsStore.session.collectAsStateWithLifecycle(initialValue = null)
     val savedSessions by container.settingsStore.savedSessions.collectAsStateWithLifecycle(initialValue = emptyList())
     val downloadsMap by container.downloadManager.downloads.collectAsStateWithLifecycle()
-    val downloadedIds = downloadsMap.keys
+    val downloadedIds = remember(downloadsMap) {
+        downloadsMap.keys.toSet()
+    }
     val localMode = session?.type == com.mentality.sonethyst.data.ServerType.LOCAL
     val serverTagEditing = session?.let { container.repository.supportsServerTagEdit } ?: false
     // pins scoped to the active connection
     val currentServer = session?.server ?: ""
     val allPins by container.settingsStore.pins.collectAsStateWithLifecycle(initialValue = emptyList())
-    val pins = allPins.filter { it.serverId == currentServer }
+    val pins = remember(allPins, currentServer) {
+        allPins.filter { it.serverId == currentServer }
+    }
     val gesturePrefs by container.settingsStore.gesturePrefs.collectAsStateWithLifecycle(initialValue = com.mentality.sonethyst.data.GesturePrefs())
     val offlineMode by container.offline.collectAsStateWithLifecycle()
 
@@ -117,19 +121,38 @@ fun SonethystApp() {
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    fun confirm(message: String) {
-        scope.launch {
-            snackbarHostState.currentSnackbarData?.dismiss()
-            snackbarHostState.showSnackbar(message, duration = androidx.compose.material3.SnackbarDuration.Short)
+
+    val confirm: (String) -> Unit = remember(scope, snackbarHostState) {
+        { message ->
+            scope.launch {
+                snackbarHostState.currentSnackbarData?.dismiss()
+                snackbarHostState.showSnackbar(
+                    message,
+                    duration = androidx.compose.material3.SnackbarDuration.Short,
+                )
+            }
         }
     }
 
-    val onDownload: (com.mentality.sonethyst.model.Song) -> Unit = {
-        val already = container.downloadManager.isDownloaded(it.id)
-        container.downloadManager.downloadSong(it)
-        confirm(if (already) "Already downloaded" else "Downloading “${it.title}”")
-    }
-    val onRemoveDownload: (String) -> Unit = { container.downloadManager.removeDownload(it); confirm("Removed download") }
+    val onDownload: (com.mentality.sonethyst.model.Song) -> Unit =
+        remember(container, confirm) {
+            { song ->
+                val already = container.downloadManager.isDownloaded(song.id)
+                container.downloadManager.downloadSong(song)
+                confirm(
+                    if (already) "Already downloaded"
+                    else "Downloading “${song.title}”"
+                )
+            }
+        }
+
+    val onRemoveDownload: (String) -> Unit =
+        remember(container, confirm) {
+            { id ->
+                container.downloadManager.removeDownload(id)
+                confirm("Removed download")
+            }
+        }
 
     // re-pull likes on foreground so stars from other devices show up
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
@@ -141,13 +164,37 @@ fun SonethystApp() {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // active means still queued or in flight
-    val activeDownloads = downloadStates.values.count {
-        it is com.mentality.sonethyst.data.DownloadState.Queued || it is com.mentality.sonethyst.data.DownloadState.Downloading
+    // Derive download summary only when the download-state map changes.
+    val downloadSummary = remember(downloadStates) {
+        var active = 0
+        var progressSum = 0f
+        var failed = 0
+
+        downloadStates.values.forEach { state ->
+            when (state) {
+                is com.mentality.sonethyst.data.DownloadState.Queued -> {
+                    active++
+                }
+                is com.mentality.sonethyst.data.DownloadState.Downloading -> {
+                    active++
+                    progressSum += state.progress
+                }
+                is com.mentality.sonethyst.data.DownloadState.Failed -> {
+                    failed++
+                }
+                else -> Unit
+            }
+        }
+
+        Triple(
+            active,
+            if (active == 0) 0f else progressSum / active,
+            failed,
+        )
     }
-    val downloadProgress = downloadStates.values
-        .mapNotNull { (it as? com.mentality.sonethyst.data.DownloadState.Downloading)?.progress }
-        .let { if (it.isEmpty()) 0f else it.sum() / activeDownloads.coerceAtLeast(1) }
+    val activeDownloads = downloadSummary.first
+    val downloadProgress = downloadSummary.second
+    val failedDownloads = downloadSummary.third
     // announce when a batch finishes active falls back to zero
     var hadActiveDownloads by remember { mutableStateOf(false) }
     androidx.compose.runtime.LaunchedEffect(activeDownloads) {
@@ -155,9 +202,8 @@ fun SonethystApp() {
             hadActiveDownloads = true
         } else if (hadActiveDownloads) {
             hadActiveDownloads = false
-            val failed = downloadStates.values.count { it is com.mentality.sonethyst.data.DownloadState.Failed }
             snackbarHostState.showSnackbar(
-                if (failed > 0) "Download finished — $failed failed" else "Download complete",
+                if (failedDownloads > 0) "Download finished — $failedDownloads failed" else "Download complete",
                 duration = androidx.compose.material3.SnackbarDuration.Short,
             )
         }
@@ -167,7 +213,10 @@ fun SonethystApp() {
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
-    val onTopLevel = currentRoute in topLevelDestinations.map { it.route }
+    val topLevelRoutes = remember {
+        topLevelDestinations.mapTo(mutableSetOf()) { it.route }
+    }
+    val onTopLevel = currentRoute in topLevelRoutes
     val showChrome = currentRoute != null && currentRoute != Routes.SIGN_IN
 
     var showSpeedSheet by remember { mutableStateOf(false) }
