@@ -125,6 +125,7 @@ fun DetailScreen(
     serverTagEditing: Boolean = false,
     artistInfo: com.mentality.sonethyst.data.remote.ArtistInfo? = null,
     onSetRating: ((Song, Int) -> Unit)? = null,
+    onEditCustomTags: ((Song) -> Unit)? = null,
 ) {
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     var headerMenu by remember { mutableStateOf(false) }

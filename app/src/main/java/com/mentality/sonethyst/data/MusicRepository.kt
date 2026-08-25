@@ -2,6 +2,7 @@ package com.mentality.sonethyst.data
 
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
+import com.mentality.sonethyst.model.CustomTag
 import com.mentality.sonethyst.model.DetailInfo
 import com.mentality.sonethyst.model.Genre
 import android.net.Uri
@@ -54,6 +55,7 @@ data class DownloadRow(
 class MusicRepository(
     private val backendProvider: () -> MediaBackend?,
     private val downloadManager: DownloadManager,
+    private val localStore: LocalStore,
     private val offlineProvider: () -> Boolean = { false },
     private val currentServerIdProvider: () -> String = { "" },
     private val smartPlaylistsProvider: () -> List<SmartPlaylist> = { emptyList() },
@@ -139,6 +141,113 @@ class MusicRepository(
         } else {
             backend?.allGenres().orEmpty()
         }
+
+    fun customTagsFor(
+        songId: String,
+    ): List<String> {
+        val activeBackend =
+            backend ?: return emptyList()
+
+        return localStore.customTags(
+            activeBackend.customTagKey(songId)
+        )
+    }
+
+    fun allCustomTags(): List<CustomTag> {
+        val activeBackend =
+            backend ?: return emptyList()
+
+        val counts =
+            linkedMapOf<String, Pair<String, Int>>()
+
+        localStore
+            .customTagAssignments(
+                activeBackend.customTagScopes
+            )
+            .values
+            .forEach { tags ->
+                tags.forEach { tag ->
+                    val key =
+                        tag.lowercase(Locale.ROOT)
+
+                    val previous = counts[key]
+
+                    counts[key] =
+                        if (previous == null) {
+                            tag to 1
+                        } else {
+                            previous.first to
+                                (previous.second + 1)
+                        }
+                }
+            }
+
+        return counts.values
+            .map { (name, count) ->
+                CustomTag(
+                    name = name,
+                    songCount = count,
+                )
+            }
+            .sortedBy {
+                it.name.lowercase(Locale.ROOT)
+            }
+    }
+
+    suspend fun setCustomTags(
+        songId: String,
+        tags: Collection<String>,
+    ): Boolean {
+        val activeBackend =
+            backend ?: return false
+
+        return localStore.setCustomTags(
+            activeBackend.customTagKey(songId),
+            tags,
+        )
+    }
+
+    suspend fun songsByCustomTag(
+        tag: String,
+    ): List<Song> {
+        val activeBackend =
+            backend ?: return emptyList()
+
+        val target =
+            tag.trim().lowercase(Locale.ROOT)
+
+        if (target.isBlank()) {
+            return emptyList()
+        }
+
+        val assignments =
+            localStore.customTagAssignments(
+                activeBackend.customTagScopes
+            )
+
+        val songs = linkedMapOf<String, Song>()
+
+        for ((key, tags) in assignments) {
+            val matches =
+                tags.any {
+                    it.lowercase(Locale.ROOT) ==
+                        target
+                }
+
+            if (!matches) {
+                continue
+            }
+
+            val song =
+                activeBackend
+                    .songForCustomTagKey(key)
+                    ?: continue
+
+            songs[song.id] = song
+        }
+
+        return songs.values.toList()
+    }
 
     suspend fun allPlaylists(): List<Playlist> =
         if (offline) emptyList() else backend?.allPlaylists().orEmpty()
@@ -499,6 +608,29 @@ class MusicRepository(
         backend?.setStarred(id, starred, kind) ?: false
 
     suspend fun detail(kind: String, id: String): DetailData? {
+        if (kind == "tag") {
+            val tracks =
+                songsByCustomTag(id)
+
+            return DetailData(
+                info =
+                    DetailInfo(
+                        title = id,
+                        subtitle =
+                            "${tracks.size} song${if (tracks.size == 1) "" else "s"}",
+                        artUrl =
+                            tracks.firstOrNull()
+                                ?.artworkUrl
+                                .orEmpty(),
+                        accent = accentFor("tag:$id"),
+                        isArtist = false,
+                        songCount = tracks.size,
+                        typeLabel = "Tag",
+                    ),
+                tracks = tracks,
+            )
+        }
+
         if (kind == "genre") {
             if (offline) return null
 

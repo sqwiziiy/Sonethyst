@@ -48,6 +48,11 @@ data class Genre(
     val songCount: Int = 0,
 )
 
+data class CustomTag(
+    val name: String,
+    val songCount: Int = 0,
+)
+
 data class Playlist(
     val id: String,
     val title: String,
@@ -76,6 +81,7 @@ enum class LibraryFilter(val label: String) {
     ALBUMS("Albums"),
     ARTISTS("Artists"),
     GENRES("Genres"),
+    TAGS("Tags"),
     SONGS("Songs"),
     DOWNLOADED("Downloaded"),
 }

@@ -30,6 +30,45 @@ class MergedBackend(
         return idx to wrapped.substring(i + 1)
     }
 
+    override fun customTagKey(
+        id: String,
+    ): String {
+        val unwrapped = unwrap(id)
+
+        if (unwrapped != null) {
+            val (index, originalId) = unwrapped
+            return sources[index].customTagKey(originalId)
+        }
+
+        return primary?.customTagKey(id)
+            ?: super.customTagKey(id)
+    }
+
+    override val customTagScopes: Set<String>
+        get() =
+            sources.flatMapTo(
+                linkedSetOf()
+            ) {
+                it.customTagScopes
+            }
+
+    override suspend fun songForCustomTagKey(
+        key: String,
+    ): Song? {
+        sources.forEachIndexed { index, source ->
+            val song =
+                runCatching {
+                    source.songForCustomTagKey(key)
+                }.getOrNull()
+
+            if (song != null) {
+                return song.wrap(index)
+            }
+        }
+
+        return null
+    }
+
     private fun Song.wrap(idx: Int) = copy(
         id = wrapId(idx, id),
         albumId = wrapId(idx, albumId),

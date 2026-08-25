@@ -102,6 +102,28 @@ class LocalBackend(
         )
     }
 
+    override fun customTagKey(
+        id: String,
+    ): String =
+        "local$CUSTOM_TAG_KEY_SEP$id"
+
+    override val customTagScopes: Set<String>
+        get() = setOf("local")
+
+    override suspend fun songForCustomTagKey(
+        key: String,
+    ): Song? {
+        val prefix = "local$CUSTOM_TAG_KEY_SEP"
+
+        if (!key.startsWith(prefix)) {
+            return null
+        }
+
+        return songFor(
+            key.removePrefix(prefix)
+        )
+    }
+
     override suspend fun ping(): Boolean = true
 
     override suspend fun home(): HomeData {

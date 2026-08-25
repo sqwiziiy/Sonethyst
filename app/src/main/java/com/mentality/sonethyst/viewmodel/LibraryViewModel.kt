@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
+import com.mentality.sonethyst.model.CustomTag
 import com.mentality.sonethyst.model.Genre
 import com.mentality.sonethyst.model.LibraryFilter
 import com.mentality.sonethyst.model.LibraryLayout
@@ -27,6 +28,7 @@ data class LibraryUiState(
     val albums: List<Album> = emptyList(),
     val artists: List<Artist> = emptyList(),
     val genres: List<Genre> = emptyList(),
+    val customTags: List<CustomTag> = emptyList(),
     val genresLoading: Boolean = false,
     val genresLoaded: Boolean = false,
     val supportsGenres: Boolean = false,
@@ -78,6 +80,11 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             container.playlistReload.drop(1).collect {
                 refreshPlaylists()
+            }
+        }
+        viewModelScope.launch {
+            container.customTagReload.drop(1).collect {
+                refreshCustomTags()
             }
         }
         viewModelScope.launch {
@@ -138,6 +145,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                     likedCover = songs.firstOrNull()?.artworkUrl ?: "",
                     supportsFolders = container.repository.supportsFolders,
                     supportsGenres = container.repository.supportsGenres,
+                    customTags = container.repository.allCustomTags(),
                 )
             }
         }
@@ -228,6 +236,15 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                 genres = emptyList(),
                 genresLoading = false,
                 genresLoaded = false,
+            )
+        }
+    }
+
+    private fun refreshCustomTags() {
+        _state.update {
+            it.copy(
+                customTags =
+                    container.repository.allCustomTags()
             )
         }
     }

@@ -281,6 +281,11 @@ class AppContainer(context: Context) {
     private val _playlistReload = MutableStateFlow(0)
     val playlistReload: StateFlow<Int> = _playlistReload.asStateFlow()
 
+    // Sonethyst-only custom tag changes are cheap to refresh independently.
+    private val _customTagReload = MutableStateFlow(0)
+    val customTagReload: StateFlow<Int> =
+        _customTagReload.asStateFlow()
+
     // Rating mutations patch already-loaded Song objects in place instead of
     // forcing complete library/search/detail reloads.
     private val _ratingChanges =
@@ -306,6 +311,7 @@ class AppContainer(context: Context) {
     val repository = MusicRepository(
         backendProvider = { backend },
         downloadManager = downloadManager,
+        localStore = localStore,
         offlineProvider = { offlineFlag },
         currentServerIdProvider = { currentServerId() },
         smartPlaylistsProvider = { smartPlaylistsValue },
@@ -332,6 +338,23 @@ class AppContainer(context: Context) {
                     rating = safe,
                 )
             )
+        }
+
+        return updated
+    }
+
+    suspend fun setSongCustomTags(
+        songId: String,
+        tags: Collection<String>,
+    ): Boolean {
+        val updated =
+            repository.setCustomTags(
+                songId,
+                tags,
+            )
+
+        if (updated) {
+            _customTagReload.value++
         }
 
         return updated

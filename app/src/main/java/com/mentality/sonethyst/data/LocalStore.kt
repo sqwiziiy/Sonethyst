@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.File
+import java.util.Locale
 import java.util.UUID
 
 // fields nullable-safe for gson forward compat
@@ -20,6 +21,7 @@ private data class LocalState(
     val playlists: List<LocalPlaylist>? = emptyList(),
     val likedIds: List<String>? = emptyList(),
     val ratings: Map<String, Int>? = emptyMap(),
+    val customTags: Map<String, List<String>>? = emptyMap(),
 )
 
 class LocalStore(context: Context) {
@@ -112,6 +114,66 @@ class LocalStore(context: Context) {
         runCatching { gson.fromJson(json, object : TypeToken<LocalState>() {}.type) as? LocalState }.getOrNull()?.let {
             state = it; persist()
         }
+    }
+
+    fun customTags(key: String): List<String> =
+        state.customTags
+            .orEmpty()[key]
+            .orEmpty()
+
+    fun customTagAssignments(
+        scopes: Set<String>,
+    ): Map<String, List<String>> {
+        if (scopes.isEmpty()) {
+            return emptyMap()
+        }
+
+        return state.customTags
+            .orEmpty()
+            .filterKeys { key ->
+                val separator =
+                    key.indexOf(CUSTOM_TAG_KEY_SEP)
+
+                separator > 0 &&
+                    key.substring(
+                        0,
+                        separator,
+                    ) in scopes
+            }
+    }
+
+    fun setCustomTags(
+        key: String,
+        tags: Collection<String>,
+    ): Boolean = synchronized(lock) {
+        val normalized =
+            tags
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .filter { it.length <= 64 }
+                .distinctBy {
+                    it.lowercase(Locale.ROOT)
+                }
+                .sortedBy {
+                    it.lowercase(Locale.ROOT)
+                }
+
+        val all =
+            state.customTags
+                .orEmpty()
+                .toMutableMap()
+
+        if (normalized.isEmpty()) {
+            all.remove(key)
+        } else {
+            all[key] = normalized
+        }
+
+        state = state.copy(
+            customTags = all
+        )
+        persist()
+        true
     }
 
     fun rating(id: String): Int =

@@ -6,9 +6,36 @@ import com.mentality.sonethyst.model.Genre
 import com.mentality.sonethyst.model.Playlist
 import com.mentality.sonethyst.model.Song
 
+const val CUSTOM_TAG_KEY_SEP = '\u0002'
+
 // returns app domain models so callers are server-agnostic backend owns dto mapping auth and urls
 interface MediaBackend {
     val session: Session
+
+    /*
+     * Custom tags are Sonethyst-owned metadata. The persistent key must use
+     * the original backend id, never a temporary merged-library wrapper id.
+     */
+    fun customTagKey(id: String): String =
+        "${session.accountKey()}$CUSTOM_TAG_KEY_SEP$id"
+
+    val customTagScopes: Set<String>
+        get() = setOf(session.accountKey())
+
+    suspend fun songForCustomTagKey(
+        key: String,
+    ): Song? {
+        val prefix =
+            "${session.accountKey()}$CUSTOM_TAG_KEY_SEP"
+
+        if (!key.startsWith(prefix)) {
+            return null
+        }
+
+        return songFor(
+            key.removePrefix(prefix)
+        )
+    }
 
     suspend fun ping(): Boolean
 

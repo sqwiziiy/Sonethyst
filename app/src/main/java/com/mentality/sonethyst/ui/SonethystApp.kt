@@ -276,6 +276,31 @@ fun SonethystApp() {
     }
     var addSongsLoading by remember { mutableStateOf(false) }
     var addSongsSaving by remember { mutableStateOf(false) }
+    var customTagSong by remember {
+        mutableStateOf<
+            com.mentality.sonethyst.model.Song?
+        >(null)
+    }
+    var customTagCurrent by remember {
+        mutableStateOf<List<String>>(emptyList())
+    }
+    var customTagKnown by remember {
+        mutableStateOf<List<String>>(emptyList())
+    }
+
+    fun openCustomTagEditor(
+        song: com.mentality.sonethyst.model.Song,
+    ) {
+        customTagSong = song
+        customTagCurrent =
+            container.repository.customTagsFor(song.id)
+
+        customTagKnown =
+            container.repository
+                .allCustomTags()
+                .map { it.name }
+    }
+
 
     fun openAddSongsToPlaylist(
         playlistId: String,
@@ -490,6 +515,44 @@ fun SonethystApp() {
         )
     }
 
+    customTagSong?.let { song ->
+        com.mentality.sonethyst.ui.components.SongTagsDialog(
+            song = song,
+            currentTags = customTagCurrent,
+            existingTags = customTagKnown,
+            onSave = { tags ->
+                scope.launch {
+                    val saved =
+                        container.setSongCustomTags(
+                            song.id,
+                            tags,
+                        )
+
+                    if (saved) {
+                        customTagSong = null
+                        customTagCurrent = emptyList()
+                        customTagKnown = emptyList()
+
+                        confirm(
+                            if (tags.isEmpty()) {
+                                "Tags cleared"
+                            } else {
+                                "Tags updated"
+                            }
+                        )
+                    } else {
+                        confirm("Couldn't update tags")
+                    }
+                }
+            },
+            onDismiss = {
+                customTagSong = null
+                customTagCurrent = emptyList()
+                customTagKnown = emptyList()
+            },
+        )
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         gesturesEnabled = showChrome && onTopLevel,
@@ -658,6 +721,9 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                                 } else {
                                     null
                                 },
+                            onEditCustomTags = {
+                                openCustomTagEditor(it)
+                            },
                         )
                     }
                     composable(Routes.LIBRARY) {
@@ -766,6 +832,9 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                                 } else {
                                     null
                                 },
+                            onEditCustomTags = {
+                                openCustomTagEditor(it)
+                            },
                         )
                     }
                     composable(
@@ -1051,6 +1120,9 @@ onAddToPlaylist = {
                                 } else {
                                     null
                                 },
+                            onEditCustomTags = {
+                                openCustomTagEditor(it)
+                            },
                         )
                     }
                     composable(

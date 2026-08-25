@@ -127,6 +127,7 @@ fun LibraryScreen(
     onEditTags: ((Song) -> Unit)? = null,
     serverTagEditing: Boolean = false,
     onSetRating: ((Song, Int) -> Unit)? = null,
+    onEditCustomTags: ((Song) -> Unit)? = null,
 ) {
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     var showCreate by remember { mutableStateOf(false) }
@@ -340,6 +341,10 @@ fun LibraryScreen(
                                     cb(s, rating)
                                 }
                             },
+                        onEditCustomTags =
+                            onEditCustomTags?.let { cb ->
+                                { cb(s) }
+                            },
                     )
                 }
 
@@ -463,7 +468,33 @@ fun LibraryScreen(
                 buildRows(state, filter, sort, pins)
             }
 
+            LibraryFilter.TAGS -> remember(
+                state.customTags,
+                filter,
+                sort,
+            ) {
+                buildRows(state, filter, sort, pins)
+            }
+
             else -> emptyList()
+        }
+
+        if (
+            filter == LibraryFilter.TAGS &&
+            rows.isEmpty()
+        ) {
+            Box(
+                Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    "No custom tags yet",
+                    color =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant,
+                )
+            }
+            return@Column
         }
 
         val openRow: (LibRow) -> Unit = remember(
@@ -663,6 +694,18 @@ private fun buildRows(
             )
         }
 
+        LibraryFilter.TAGS -> state.customTags.map {
+            LibRow(
+                it.name,
+                "Tag • ${it.songCount} song${if (it.songCount == 1) "" else "s"}",
+                "",
+                accentFor("tag:${it.name}"),
+                it.name,
+                "tag",
+                menu = false,
+            )
+        }
+
         else -> return emptyList()
     }
 
@@ -675,7 +718,8 @@ private fun buildRows(
     if (
         filter == LibraryFilter.ALBUMS ||
         filter == LibraryFilter.ARTISTS ||
-        filter == LibraryFilter.GENRES
+        filter == LibraryFilter.GENRES ||
+        filter == LibraryFilter.TAGS
     ) {
         return sorted
     }
