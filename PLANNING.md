@@ -150,6 +150,8 @@ Sonethyst is an independent Android music player fork based on Aurora.
 - [ ] Improved Now Playing
 - [x] Make the liked/favorite heart use the active track artwork-derived accent instead of a fixed theme color; fall back to MaterialTheme.colorScheme.primary when no track accent is available and preserve sufficient contrast
 - [ ] Waveform/visualization improvements
+  - [ ] Fix track artwork crop/alignment in the full-screen visualizer
+  - [ ] Improve the horizontal visualizer-style picker so it remains easy to scroll and does not immediately disappear/off-screen
 - [ ] Artwork options
 - [ ] Credits
 - [ ] Detailed active audio-stream information
