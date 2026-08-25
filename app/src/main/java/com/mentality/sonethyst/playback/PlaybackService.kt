@@ -1783,15 +1783,6 @@ class PlaybackService : MediaLibraryService() {
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = mediaSession
 
-    override fun onTaskRemoved(rootIntent: android.content.Intent?) {
-        // swipe-away stops playback so music doesnt keep going
-        runCatching { fadePlayer?.run { pause(); clearMediaItems() } }
-        player.pause()
-        player.stop()
-        player.clearMediaItems()
-        stopSelf()
-    }
-
     override fun onDestroy() {
         runCatching { fadePlayer?.release() }
         fadePlayer = null
