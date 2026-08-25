@@ -79,7 +79,8 @@ Sonethyst is an independent Android music player fork based on Aurora.
 - [x] Avoid full-size artwork decoding for small list rows
 - [x] Review paging/incremental loading for very large song libraries
 - [x] Keep scroll position stable after likes, playlist mutations and metadata changes
-- [ ] Profile scrolling for dropped frames and excessive allocations on a real device
+- [x] Profile scrolling for dropped frames on a real device
+- [ ] Profile excessive allocations with desktop tooling — deferred; PC/ADB profiling not performed
 
 ## Phase 2 — Library
 
