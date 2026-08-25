@@ -259,6 +259,12 @@ data class GesturePrefs(
     val doubleTapPause: Boolean = true,
 )
 
+data class LocalFolderPrefs(
+    val includeOnly: Boolean = false,
+    val excluded: Set<String> = emptySet(),
+    val included: Set<String> = emptySet(),
+)
+
 class SettingsStore(private val context: Context) {
 
     private val gson = Gson()
@@ -325,6 +331,8 @@ class SettingsStore(private val context: Context) {
         val UNIFIED_LIBRARY = booleanPreferencesKey("unified_library")
         val MERGE_SOURCES = stringSetPreferencesKey("merge_sources")      // empty = all
         val LOCAL_EXCLUDED_FOLDERS = stringSetPreferencesKey("local_excluded_folders")
+        val LOCAL_INCLUDE_ONLY = booleanPreferencesKey("local_include_only")
+        val LOCAL_INCLUDED_FOLDERS = stringSetPreferencesKey("local_included_folders")
         val RECENT_SEARCHES = stringPreferencesKey("recent_searches")
         val SQUIG_BASE = stringPreferencesKey("squig_base_url")
         val SQUIG_TARGET = stringPreferencesKey("squig_target")
@@ -671,33 +679,62 @@ class SettingsStore(private val context: Context) {
     val mergeSources: Flow<Set<String>> = context.dataStore.data.map { it[Keys.MERGE_SOURCES] ?: emptySet() }
     suspend fun setMergeSources(keys: Set<String>) = context.dataStore.edit { it[Keys.MERGE_SOURCES] = keys }
 
-    val localExcludedFolders: Flow<Set<String>> =
+    private fun normalizeLocalFolder(path: String): String =
+        path.replace('\\', '/')
+            .trim()
+            .trimEnd('/')
+
+    private fun normalizeLocalFolders(
+        paths: Set<String>?,
+    ): Set<String> =
+        paths.orEmpty()
+            .map(::normalizeLocalFolder)
+            .filter { it.isNotBlank() }
+            .toSet()
+
+    val localFolderPrefs: Flow<LocalFolderPrefs> =
         context.dataStore.data
             .map { prefs ->
-                prefs[Keys.LOCAL_EXCLUDED_FOLDERS]
-                    ?.map { path ->
-                        path.replace('\\', '/').trim().trimEnd('/')
-                    }
-                    ?.filter { it.isNotBlank() }
-                    ?.toSet()
-                    ?: emptySet()
+                LocalFolderPrefs(
+                    includeOnly =
+                        prefs[Keys.LOCAL_INCLUDE_ONLY] ?: false,
+                    excluded =
+                        normalizeLocalFolders(
+                            prefs[Keys.LOCAL_EXCLUDED_FOLDERS],
+                        ),
+                    included =
+                        normalizeLocalFolders(
+                            prefs[Keys.LOCAL_INCLUDED_FOLDERS],
+                        ),
+                )
             }
             .distinctUntilChanged()
+
+    val localExcludedFolders: Flow<Set<String>> =
+        localFolderPrefs
+            .map { it.excluded }
+            .distinctUntilChanged()
+
+    suspend fun setLocalFolderIncludeOnly(
+        enabled: Boolean,
+    ) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.LOCAL_INCLUDE_ONLY] = enabled
+        }
+    }
 
     suspend fun setLocalFolderExcluded(
         path: String,
         excluded: Boolean,
     ) {
-        val normalized =
-            path.replace('\\', '/').trim().trimEnd('/')
-
+        val normalized = normalizeLocalFolder(path)
         if (normalized.isBlank()) return
 
         context.dataStore.edit { prefs ->
             val current =
-                prefs[Keys.LOCAL_EXCLUDED_FOLDERS]
-                    ?.toMutableSet()
-                    ?: mutableSetOf()
+                normalizeLocalFolders(
+                    prefs[Keys.LOCAL_EXCLUDED_FOLDERS],
+                ).toMutableSet()
 
             if (excluded) {
                 current += normalized
@@ -712,6 +749,46 @@ class SettingsStore(private val context: Context) {
     suspend fun clearLocalFolderExclusions() {
         context.dataStore.edit { prefs ->
             prefs[Keys.LOCAL_EXCLUDED_FOLDERS] = emptySet()
+        }
+    }
+
+    suspend fun setLocalFolderIncluded(
+        path: String,
+        included: Boolean,
+    ) {
+        val normalized = normalizeLocalFolder(path)
+        if (normalized.isBlank()) return
+
+        context.dataStore.edit { prefs ->
+            val current =
+                normalizeLocalFolders(
+                    prefs[Keys.LOCAL_INCLUDED_FOLDERS],
+                ).toMutableSet()
+
+            if (included) {
+                val coveredByParent =
+                    current.any { parent ->
+                        normalized == parent ||
+                            normalized.startsWith("$parent/")
+                    }
+
+                if (!coveredByParent) {
+                    current.removeAll { child ->
+                        child.startsWith("$normalized/")
+                    }
+                    current += normalized
+                }
+            } else {
+                current -= normalized
+            }
+
+            prefs[Keys.LOCAL_INCLUDED_FOLDERS] = current
+        }
+    }
+
+    suspend fun clearLocalFolderIncludes() {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.LOCAL_INCLUDED_FOLDERS] = emptySet()
         }
     }
 

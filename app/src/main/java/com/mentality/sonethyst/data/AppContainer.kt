@@ -384,8 +384,8 @@ class AppContainer(context: Context) {
         scope.launch {
             var first = true
 
-            settingsStore.localExcludedFolders.collect { excluded ->
-                localLibrary.setExcludedFolders(excluded)
+            settingsStore.localFolderPrefs.collect { prefs ->
+                localLibrary.setFolderPolicy(prefs)
 
                 if (!first) {
                     runCatching {

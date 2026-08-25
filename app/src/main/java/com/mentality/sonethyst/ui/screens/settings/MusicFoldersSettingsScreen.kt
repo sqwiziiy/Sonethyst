@@ -52,9 +52,16 @@ fun MusicFoldersSettingsScreen(
     val container =
         (context.applicationContext as SonethystApplication).container
 
-    val excludedFolders by
-        container.settingsStore.localExcludedFolders
-            .collectAsStateWithLifecycle(initialValue = emptySet())
+    val folderPrefs by
+        container.settingsStore.localFolderPrefs
+            .collectAsStateWithLifecycle(
+                initialValue =
+                    com.mentality.sonethyst.data.LocalFolderPrefs(),
+            )
+
+    val excludedFolders = folderPrefs.excluded
+    val includedFolders = folderPrefs.included
+    val includeOnly = folderPrefs.includeOnly
 
     val libraryReload by
         container.libraryReload.collectAsStateWithLifecycle()
@@ -76,6 +83,13 @@ fun MusicFoldersSettingsScreen(
 
     val normalizedExcluded = remember(excludedFolders) {
         excludedFolders
+            .map(::normalize)
+            .filter { it.isNotBlank() }
+            .toSet()
+    }
+
+    val normalizedIncluded = remember(includedFolders) {
+        includedFolders
             .map(::normalize)
             .filter { it.isNotBlank() }
             .toSet()
@@ -127,7 +141,11 @@ fun MusicFoldersSettingsScreen(
                     )
 
                     Text(
-                        "Excluded folders and their subfolders are hidden only from Sonethyst. Your actual music files are never deleted or modified.",
+                        if (includeOnly) {
+                            "Only selected folders and their subfolders are shown. Your exclusion list is preserved for normal mode."
+                        } else {
+                            "Excluded folders and their subfolders are hidden only from Sonethyst. Your actual music files are never deleted or modified."
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color =
                             MaterialTheme.colorScheme
@@ -136,6 +154,63 @@ fun MusicFoldersSettingsScreen(
                             Modifier.padding(top = 4.dp),
                     )
                 }
+            }
+
+            item(
+                key = "folder-mode",
+                contentType = "folder-mode",
+            ) {
+                ListItem(
+                    headlineContent = {
+                        Text(
+                            "Include only selected folders",
+                            fontWeight = FontWeight.Medium,
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            if (
+                                includeOnly &&
+                                normalizedIncluded.isEmpty()
+                            ) {
+                                "No folders selected — the local library is empty until you select at least one folder below."
+                            } else {
+                                "When enabled, only selected folders and their subfolders appear in the local library."
+                            },
+                        )
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = includeOnly,
+                            enabled = !rescanning,
+                            onCheckedChange = { enabled ->
+                                scope.launch {
+                                    container.settingsStore
+                                        .setLocalFolderIncludeOnly(
+                                            enabled
+                                        )
+                                }
+                            },
+                        )
+                    },
+                    colors =
+                        ListItemDefaults.colors(
+                            containerColor = Color.Transparent,
+                        ),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = 12.dp,
+                                vertical = 2.dp,
+                            )
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(
+                                MaterialTheme.colorScheme
+                                    .surfaceContainerHigh
+                                    .copy(alpha = 0.5f)
+                            ),
+                )
             }
 
             item(
@@ -193,7 +268,25 @@ fun MusicFoldersSettingsScreen(
                         )
                     }
 
-                    if (normalizedExcluded.isNotEmpty()) {
+                    if (
+                        includeOnly &&
+                        normalizedIncluded.isNotEmpty()
+                    ) {
+                        OutlinedButton(
+                            enabled = !rescanning,
+                            onClick = {
+                                scope.launch {
+                                    container.settingsStore
+                                        .clearLocalFolderIncludes()
+                                }
+                            },
+                        ) {
+                            Text("Clear selection")
+                        }
+                    } else if (
+                        !includeOnly &&
+                        normalizedExcluded.isNotEmpty()
+                    ) {
                         OutlinedButton(
                             enabled = !rescanning,
                             onClick = {
@@ -264,6 +357,26 @@ fun MusicFoldersSettingsScreen(
                         directlyExcluded ||
                             excludedByParent != null
 
+                    val directlyIncluded =
+                        path in normalizedIncluded
+
+                    val includedByParent =
+                        normalizedIncluded
+                            .firstOrNull { parent ->
+                                parent != path &&
+                                    path.startsWith(
+                                        "$parent/"
+                                    )
+                            }
+
+                    val effectivelyIncluded =
+                        if (includeOnly) {
+                            directlyIncluded ||
+                                includedByParent != null
+                        } else {
+                            !effectivelyExcluded
+                        }
+
                     val folderName =
                         path.substringAfterLast('/')
                             .ifBlank { path }
@@ -289,27 +402,45 @@ fun MusicFoldersSettingsScreen(
                                 )
 
                                 Text(
-                                    when {
-                                        excludedByParent != null ->
-                                            "Excluded by parent folder"
+                                    if (includeOnly) {
+                                        when {
+                                            includedByParent != null ->
+                                                "Included by selected parent"
 
-                                        directlyExcluded ->
-                                            "Excluded"
+                                            directlyIncluded ->
+                                                "Selected"
 
-                                        else ->
-                                            "Included"
+                                            else ->
+                                                "Not selected"
+                                        }
+                                    } else {
+                                        when {
+                                            excludedByParent != null ->
+                                                "Excluded by parent folder"
+
+                                            directlyExcluded ->
+                                                "Excluded"
+
+                                            else ->
+                                                "Included"
+                                        }
                                     },
                                     color =
-                                        if (
-                                            effectivelyExcluded
-                                        ) {
-                                            MaterialTheme
-                                                .colorScheme
-                                                .error
-                                        } else {
-                                            MaterialTheme
-                                                .colorScheme
-                                                .primary
+                                        when {
+                                            effectivelyIncluded ->
+                                                MaterialTheme
+                                                    .colorScheme
+                                                    .primary
+
+                                            includeOnly ->
+                                                MaterialTheme
+                                                    .colorScheme
+                                                    .onSurfaceVariant
+
+                                            else ->
+                                                MaterialTheme
+                                                    .colorScheme
+                                                    .error
                                         },
                                     style =
                                         MaterialTheme
@@ -344,35 +475,47 @@ fun MusicFoldersSettingsScreen(
                                     null,
                                     tint =
                                         if (
-                                            effectivelyExcluded
+                                            effectivelyIncluded
                                         ) {
                                             MaterialTheme
                                                 .colorScheme
-                                                .onSurfaceVariant
+                                                .primary
                                         } else {
                                             MaterialTheme
                                                 .colorScheme
-                                                .primary
+                                                .onSurfaceVariant
                                         },
                                 )
                             }
                         },
                         trailingContent = {
                             Switch(
-                                checked =
-                                    !effectivelyExcluded,
+                                checked = effectivelyIncluded,
                                 enabled =
-                                    excludedByParent == null &&
-                                        !rescanning,
+                                    if (includeOnly) {
+                                        includedByParent == null &&
+                                            !rescanning
+                                    } else {
+                                        excludedByParent == null &&
+                                            !rescanning
+                                    },
                                 onCheckedChange = {
                                         included ->
                                     scope.launch {
-                                        container.settingsStore
-                                            .setLocalFolderExcluded(
-                                                path = path,
-                                                excluded =
-                                                    !included,
-                                            )
+                                        if (includeOnly) {
+                                            container.settingsStore
+                                                .setLocalFolderIncluded(
+                                                    path = path,
+                                                    included = included,
+                                                )
+                                        } else {
+                                            container.settingsStore
+                                                .setLocalFolderExcluded(
+                                                    path = path,
+                                                    excluded =
+                                                        !included,
+                                                )
+                                        }
                                     }
                                 },
                                 colors =

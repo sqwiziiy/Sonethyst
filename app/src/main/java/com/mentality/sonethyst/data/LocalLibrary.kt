@@ -38,6 +38,12 @@ class LocalLibrary(
     private var excludedFolders: Set<String> = emptySet()
 
     @Volatile
+    private var includedFolders: Set<String> = emptySet()
+
+    @Volatile
+    private var includeOnlyFolders: Boolean = false
+
+    @Volatile
     private var detectedFolders: List<String> = emptyList()
 
     @Volatile var folderRoot: String = ""; private set
@@ -58,12 +64,20 @@ class LocalLibrary(
     fun detectedMusicFolders(): List<String> =
         detectedFolders
 
-    fun setExcludedFolders(paths: Set<String>) {
+    fun setFolderPolicy(prefs: LocalFolderPrefs) {
         excludedFolders =
-            paths
+            prefs.excluded
                 .map { normalizeFolder(it) }
                 .filter { it.isNotBlank() }
                 .toSet()
+
+        includedFolders =
+            prefs.included
+                .map { normalizeFolder(it) }
+                .filter { it.isNotBlank() }
+                .toSet()
+
+        includeOnlyFolders = prefs.includeOnly
     }
 
     private fun normalizeFolder(path: String): String =
@@ -71,12 +85,21 @@ class LocalLibrary(
             .trim()
             .trimEnd('/')
 
-    private fun isFolderExcluded(path: String): Boolean {
+    private fun shouldIncludeFolder(path: String): Boolean {
         val normalized = normalizeFolder(path)
 
-        if (normalized.isBlank()) return false
+        if (includeOnlyFolders) {
+            if (normalized.isBlank()) return false
 
-        return excludedFolders.any { excluded ->
+            return includedFolders.any { included ->
+                normalized == included ||
+                    normalized.startsWith("$included/")
+            }
+        }
+
+        if (normalized.isBlank()) return true
+
+        return excludedFolders.none { excluded ->
             normalized == excluded ||
                 normalized.startsWith("$excluded/")
         }
@@ -216,12 +239,9 @@ class LocalLibrary(
                         allDetectedDirs += directory
                     }
 
-                    // Exclusion affects Sonethyst's library only.
-                    // MediaStore and the actual file are never modified.
-                    if (
-                        directory.isNotBlank() &&
-                        isFolderExcluded(directory)
-                    ) {
+                    // Folder policy affects Sonethyst's in-memory library
+                    // only. MediaStore and the actual file are never modified.
+                    if (!shouldIncludeFolder(directory)) {
                         continue
                     }
 
