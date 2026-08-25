@@ -132,17 +132,40 @@ fun LibraryScreen(
     val sort = state.sort
     val layout = state.layout
     val libColumns = com.mentality.sonethyst.ui.theme.LocalUiPrefs.current.libraryColumns.coerceIn(2, 4)
-    val actions = LibActions(
-        isLiked = { id -> likedIds.contains(id) },
-        onPlay = { r -> onPlayCollection(r.id, r.kind) },
-        onShuffle = { r -> onShuffleCollection(r.id, r.kind) },
-        onQueue = { r -> onQueueCollection(r.id, r.kind) },
-        onToggleLike = { r -> onToggleLikeKind(r.id, r.kind) },
-        onDelete = { r -> onDeletePlaylist(r.id) },
-        onEditSmart = { r -> onEditSmart(r.id) },
-        onDeleteSmart = { r -> onDeleteSmart(r.id) },
-        onExport = { r -> onExportPlaylist(r.id, r.kind, r.title) },
-    )
+
+    val actions = remember(
+        likedIds,
+        onPlayCollection,
+        onShuffleCollection,
+        onQueueCollection,
+        onToggleLikeKind,
+        onDeletePlaylist,
+        onEditSmart,
+        onDeleteSmart,
+        onExportPlaylist,
+    ) {
+        LibActions(
+            isLiked = { id -> likedIds.contains(id) },
+            onPlay = { r -> onPlayCollection(r.id, r.kind) },
+            onShuffle = { r -> onShuffleCollection(r.id, r.kind) },
+            onQueue = { r -> onQueueCollection(r.id, r.kind) },
+            onToggleLike = { r -> onToggleLikeKind(r.id, r.kind) },
+            onDelete = { r -> onDeletePlaylist(r.id) },
+            onEditSmart = { r -> onEditSmart(r.id) },
+            onDeleteSmart = { r -> onDeleteSmart(r.id) },
+            onExport = { r -> onExportPlaylist(r.id, r.kind, r.title) },
+        )
+    }
+
+    val visibleFilters = remember(canDownload) {
+        LibraryFilter.entries.filter {
+            canDownload || it != LibraryFilter.DOWNLOADED
+        }
+    }
+
+    val userInitials = remember(username) {
+        username.take(2).uppercase().ifBlank { "ME" }
+    }
 
     Column(Modifier.fillMaxWidth().padding(top = topInset)) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -151,7 +174,7 @@ fun LibraryScreen(
                     .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary)))
                     .clickable(onClick = onOpenDrawer),
                 contentAlignment = Alignment.Center,
-            ) { Text(username.take(2).uppercase().ifBlank { "ME" }, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onPrimary) }
+            ) { Text(userInitials, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onPrimary) }
             Spacer(Modifier.width(12.dp))
             Text("Your Library", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             Icon(Icons.Filled.Search, "Search", modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onOpenSearch).padding(8.dp))
@@ -179,13 +202,12 @@ fun LibraryScreen(
                 }
             }
             // local mode has no downloads
-            val visible = LibraryFilter.entries.filter { canDownload || it != LibraryFilter.DOWNLOADED }
             items(
-                count = visible.size,
-                key = { i -> visible[i].name },
+                count = visibleFilters.size,
+                key = { i -> visibleFilters[i].name },
                 contentType = { "library-filter" },
             ) { i ->
-                val f = visible[i]
+                val f = visibleFilters[i]
                 if (f == LibraryFilter.ALL && filter != LibraryFilter.ALL) return@items
                 FilterChip(f.label, selected = f == filter) { onFilter(f) }
             }
@@ -315,15 +337,34 @@ fun LibraryScreen(
             return@Column
         }
 
-        val rows = remember(state, filter, sort, pins) {
+        val rows = remember(
+            state.smartPlaylists,
+            state.playlists,
+            state.albums,
+            state.artists,
+            state.likedSongCount,
+            state.likedCover,
+            state.supportsFolders,
+            filter,
+            sort,
+            pins,
+        ) {
             buildRows(state, filter, sort, pins)
         }
-        val openRow: (LibRow) -> Unit = { r ->
-            when (r.kind) {
-                "folders" -> onOpenFolders()
-                "radio" -> onOpenRadio()
-                "podcasts" -> onOpenPodcasts()
-                else -> onOpenDetail(r.kind, r.id)
+
+        val openRow: (LibRow) -> Unit = remember(
+            onOpenFolders,
+            onOpenRadio,
+            onOpenPodcasts,
+            onOpenDetail,
+        ) {
+            { r ->
+                when (r.kind) {
+                    "folders" -> onOpenFolders()
+                    "radio" -> onOpenRadio()
+                    "podcasts" -> onOpenPodcasts()
+                    else -> onOpenDetail(r.kind, r.id)
+                }
             }
         }
         if (layout == LibraryLayout.LIST) {
