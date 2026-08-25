@@ -1,7 +1,13 @@
 package com.mentality.sonethyst.ui
+import android.app.Activity
+import android.app.RecoverableSecurityException
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
 
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -1364,6 +1370,134 @@ onAddToPlaylist = {
                     composable(Routes.DUPLICATES) {
                         val dupVM: com.mentality.sonethyst.viewmodel.DuplicatesViewModel = viewModel()
                         val dupState by dupVM.state.collectAsStateWithLifecycle()
+                        val duplicateDeleteLauncher =
+                            rememberLauncherForActivityResult(
+                                ActivityResultContracts
+                                    .StartIntentSenderForResult()
+                            ) { result ->
+                                if (
+                                    result.resultCode ==
+                                    Activity.RESULT_OK
+                                ) {
+                                    dupVM.scan(
+                                        refreshLocal = true
+                                    )
+                                    confirm("File deleted")
+                                }
+                            }
+
+                        val deleteDuplicate:
+                            (com.mentality.sonethyst.model.Song) -> Unit =
+                            { song ->
+                                val uri =
+                                    runCatching {
+                                        Uri.parse(
+                                            song.streamUrl
+                                        )
+                                    }.getOrNull()
+
+                                if (
+                                    uri == null ||
+                                    uri.scheme != "content" ||
+                                    !container.repository
+                                        .isLocalLibrarySong(
+                                            song.id
+                                        )
+                                ) {
+                                    confirm(
+                                        "Only local files can be deleted here"
+                                    )
+                                } else if (
+                                    Build.VERSION.SDK_INT >= 30
+                                ) {
+                                    runCatching {
+                                        MediaStore.createDeleteRequest(
+                                            context.contentResolver,
+                                            listOf(uri),
+                                        )
+                                    }.onSuccess { request ->
+                                        duplicateDeleteLauncher.launch(
+                                            IntentSenderRequest
+                                                .Builder(
+                                                    request.intentSender
+                                                )
+                                                .build()
+                                        )
+                                    }.onFailure {
+                                        confirm(
+                                            "Couldn't request file deletion"
+                                        )
+                                    }
+                                } else {
+                                    scope.launch {
+                                        val result =
+                                            kotlinx.coroutines.withContext(
+                                                kotlinx.coroutines.Dispatchers.IO
+                                            ) {
+                                                try {
+                                                    val deleted =
+                                                        context
+                                                            .contentResolver
+                                                            .delete(
+                                                                uri,
+                                                                null,
+                                                                null,
+                                                            ) > 0
+
+                                                    deleted to null
+                                                } catch (
+                                                    error: SecurityException
+                                                ) {
+                                                    val sender =
+                                                        if (
+                                                            Build.VERSION.SDK_INT >= 29 &&
+                                                            error is RecoverableSecurityException
+                                                        ) {
+                                                            error
+                                                                .userAction
+                                                                .actionIntent
+                                                                .intentSender
+                                                        } else {
+                                                            null
+                                                        }
+
+                                                    false to sender
+                                                }
+                                            }
+
+                                        val deleted =
+                                            result.first
+                                        val sender =
+                                            result.second
+
+                                        when {
+                                            deleted -> {
+                                                dupVM.scan(
+                                                    refreshLocal = true
+                                                )
+                                                confirm(
+                                                    "File deleted"
+                                                )
+                                            }
+
+                                            sender != null -> {
+                                                duplicateDeleteLauncher
+                                                    .launch(
+                                                        IntentSenderRequest
+                                                            .Builder(sender)
+                                                            .build()
+                                                    )
+                                            }
+
+                                            else -> {
+                                                confirm(
+                                                    "Couldn't delete file"
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         com.mentality.sonethyst.ui.screens.library.DuplicatesScreen(
                             contentPadding = inner,
                             loading = dupState.loading,
@@ -1371,7 +1505,24 @@ onAddToPlaylist = {
                             groups = dupState.groups,
                             currentSongId = playerState.current.id,
                             onBack = { navController.popBackStack() },
-                            onPlay = { s -> playerVM.playAll(listOf(s), 0) },
+                            onRefresh = {
+                                dupVM.scan(
+                                    refreshLocal = true
+                                )
+                            },
+                            canDelete = { song ->
+                                container.repository
+                                    .isLocalLibrarySong(
+                                        song.id
+                                    )
+                            },
+                            onDelete = deleteDuplicate,
+                            onPlay = { s ->
+                                playerVM.playAll(
+                                    listOf(s),
+                                    0,
+                                )
+                            },
                         )
                     }
                     composable(Routes.STATS) {

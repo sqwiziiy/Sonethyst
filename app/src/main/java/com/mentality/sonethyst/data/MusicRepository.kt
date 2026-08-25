@@ -101,6 +101,20 @@ class MusicRepository(
         return key to scope
     }
 
+    fun isLocalLibrarySong(
+        songId: String,
+    ): Boolean {
+        val activeBackend =
+            backend ?: return false
+
+        val persistent =
+            activeBackend.customTagKey(songId)
+
+        return persistent.startsWith(
+            "local$CUSTOM_TAG_KEY_SEP"
+        )
+    }
+
     fun hiddenLibraryItems(): List<HiddenLibraryItem> {
         val activeBackend =
             backend ?: return emptyList()
@@ -429,6 +443,25 @@ class MusicRepository(
 
     suspend fun allSongs(): List<Song> =
         if (offline) downloadedSongs() else backend?.allSongs().orEmpty()
+
+    suspend fun duplicateCandidates(): List<Song> {
+        val songs =
+            if (offline) {
+                downloadedSongs()
+            } else {
+                backend
+                    ?.duplicateCandidates()
+                    .orEmpty()
+            }
+
+        /*
+         * Hidden is a Sonethyst library visibility decision.
+         * A track intentionally hidden by the user should not reappear
+         * just because the duplicate scanner bypasses merged dedup.
+         */
+        return visibleSongs(songs)
+            .distinctBy { it.id }
+    }
 
     suspend fun librarySongs(
         limit: Int = 2000,

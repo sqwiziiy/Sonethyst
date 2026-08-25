@@ -222,6 +222,15 @@ class MergedBackend(
         if (known.isEmpty()) null
         else known.sum()
     }
+    override suspend fun duplicateCandidates(): List<Song> =
+        wrapAll(
+            fanOut {
+                it.duplicateCandidates()
+            }
+        ) { song, index ->
+            song.wrap(index)
+        }
+
     override suspend fun allSongs(): List<Song> = dedupSongs(wrapAll(fanOut { it.allSongs() }) { s, i -> s.wrap(i) })
     override suspend fun librarySongs(limit: Int): List<Song> = dedupSongs(wrapAll(fanOut { it.librarySongs(limit) }) { s, i -> s.wrap(i) })
     override suspend fun starredSongs(): List<Song> = dedupSongs(wrapAll(fanOut { it.starredSongs() }) { s, i -> s.wrap(i) })

@@ -56,6 +56,13 @@ interface MediaBackend {
 
     suspend fun allSongs(): List<Song>
 
+    /*
+     * Duplicate scanning needs every reachable copy.
+     * MergedBackend intentionally overrides this without deduplicating.
+     */
+    suspend fun duplicateCandidates(): List<Song> =
+        allSongs()
+
     suspend fun songsByGenre(
         genreId: String,
         limit: Int = 200,
