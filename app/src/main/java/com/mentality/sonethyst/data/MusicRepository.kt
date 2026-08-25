@@ -57,13 +57,13 @@ class MusicRepository(
     private val currentServerIdProvider: () -> String = { "" },
     private val smartPlaylistsProvider: () -> List<SmartPlaylist> = { emptyList() },
     private val smartEngine: SmartPlaylistEngine? = null,
-    private val onLibraryChanged: () -> Unit = {},
+    private val onPlaylistChanged: () -> Unit = {},
 ) {
     private val backend: MediaBackend? get() = backendProvider()
     private val offline: Boolean get() = offlineProvider()
 
-    private fun libraryMutationResult(ok: Boolean): Boolean {
-        if (ok) onLibraryChanged()
+    private fun playlistMutationResult(ok: Boolean): Boolean {
+        if (ok) onPlaylistChanged()
         return ok
     }
 
@@ -168,13 +168,13 @@ class MusicRepository(
     }
 
     suspend fun createPlaylist(name: String): Boolean =
-        libraryMutationResult(backend?.createPlaylist(name) ?: false)
+        playlistMutationResult(backend?.createPlaylist(name) ?: false)
 
     suspend fun addToPlaylist(playlistId: String, trackIds: List<String>): Boolean =
-        libraryMutationResult(backend?.addToPlaylist(playlistId, trackIds) ?: false)
+        playlistMutationResult(backend?.addToPlaylist(playlistId, trackIds) ?: false)
 
     suspend fun removeFromPlaylist(playlistId: String, trackIds: List<String>): Boolean =
-        libraryMutationResult(backend?.removeFromPlaylist(playlistId, trackIds) ?: false)
+        playlistMutationResult(backend?.removeFromPlaylist(playlistId, trackIds) ?: false)
 
     val supportsPlaylistReorder: Boolean
         get() = !offline && backend?.supportsPlaylistReorder == true
@@ -187,12 +187,12 @@ class MusicRepository(
         mode: String,
         value: String? = null,
     ): Boolean =
-        libraryMutationResult(
+        playlistMutationResult(
             backend?.setPlaylistCover(playlistId, mode, value) ?: false
         )
 
     suspend fun reorderPlaylist(playlistId: String, orderedTrackIds: List<String>): Boolean =
-        libraryMutationResult(
+        playlistMutationResult(
             backend?.reorderPlaylist(playlistId, orderedTrackIds) ?: false
         )
 
@@ -208,7 +208,7 @@ class MusicRepository(
 
         // The playlist was created even if adding its first tracks failed,
         // so every cached library/detail screen must refresh.
-        onLibraryChanged()
+        onPlaylistChanged()
         return result
     }
 
@@ -241,7 +241,7 @@ class MusicRepository(
             )
         }
 
-        onLibraryChanged()
+        onPlaylistChanged()
         return matched.size to entries.size
     }
 
@@ -459,10 +459,10 @@ class MusicRepository(
     }
 
     suspend fun updatePlaylist(id: String, name: String?, comment: String?): Boolean =
-        libraryMutationResult(backend?.updatePlaylist(id, name, comment) ?: false)
+        playlistMutationResult(backend?.updatePlaylist(id, name, comment) ?: false)
 
     suspend fun deletePlaylist(id: String): Boolean =
-        libraryMutationResult(backend?.deletePlaylist(id) ?: false)
+        playlistMutationResult(backend?.deletePlaylist(id) ?: false)
 
     // playlists arent server-starrable handled locally by the caller
     suspend fun setStarred(id: String, starred: Boolean, kind: String = "song"): Boolean =

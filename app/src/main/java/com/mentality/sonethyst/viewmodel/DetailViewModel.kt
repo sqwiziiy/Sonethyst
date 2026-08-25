@@ -37,6 +37,16 @@ class DetailViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
+
+        viewModelScope.launch {
+            container.playlistReload.drop(1).collect {
+                val kind = curKind
+                val id = curId
+                if (kind == "playlist" && id != null) {
+                    fetch(kind, id)
+                }
+            }
+        }
     }
 
     private var loadedKey: String? = null

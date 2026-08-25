@@ -44,6 +44,11 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { container.accountEpoch.drop(1).collect { load() } }
         viewModelScope.launch { container.libraryReload.drop(1).collect { load() } }
         viewModelScope.launch {
+            container.playlistReload.drop(1).collect {
+                refreshPlaylists()
+            }
+        }
+        viewModelScope.launch {
             container.downloadManager.downloads.collect {
                 _state.update { s -> s.copy(downloadedRows = container.repository.downloadedLibrary()) }
             }
@@ -71,6 +76,13 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             _state.update {
                 it.copy(loading = false, playlists = playlists, albums = albums, artists = artists, songs = songs, downloadedRows = container.repository.downloadedLibrary(), likedSongCount = likedCount, likedCover = songs.firstOrNull()?.artworkUrl ?: "", supportsFolders = container.repository.supportsFolders)
             }
+        }
+    }
+
+    private fun refreshPlaylists() {
+        viewModelScope.launch {
+            val playlists = container.repository.allPlaylists()
+            _state.update { it.copy(playlists = playlists) }
         }
     }
 

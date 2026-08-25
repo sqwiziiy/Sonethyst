@@ -267,9 +267,13 @@ class AppContainer(context: Context) {
     private val _accountEpoch = MutableStateFlow(0)
     val accountEpoch: StateFlow<Int> = _accountEpoch.asStateFlow()
 
-    // reloads home/library without the playback-stopping semantics of an account change
+    // Full library reload: source/account/local-index changes.
     private val _libraryReload = MutableStateFlow(0)
     val libraryReload: StateFlow<Int> = _libraryReload.asStateFlow()
+
+    // Playlist-only mutations must not force albums/artists/songs to reload.
+    private val _playlistReload = MutableStateFlow(0)
+    val playlistReload: StateFlow<Int> = _playlistReload.asStateFlow()
     @Volatile private var lastAccountKey: String? = null
     private fun accountKey(s: Session?): String = s?.accountKey() ?: ""
 
@@ -292,7 +296,7 @@ class AppContainer(context: Context) {
         currentServerIdProvider = { currentServerId() },
         smartPlaylistsProvider = { smartPlaylistsValue },
         smartEngine = smartEngine,
-        onLibraryChanged = { _libraryReload.value++ },
+        onPlaylistChanged = { _playlistReload.value++ },
     )
 
     suspend fun refreshLocalLibrary() {
