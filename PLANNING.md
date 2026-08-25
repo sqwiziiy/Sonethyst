@@ -174,6 +174,19 @@ Sonethyst is an independent Android music player fork based on Aurora.
 - [ ] Android Auto
 - [ ] Test on current One UI
 
+## Listening statistics / monthly recap
+
+- [ ] Monthly listening recap
+  - [ ] Show top tracks for the selected month, ranked by play count
+  - [ ] Show the number of plays for every top track
+  - [ ] Show top artists and their share of monthly listening
+  - [ ] Show total listening time for the month
+  - [ ] Allow switching between previous months
+  - [ ] Keep historical monthly statistics instead of only the current month
+  - [ ] Open a track/artist directly from the monthly recap
+  - [ ] Generate a clean shareable monthly recap card inspired by Musicolet-style statistics
+  - [ ] Ensure statistics are based on Sonethyst playback history and remain available for local music
+
 ## Phase 6 — Advanced audio
 
 Only after the application foundation and UX are stable:
