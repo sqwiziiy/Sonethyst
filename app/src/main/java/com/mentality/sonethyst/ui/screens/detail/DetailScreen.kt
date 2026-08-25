@@ -172,12 +172,19 @@ fun DetailScreen(
     val info = data.info
     val tracks = data.tracks
 
+    val trackIds = remember(tracks) {
+        tracks.map { it.id }
+    }
+    val validTrackIds = remember(trackIds) {
+        trackIds.toSet()
+    }
+
     val playlistOrder = remember {
         androidx.compose.runtime.mutableStateListOf<Song>()
     }
 
-    androidx.compose.runtime.LaunchedEffect(tracks.map { it.id }) {
-        if (playlistOrder.map { it.id } != tracks.map { it.id }) {
+    androidx.compose.runtime.LaunchedEffect(trackIds) {
+        if (playlistOrder.map { it.id } != trackIds) {
             playlistOrder.clear()
             playlistOrder.addAll(tracks)
         }
@@ -190,9 +197,8 @@ fun DetailScreen(
     val selectionMode = selectedTrackIds.isNotEmpty()
     var selectionMenuOpen by remember { mutableStateOf(false) }
 
-    androidx.compose.runtime.LaunchedEffect(tracks.map { it.id }) {
-        val validIds = tracks.map { it.id }.toSet()
-        selectedTrackIds = selectedTrackIds.intersect(validIds)
+    androidx.compose.runtime.LaunchedEffect(validTrackIds) {
+        selectedTrackIds = selectedTrackIds.intersect(validTrackIds)
     }
 
     var draggingSongId by remember { mutableStateOf<String?>(null) }

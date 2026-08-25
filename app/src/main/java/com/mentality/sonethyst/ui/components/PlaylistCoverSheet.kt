@@ -50,11 +50,16 @@ fun PlaylistCoverSheet(
 ) {
     var choosingTrack by remember { mutableStateOf(false) }
 
-    val trackArtworks = tracks.filter { it.artworkUrl.isNotBlank() }
-    val distinctArtworkCount = trackArtworks
-        .map { it.artworkUrl }
-        .distinct()
-        .size
+    val trackArtworks = remember(tracks) {
+        tracks.filter { it.artworkUrl.isNotBlank() }
+    }
+    val distinctArtworkCount = remember(trackArtworks) {
+        trackArtworks
+            .asSequence()
+            .map { it.artworkUrl }
+            .distinct()
+            .count()
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,

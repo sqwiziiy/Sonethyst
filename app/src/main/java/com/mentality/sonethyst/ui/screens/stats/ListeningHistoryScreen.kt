@@ -67,7 +67,9 @@ fun ListeningHistoryScreen(contentPadding: PaddingValues, onBack: () -> Unit, on
             }
             return@Column
         }
-        val grouped = history.groupBy { dayLabel(it.timestamp) }
+        val grouped = remember(history) {
+            history.groupBy { dayLabel(it.timestamp) }
+        }
         LazyColumn(Modifier.fillMaxWidth(), contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding() + 24.dp)) {
             grouped.forEach { (day, events) ->
                 item {
