@@ -1,4 +1,4 @@
-// Vendored from github.com/Ma145/decent-player (MIT). Build settings realigned to Aurora's
+// Vendored from github.com/Ma145/decent-player (MIT). Build settings realigned to Sonethyst's
 // toolchain (compileSdk 35 / minSdk 26 / NDK 27 / JDK 17) and the Kotlin plugin applied explicitly.
 plugins {
     id("com.android.library")

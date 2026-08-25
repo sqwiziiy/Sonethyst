@@ -2,7 +2,7 @@
 
 The three modules in this directory are vendored from **decent-player**
 (https://github.com/Ma145/decent-player) and are used under the MIT License.
-Build settings were realigned to Aurora's toolchain and a control-interface fix
+Build settings were realigned to Sonethyst's toolchain and a control-interface fix
 was applied to the USB driver, but the implementation is otherwise unchanged.
 
 ## decent-player — MIT License

@@ -1,4 +1,4 @@
-// Vendored from github.com/Ma145/decent-player (MIT). Realigned to Aurora's toolchain and Media3
+// Vendored from github.com/Ma145/decent-player (MIT). Realigned to Sonethyst's toolchain and Media3
 // 1.5.1 (matching the host app) for the low-risk first integration.
 plugins {
     id("com.android.library")

@@ -35,7 +35,7 @@ class JellyfinClient(val session: Session) {
 
     companion object {
         const val CLIENT_NAME = "Sonethyst"
-        const val DEVICE_ID = "aurora-android"
+        const val DEVICE_ID = "sonethyst-android"
         const val VERSION = "1.0"
 
         private fun enc(s: String): String = URLEncoder.encode(s, "UTF-8")

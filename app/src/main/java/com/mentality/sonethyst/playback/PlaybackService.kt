@@ -1735,8 +1735,9 @@ class PlaybackService : MediaLibraryService() {
     private fun postAlarmNotification() {
         val nm = getSystemService(NotificationManager::class.java) ?: return
         if (android.os.Build.VERSION.SDK_INT >= 26) {
+            nm.deleteNotificationChannel("aurora_alarm")
             nm.createNotificationChannel(
-                NotificationChannel("aurora_alarm", "Alarm", NotificationManager.IMPORTANCE_HIGH)
+                NotificationChannel("sonethyst_alarm", "Alarm", NotificationManager.IMPORTANCE_HIGH)
             )
         }
         val piFlags = android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT
@@ -1745,7 +1746,7 @@ class PlaybackService : MediaLibraryService() {
         val dismissPending = android.app.PendingIntent.getService(
             this, 2, android.content.Intent(this, PlaybackService::class.java).setAction(ACTION_ALARM_DISMISS), piFlags,
         )
-        val notif = androidx.core.app.NotificationCompat.Builder(this, "aurora_alarm")
+        val notif = androidx.core.app.NotificationCompat.Builder(this, "sonethyst_alarm")
             .setSmallIcon(com.mentality.sonethyst.R.drawable.ic_launcher_monochrome)
             .setContentTitle("Sonethyst alarm")
             .setContentText("Tap to dismiss")

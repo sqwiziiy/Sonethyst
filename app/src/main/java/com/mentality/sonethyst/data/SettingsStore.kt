@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "aurora_settings")
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "sonethyst_settings")
 
 val DEFAULT_SOURCE_PRIORITY = listOf("local", "downloaded", "stream")
 

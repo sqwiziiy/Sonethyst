@@ -19,18 +19,18 @@ object MockData {
     )
 
     val songs: List<Song> = listOf(
-        Song("s1", "Midnight Bloom", "Lunar Tide", "Nocturne", art("aurora1"), 214, liked = true, accent = accents[0]),
-        Song("s2", "Velvet Skyline", "Mara Quinn", "Neon Hours", art("aurora2"), 187, accent = accents[1]),
-        Song("s3", "Paper Planes", "The Foxgloves", "Wildflower", art("aurora3"), 241, liked = true, accent = accents[2]),
-        Song("s4", "Gravity", "Aerial", "Lightyears", art("aurora4"), 199, explicit = true, accent = accents[3]),
-        Song("s5", "Saltwater", "Coastlines", "Tidal", art("aurora5"), 263, accent = accents[4]),
-        Song("s6", "Ember", "Wren Holloway", "Slow Burn", art("aurora6"), 176, liked = true, accent = accents[5]),
-        Song("s7", "Cassette Dreams", "Polaroid Kids", "Analog", art("aurora7"), 224, accent = accents[6]),
-        Song("s8", "Northern Lights", "Glacier", "Aurora", art("aurora8"), 252, accent = accents[7]),
-        Song("s9", "Honeyglow", "Marigold", "Sundrop", art("aurora9"), 208, accent = accents[0]),
-        Song("s10", "Static Heart", "Neon Vows", "Frequency", art("aurora10"), 231, explicit = true, accent = accents[1]),
-        Song("s11", "Driftwood", "Coastlines", "Tidal", art("aurora11"), 195, accent = accents[2]),
-        Song("s12", "After Hours", "Mara Quinn", "Neon Hours", art("aurora12"), 218, liked = true, accent = accents[3]),
+        Song("s1", "Midnight Bloom", "Lunar Tide", "Nocturne", art("sonethyst1"), 214, liked = true, accent = accents[0]),
+        Song("s2", "Velvet Skyline", "Mara Quinn", "Neon Hours", art("sonethyst2"), 187, accent = accents[1]),
+        Song("s3", "Paper Planes", "The Foxgloves", "Wildflower", art("sonethyst3"), 241, liked = true, accent = accents[2]),
+        Song("s4", "Gravity", "Aerial", "Lightyears", art("sonethyst4"), 199, explicit = true, accent = accents[3]),
+        Song("s5", "Saltwater", "Coastlines", "Tidal", art("sonethyst5"), 263, accent = accents[4]),
+        Song("s6", "Ember", "Wren Holloway", "Slow Burn", art("sonethyst6"), 176, liked = true, accent = accents[5]),
+        Song("s7", "Cassette Dreams", "Polaroid Kids", "Analog", art("sonethyst7"), 224, accent = accents[6]),
+        Song("s8", "Northern Lights", "Glacier", "Polar Glow", art("sonethyst8"), 252, accent = accents[7]),
+        Song("s9", "Honeyglow", "Marigold", "Sundrop", art("sonethyst9"), 208, accent = accents[0]),
+        Song("s10", "Static Heart", "Neon Vows", "Frequency", art("sonethyst10"), 231, explicit = true, accent = accents[1]),
+        Song("s11", "Driftwood", "Coastlines", "Tidal", art("sonethyst11"), 195, accent = accents[2]),
+        Song("s12", "After Hours", "Mara Quinn", "Neon Hours", art("sonethyst12"), 218, liked = true, accent = accents[3]),
     )
 
     fun songById(id: String) = songs.firstOrNull { it.id == id } ?: songs.first()

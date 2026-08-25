@@ -72,7 +72,7 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { runCatching { container.settingsStore.setSpotifyClientId(id) } }
         val verifier = SpotifyAuth.newVerifier()
         spotifyVerifier = verifier
-        _state.update { it.copy(error = null, pendingAuthUrl = SpotifyAuth.authorizeUrl(id, verifier, "aurora")) }
+        _state.update { it.copy(error = null, pendingAuthUrl = SpotifyAuth.authorizeUrl(id, verifier, "sonethyst")) }
     }
 
     fun authUrlOpened() = _state.update { it.copy(pendingAuthUrl = null) }
