@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.mentality.sonethyst.SonethystApplication
+import com.mentality.sonethyst.data.HiddenLibraryItem
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
 import com.mentality.sonethyst.model.CustomTag
@@ -29,6 +30,7 @@ data class LibraryUiState(
     val artists: List<Artist> = emptyList(),
     val genres: List<Genre> = emptyList(),
     val customTags: List<CustomTag> = emptyList(),
+    val hiddenItems: List<HiddenLibraryItem> = emptyList(),
     val genresLoading: Boolean = false,
     val genresLoaded: Boolean = false,
     val supportsGenres: Boolean = false,
@@ -85,6 +87,12 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             container.customTagReload.drop(1).collect {
                 refreshCustomTags()
+            }
+        }
+        viewModelScope.launch {
+            container.hiddenReload.drop(1).collect {
+                refreshHiddenItems()
+                refreshVisibleLibrary()
             }
         }
         viewModelScope.launch {
@@ -146,6 +154,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                     supportsFolders = container.repository.supportsFolders,
                     supportsGenres = container.repository.supportsGenres,
                     customTags = container.repository.allCustomTags(),
+                    hiddenItems = container.repository.hiddenLibraryItems(),
                 )
             }
         }
@@ -237,6 +246,36 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                 genresLoading = false,
                 genresLoaded = false,
             )
+        }
+    }
+
+    private fun refreshHiddenItems() {
+        _state.update {
+            it.copy(
+                hiddenItems =
+                    container.repository
+                        .hiddenLibraryItems()
+            )
+        }
+    }
+
+    private fun refreshVisibleLibrary() {
+        viewModelScope.launch {
+            val albums =
+                container.repository.allAlbums()
+
+            val songs =
+                container.repository
+                    .librarySongs(songLimit)
+
+            _state.update {
+                it.copy(
+                    albums = albums,
+                    songs = songs,
+                    canLoadMoreSongs =
+                        songs.size >= songLimit,
+                )
+            }
         }
     }
 

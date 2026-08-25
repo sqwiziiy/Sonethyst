@@ -45,6 +45,11 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         viewModelScope.launch {
+            container.hiddenReload.drop(1).collect {
+                refreshCurrentQuery()
+            }
+        }
+        viewModelScope.launch {
             container.ratingChanges.collect { change ->
                 _state.update { current ->
                     current.copy(

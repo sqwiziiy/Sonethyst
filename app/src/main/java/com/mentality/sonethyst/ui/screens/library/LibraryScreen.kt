@@ -42,6 +42,7 @@ import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -71,7 +72,17 @@ import com.mentality.sonethyst.ui.components.SongRow
 import com.mentality.sonethyst.util.accentFor
 import com.mentality.sonethyst.viewmodel.LibraryUiState
 
-private data class LibRow(val title: String, val subtitle: String, val art: String, val accent: androidx.compose.ui.graphics.Color, val id: String, val kind: String, val circle: Boolean = false, val menu: Boolean = true)
+private data class LibRow(
+    val title: String,
+    val subtitle: String,
+    val art: String,
+    val accent: androidx.compose.ui.graphics.Color,
+    val id: String,
+    val kind: String,
+    val circle: Boolean = false,
+    val menu: Boolean = true,
+    val hideable: Boolean = false,
+)
 
 private class LibActions(
     val isLiked: (String) -> Boolean,
@@ -83,6 +94,7 @@ private class LibActions(
     val onEditSmart: (LibRow) -> Unit,
     val onDeleteSmart: (LibRow) -> Unit,
     val onExport: (LibRow) -> Unit,
+    val onHide: (LibRow) -> Unit,
 )
 
 @Composable
@@ -128,6 +140,11 @@ fun LibraryScreen(
     serverTagEditing: Boolean = false,
     onSetRating: ((Song, Int) -> Unit)? = null,
     onEditCustomTags: ((Song) -> Unit)? = null,
+    onHideSong: ((Song) -> Unit)? = null,
+    onHideAlbum: (String, String, String, String) -> Unit =
+        { _, _, _, _ -> },
+    onRestoreHidden:
+        (com.mentality.sonethyst.data.HiddenLibraryItem) -> Unit = {},
 ) {
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     var showCreate by remember { mutableStateOf(false) }
@@ -146,6 +163,7 @@ fun LibraryScreen(
         onEditSmart,
         onDeleteSmart,
         onExportPlaylist,
+        onHideAlbum,
     ) {
         LibActions(
             isLiked = { id -> likedIds.contains(id) },
@@ -157,6 +175,16 @@ fun LibraryScreen(
             onEditSmart = { r -> onEditSmart(r.id) },
             onDeleteSmart = { r -> onDeleteSmart(r.id) },
             onExport = { r -> onExportPlaylist(r.id, r.kind, r.title) },
+            onHide = { r ->
+                if (r.kind == "album") {
+                    onHideAlbum(
+                        r.id,
+                        r.title,
+                        r.subtitle,
+                        r.art,
+                    )
+                }
+            },
         )
     }
 
@@ -345,6 +373,10 @@ fun LibraryScreen(
                             onEditCustomTags?.let { cb ->
                                 { cb(s) }
                             },
+                        onHide =
+                            onHideSong?.let { cb ->
+                                { cb(s) }
+                            },
                     )
                 }
 
@@ -366,6 +398,48 @@ fun LibraryScreen(
                     }
                 }
             }
+            return@Column
+        }
+
+        if (filter == LibraryFilter.HIDDEN) {
+            val hidden = state.hiddenItems
+
+            if (hidden.isEmpty()) {
+                Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        "No hidden tracks or albums",
+                        color =
+                            MaterialTheme.colorScheme
+                                .onSurfaceVariant,
+                    )
+                }
+                return@Column
+            }
+
+            LazyColumn(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                contentPadding =
+                    PaddingValues(bottom = bottom),
+            ) {
+                items(
+                    count = hidden.size,
+                    key = { i -> hidden[i].key },
+                    contentType = { "hidden-library-item" },
+                ) { i ->
+                    HiddenLibraryRow(
+                        item = hidden[i],
+                        onRestore = {
+                            onRestoreHidden(hidden[i])
+                        },
+                    )
+                }
+            }
+
             return@Column
         }
 
@@ -605,6 +679,7 @@ private fun buildRows(
                         accentFor(it.id),
                         it.id,
                         "album",
+                        hideable = true,
                     )
                 )
             }
@@ -663,6 +738,7 @@ private fun buildRows(
                 accentFor(it.id),
                 it.id,
                 "album",
+                hideable = true,
             )
         }
 
@@ -724,11 +800,24 @@ private fun buildRows(
         return sorted
     }
 
-    val pinned: Set<Pair<String, String>> = if (pins.isEmpty()) {
-        emptySet()
-    } else {
-        pins.mapTo(mutableSetOf()) { it.kind to it.id }
-    }
+    val visibleAlbumIds =
+        state.albums
+            .mapTo(mutableSetOf()) { it.id }
+
+    val displayPins =
+        pins.filterNot {
+            it.kind == "album" &&
+                it.id !in visibleAlbumIds
+        }
+
+    val pinned: Set<Pair<String, String>> =
+        if (displayPins.isEmpty()) {
+            emptySet()
+        } else {
+            displayPins.mapTo(mutableSetOf()) {
+                it.kind to it.id
+            }
+        }
 
     val deduped = if (pinned.isEmpty()) {
         sorted
@@ -738,7 +827,7 @@ private fun buildRows(
 
     return buildList<LibRow> {
         if (filter == LibraryFilter.ALL) {
-            pins.forEach {
+            displayPins.forEach {
                 add(
                     LibRow(
                         it.title,
@@ -804,6 +893,82 @@ private fun buildRows(
         }
 
         addAll(deduped)
+    }
+}
+
+@Composable
+private fun HiddenLibraryRow(
+    item: com.mentality.sonethyst.data.HiddenLibraryItem,
+    onRestore: () -> Unit,
+) {
+    val subtitle =
+        if (item.kind == "album") {
+            "Album • " +
+                item.subtitle.removePrefix("Album • ")
+        } else {
+            "Track • ${item.subtitle}"
+        }
+
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = 8.dp,
+                    vertical = 4.dp,
+                )
+                .clip(RoundedCornerShape(16.dp))
+                .background(
+                    MaterialTheme.colorScheme
+                        .surfaceContainerHigh
+                        .copy(alpha = 0.45f)
+                )
+                .padding(8.dp),
+        verticalAlignment =
+            Alignment.CenterVertically,
+    ) {
+        Artwork(
+            item.artworkUrl,
+            accentFor(item.key),
+            Modifier.size(56.dp),
+            corner = 14.dp,
+        )
+
+        Spacer(Modifier.width(14.dp))
+
+        Column(
+            Modifier.weight(1f)
+        ) {
+            Text(
+                item.title,
+                style =
+                    MaterialTheme.typography
+                        .titleSmall,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+
+            Spacer(Modifier.height(2.dp))
+
+            Text(
+                subtitle,
+                style =
+                    MaterialTheme.typography
+                        .bodySmall,
+                color =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        TextButton(
+            onClick = onRestore,
+        ) {
+            Text("Restore")
+        }
     }
 }
 
@@ -940,6 +1105,25 @@ private fun CollectionMenu(row: LibRow, actions: LibActions, expanded: Boolean, 
                 leadingIcon = { Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error) },
             )
         }
+        if (
+            row.hideable &&
+            row.kind == "album"
+        ) {
+            DropdownMenuItem(
+                text = { Text("Hide album") },
+                onClick = {
+                    onDismiss()
+                    actions.onHide(row)
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Filled.VisibilityOff,
+                        null,
+                    )
+                },
+            )
+        }
+
         if (!isVirtual && !isSmart) {
             DropdownMenuItem(
                 text = { Text(if (liked) "Unlike" else "Like") },

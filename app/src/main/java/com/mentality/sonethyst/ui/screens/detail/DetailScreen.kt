@@ -52,6 +52,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.DropdownMenu
@@ -126,6 +127,8 @@ fun DetailScreen(
     artistInfo: com.mentality.sonethyst.data.remote.ArtistInfo? = null,
     onSetRating: ((Song, Int) -> Unit)? = null,
     onEditCustomTags: ((Song) -> Unit)? = null,
+    onHideSong: ((Song) -> Unit)? = null,
+    onHideItem: (() -> Unit)? = null,
 ) {
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     var headerMenu by remember { mutableStateOf(false) }
@@ -289,6 +292,27 @@ fun DetailScreen(
                                 onClick = { headerMenu = false; onTogglePin() },
                                 leadingIcon = { Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, null) },
                             )
+                            if (
+                                itemKind == "album" &&
+                                onHideItem != null
+                            ) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text("Hide album")
+                                    },
+                                    onClick = {
+                                        headerMenu = false
+                                        onHideItem()
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Filled.VisibilityOff,
+                                            null,
+                                        )
+                                    },
+                                )
+                            }
+
                             if (isPlaylist) {
                                 if (onSetPlaylistCover != null) {
                                     DropdownMenuItem(
@@ -771,6 +795,14 @@ fun DetailScreen(
                         { rating ->
                             cb(s, rating)
                         }
+                    },
+                onEditCustomTags =
+                    onEditCustomTags?.let { cb ->
+                        { cb(s) }
+                    },
+                onHide =
+                    onHideSong?.let { cb ->
+                        { cb(s) }
                     },
             )
         }

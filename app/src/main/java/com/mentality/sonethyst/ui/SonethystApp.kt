@@ -171,6 +171,33 @@ fun SonethystApp() {
             }
         }
 
+    val onHideSong:
+        (com.mentality.sonethyst.model.Song) -> Unit =
+        remember(
+            container,
+            confirm,
+        ) {
+            { song ->
+                val hidden =
+                    container.setHiddenLibraryItem(
+                        kind = "song",
+                        id = song.id,
+                        title = song.title,
+                        subtitle = song.artist,
+                        artworkUrl = song.artworkUrl,
+                        hidden = true,
+                    )
+
+                confirm(
+                    if (hidden) {
+                        "Hidden from library"
+                    } else {
+                        "Couldn't hide track"
+                    }
+                )
+            }
+        }
+
     val onDownload: (com.mentality.sonethyst.model.Song) -> Unit =
         remember(container, confirm) {
             { song ->
@@ -724,6 +751,7 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             onEditCustomTags = {
                                 openCustomTagEditor(it)
                             },
+                            onHideSong = onHideSong,
                         )
                     }
                     composable(Routes.LIBRARY) {
@@ -834,6 +862,45 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                                 },
                             onEditCustomTags = {
                                 openCustomTagEditor(it)
+                            },
+                            onHideSong = onHideSong,
+                            onHideAlbum = {
+                                albumId,
+                                title,
+                                subtitle,
+                                artworkUrl ->
+
+                                val hidden =
+                                    container.setHiddenLibraryItem(
+                                        kind = "album",
+                                        id = albumId,
+                                        title = title,
+                                        subtitle = subtitle,
+                                        artworkUrl = artworkUrl,
+                                        hidden = true,
+                                    )
+
+                                confirm(
+                                    if (hidden) {
+                                        "Album hidden from library"
+                                    } else {
+                                        "Couldn't hide album"
+                                    }
+                                )
+                            },
+                            onRestoreHidden = { item ->
+                                val restored =
+                                    container.restoreHiddenLibraryItem(
+                                        item.key
+                                    )
+
+                                confirm(
+                                    if (restored) {
+                                        "Restored to library"
+                                    } else {
+                                        "Couldn't restore item"
+                                    }
+                                )
                             },
                         )
                     }
@@ -1123,6 +1190,43 @@ onAddToPlaylist = {
                             onEditCustomTags = {
                                 openCustomTagEditor(it)
                             },
+                            onHideSong = onHideSong,
+                            onHideItem =
+                                if (kind == "album") {
+                                    {
+                                        val data =
+                                            detailState.data
+
+                                        if (data != null) {
+                                            val hidden =
+                                                container
+                                                    .setHiddenLibraryItem(
+                                                        kind = "album",
+                                                        id = id,
+                                                        title =
+                                                            data.info.title,
+                                                        subtitle =
+                                                            data.info.subtitle,
+                                                        artworkUrl =
+                                                            data.info.artUrl,
+                                                        hidden = true,
+                                                    )
+
+                                            if (hidden) {
+                                                confirm(
+                                                    "Album hidden from library"
+                                                )
+                                                navController.popBackStack()
+                                            } else {
+                                                confirm(
+                                                    "Couldn't hide album"
+                                                )
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    null
+                                },
                         )
                     }
                     composable(

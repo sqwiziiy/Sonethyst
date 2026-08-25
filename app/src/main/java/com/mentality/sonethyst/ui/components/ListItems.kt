@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QueuePlayNext
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.Explicit
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.MoreVert
@@ -86,6 +87,7 @@ fun SongRow(
     serverTagEditing: Boolean = false,
     onSetRating: ((Int) -> Unit)? = null,
     onEditCustomTags: (() -> Unit)? = null,
+    onHide: (() -> Unit)? = null,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     var ratingOpen by remember(song.id) {
@@ -251,6 +253,24 @@ fun SongRow(
                         leadingIcon = {
                             Icon(
                                 Icons.Filled.Label,
+                                null,
+                            )
+                        },
+                    )
+                }
+
+                if (onHide != null) {
+                    DropdownMenuItem(
+                        text = {
+                            Text("Hide from library")
+                        },
+                        onClick = {
+                            menuOpen = false
+                            onHide()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.VisibilityOff,
                                 null,
                             )
                         },

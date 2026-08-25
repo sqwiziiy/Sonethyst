@@ -99,6 +99,7 @@ fun SearchScreen(
     onCommitSearch: () -> Unit = {},
     onSetRating: ((Song, Int) -> Unit)? = null,
     onEditCustomTags: ((Song) -> Unit)? = null,
+    onHideSong: ((Song) -> Unit)? = null,
 ) {
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val results = state.results
@@ -179,6 +180,7 @@ fun SearchScreen(
                     downloadedIds = downloadedIds, onDownload = onDownload, onRemoveDownload = onRemoveDownload, canDownload = canDownload,
                     onSetRating = onSetRating,
                     onEditCustomTags = onEditCustomTags,
+                    onHideSong = onHideSong,
                 )
             }
         }
@@ -246,6 +248,7 @@ private fun Results(
     canDownload: Boolean,
     onSetRating: ((Song, Int) -> Unit)?,
     onEditCustomTags: ((Song) -> Unit)?,
+    onHideSong: ((Song) -> Unit)?,
 ) {
     fun show(f: SearchFilter) = filter == SearchFilter.ALL || filter == f
     LazyColumn(
@@ -341,6 +344,10 @@ private fun Results(
                         },
                     onEditCustomTags =
                         onEditCustomTags?.let { cb ->
+                            { cb(song) }
+                        },
+                    onHide =
+                        onHideSong?.let { cb ->
                             { cb(song) }
                         },
                 )

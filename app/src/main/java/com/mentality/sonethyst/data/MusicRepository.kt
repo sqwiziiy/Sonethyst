@@ -65,6 +65,165 @@ class MusicRepository(
     private val backend: MediaBackend? get() = backendProvider()
     private val offline: Boolean get() = offlineProvider()
 
+    private fun hiddenStorageIdentity(
+        kind: String,
+        id: String,
+    ): Pair<String, String>? {
+        val activeBackend =
+            backend ?: return null
+
+        if (
+            kind != "song" &&
+            kind != "album"
+        ) {
+            return null
+        }
+
+        val persistent =
+            activeBackend.customTagKey(id)
+
+        val separator =
+            persistent.indexOf(CUSTOM_TAG_KEY_SEP)
+
+        if (separator <= 0) {
+            return null
+        }
+
+        val scope =
+            persistent.substring(
+                0,
+                separator,
+            )
+
+        val key =
+            "$kind$HIDDEN_ITEM_KEY_SEP$persistent"
+
+        return key to scope
+    }
+
+    fun hiddenLibraryItems(): List<HiddenLibraryItem> {
+        val activeBackend =
+            backend ?: return emptyList()
+
+        return localStore.hiddenItems(
+            activeBackend.customTagScopes
+        )
+    }
+
+    fun isHiddenItem(
+        kind: String,
+        id: String,
+    ): Boolean {
+        val identity =
+            hiddenStorageIdentity(
+                kind,
+                id,
+            ) ?: return false
+
+        return localStore.isHidden(
+            identity.first
+        )
+    }
+
+    fun setHiddenItem(
+        kind: String,
+        id: String,
+        title: String,
+        subtitle: String,
+        artworkUrl: String,
+        hidden: Boolean,
+    ): Boolean {
+        val identity =
+            hiddenStorageIdentity(
+                kind,
+                id,
+            ) ?: return false
+
+        val (key, scope) = identity
+
+        return localStore.setHidden(
+            HiddenLibraryItem(
+                key = key,
+                scope = scope,
+                kind = kind,
+                title = title,
+                subtitle = subtitle,
+                artworkUrl = artworkUrl,
+            ),
+            hidden,
+        )
+    }
+
+    fun restoreHiddenItem(
+        key: String,
+    ): Boolean =
+        localStore.removeHidden(key)
+
+    private fun visibleAlbums(
+        albums: List<Album>,
+    ): List<Album> =
+        albums.filterNot { album ->
+            isHiddenItem(
+                kind = "album",
+                id = album.id,
+            )
+        }
+
+    private fun visibleSongs(
+        songs: List<Song>,
+    ): List<Song> =
+        songs.filterNot { song ->
+            isHiddenItem(
+                kind = "song",
+                id = song.id,
+            ) ||
+                (
+                    song.albumId.isNotBlank() &&
+                        isHiddenItem(
+                            kind = "album",
+                            id = song.albumId,
+                        )
+                )
+        }
+
+    private fun visibleSearch(
+        results: SearchResults,
+    ): SearchResults =
+        results.copy(
+            songs = visibleSongs(results.songs),
+            albums = visibleAlbums(results.albums),
+        )
+
+    private fun visibleHome(
+        data: HomeData,
+    ): HomeData =
+        data.copy(
+            newReleases =
+                visibleAlbums(data.newReleases),
+            recentlyPlayed =
+                visibleAlbums(data.recentlyPlayed),
+            mostPlayed =
+                visibleAlbums(data.mostPlayed),
+            random =
+                visibleAlbums(data.random),
+            starred =
+                visibleSongs(data.starred),
+        )
+
+    private fun visibleDetail(
+        kind: String,
+        data: DetailData,
+    ): DetailData {
+        if (kind == "playlist") {
+            return data
+        }
+
+        return data.copy(
+            tracks = visibleSongs(data.tracks),
+            albums = visibleAlbums(data.albums),
+        )
+    }
+
     private fun playlistMutationResult(ok: Boolean): Boolean {
         if (ok) onPlaylistChanged()
         return ok
@@ -114,13 +273,29 @@ class MusicRepository(
     suspend fun home(): HomeData {
         if (offline) {
             val albums = downloadedAlbums()
-            return HomeData(newReleases = albums, recentlyPlayed = albums, starred = downloadedSongs())
+
+            return visibleHome(
+                HomeData(
+                    newReleases = albums,
+                    recentlyPlayed = albums,
+                    starred = downloadedSongs(),
+                )
+            )
         }
-        return backend?.home() ?: HomeData()
+
+        return visibleHome(
+            backend?.home() ?: HomeData()
+        )
     }
 
     suspend fun allAlbums(): List<Album> =
-        if (offline) downloadedAlbums() else backend?.allAlbums().orEmpty()
+        visibleAlbums(
+            if (offline) {
+                downloadedAlbums()
+            } else {
+                backend?.allAlbums().orEmpty()
+            }
+        )
 
     suspend fun allArtists(): List<Artist> =
         if (offline) emptyList() else backend?.allArtists().orEmpty()
@@ -255,8 +430,61 @@ class MusicRepository(
     suspend fun allSongs(): List<Song> =
         if (offline) downloadedSongs() else backend?.allSongs().orEmpty()
 
-    suspend fun librarySongs(limit: Int = 2000): List<Song> =
-        if (offline) downloadedSongs() else backend?.librarySongs(limit).orEmpty()
+    suspend fun librarySongs(
+        limit: Int = 2000,
+    ): List<Song> {
+        val safeLimit =
+            limit.coerceAtLeast(0)
+
+        if (safeLimit == 0) {
+            return emptyList()
+        }
+
+        if (offline) {
+            return visibleSongs(
+                downloadedSongs()
+            ).take(safeLimit)
+        }
+
+        val activeBackend =
+            backend ?: return emptyList()
+
+        /*
+         * Filtering after fetching exactly N rows would make pagination
+         * falsely look exhausted whenever hidden items are inside that N.
+         * Expand the backend window until we have enough visible rows or
+         * the backend itself is exhausted.
+         */
+        var requestLimit = safeLimit
+        var attempts = 0
+
+        var raw =
+            activeBackend.librarySongs(
+                requestLimit
+            )
+
+        var visible =
+            visibleSongs(raw)
+
+        while (
+            visible.size < safeLimit &&
+            raw.size >= requestLimit &&
+            attempts < 8
+        ) {
+            requestLimit += 500
+            attempts++
+
+            raw =
+                activeBackend.librarySongs(
+                    requestLimit
+                )
+
+            visible =
+                visibleSongs(raw)
+        }
+
+        return visible.take(safeLimit)
+    }
 
     suspend fun starredSongs(): List<Song> = backend?.starredSongs().orEmpty()
 
@@ -274,14 +502,38 @@ class MusicRepository(
         return backend?.songFor(id)
     }
 
-    suspend fun search(query: String): SearchResults {
+    suspend fun search(
+        query: String,
+    ): SearchResults {
         if (offline) {
             val q = query.trim()
-            val songs = downloadedSongs().filter { it.title.contains(q, true) || it.artist.contains(q, true) || it.album.contains(q, true) }
-            val albums = downloadedAlbums().filter { it.title.contains(q, true) || it.artist.contains(q, true) }
-            return SearchResults(songs = songs, albums = albums, artists = emptyList())
+
+            val songs =
+                downloadedSongs().filter {
+                    it.title.contains(q, true) ||
+                        it.artist.contains(q, true) ||
+                        it.album.contains(q, true)
+                }
+
+            val albums =
+                downloadedAlbums().filter {
+                    it.title.contains(q, true) ||
+                        it.artist.contains(q, true)
+                }
+
+            return visibleSearch(
+                SearchResults(
+                    songs = songs,
+                    albums = albums,
+                    artists = emptyList(),
+                )
+            )
         }
-        return backend?.search(query) ?: SearchResults()
+
+        return visibleSearch(
+            backend?.search(query)
+                ?: SearchResults()
+        )
     }
 
     suspend fun scrobble(id: String) {
@@ -627,7 +879,7 @@ class MusicRepository(
                         songCount = tracks.size,
                         typeLabel = "Tag",
                     ),
-                tracks = tracks,
+                tracks = visibleSongs(tracks),
             )
         }
 
@@ -663,13 +915,18 @@ class MusicRepository(
                         songCount = total,
                         typeLabel = "Genre",
                     ),
-                tracks = tracks,
+                tracks = visibleSongs(tracks),
             )
         }
 
         if (kind == "smart") {
             val sp = smartPlaylistsProvider().firstOrNull { it.id == id } ?: return null
-            val tracks = smartEngine?.evaluate(sp, librarySongs()).orEmpty()
+            val tracks =
+                visibleSongs(
+                    smartEngine
+                        ?.evaluate(sp, librarySongs())
+                        .orEmpty()
+                )
             return DetailData(
                 DetailInfo(sp.name ?: "Smart playlist", "Smart playlist • ${tracks.size} songs", tracks.firstOrNull()?.artworkUrl ?: "", accentFor(id), false, tracks.size, "Smart playlist"),
                 tracks,
@@ -678,11 +935,15 @@ class MusicRepository(
         if (offline) {
             val dls = downloadedSongs()
             return when (kind) {
-                "album" -> dls.filter { it.albumId == id }.takeIf { it.isNotEmpty() }?.let { tracks ->
+                "album" -> visibleSongs(
+                    dls.filter { it.albumId == id }
+                ).takeIf { it.isNotEmpty() }?.let { tracks ->
                     val f = tracks.first()
                     DetailData(DetailInfo(f.album.ifBlank { "Album" }, "${f.artist} • Downloaded", f.artworkUrl, accentFor(id), false, tracks.size, "Album"), tracks)
                 }
-                "artist" -> dls.filter { it.artistId == id }.takeIf { it.isNotEmpty() }?.let { tracks ->
+                "artist" -> visibleSongs(
+                    dls.filter { it.artistId == id }
+                ).takeIf { it.isNotEmpty() }?.let { tracks ->
                     DetailData(DetailInfo(tracks.first().artist, "${tracks.size} downloaded tracks", tracks.first().artworkUrl, accentFor(id), true, tracks.size, "Artist"), tracks)
                 }
                 "playlist" -> downloadManager.collections.value.firstOrNull { it.id == id }?.let { col ->
@@ -693,7 +954,9 @@ class MusicRepository(
                 else -> null
             }
         }
-        return backend?.detail(kind, id)
+        return backend
+            ?.detail(kind, id)
+            ?.let { visibleDetail(kind, it) }
     }
 
     suspend fun detailPage(
@@ -703,18 +966,25 @@ class MusicRepository(
     ): List<Song> {
         if (offline) return emptyList()
 
-        return if (kind == "genre") {
-            backend?.songsByGenre(
-                genreId = id,
-                limit = 200,
-                offset = offset,
-            ).orEmpty()
+        val tracks =
+            if (kind == "genre") {
+                backend?.songsByGenre(
+                    genreId = id,
+                    limit = 200,
+                    offset = offset,
+                ).orEmpty()
+            } else {
+                backend?.detailPage(
+                    kind,
+                    id,
+                    offset,
+                ).orEmpty()
+            }
+
+        return if (kind == "playlist") {
+            tracks
         } else {
-            backend?.detailPage(
-                kind,
-                id,
-                offset,
-            ).orEmpty()
+            visibleSongs(tracks)
         }
     }
 

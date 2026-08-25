@@ -7,6 +7,17 @@ import java.io.File
 import java.util.Locale
 import java.util.UUID
 
+const val HIDDEN_ITEM_KEY_SEP = '\u0003'
+
+data class HiddenLibraryItem(
+    val key: String = "",
+    val scope: String = "",
+    val kind: String = "",
+    val title: String = "",
+    val subtitle: String = "",
+    val artworkUrl: String = "",
+)
+
 // fields nullable-safe for gson forward compat
 data class LocalPlaylist(
     val id: String = "",
@@ -22,6 +33,7 @@ private data class LocalState(
     val likedIds: List<String>? = emptyList(),
     val ratings: Map<String, Int>? = emptyMap(),
     val customTags: Map<String, List<String>>? = emptyMap(),
+    val hiddenItems: Map<String, HiddenLibraryItem>? = emptyMap(),
 )
 
 class LocalStore(context: Context) {
@@ -114,6 +126,74 @@ class LocalStore(context: Context) {
         runCatching { gson.fromJson(json, object : TypeToken<LocalState>() {}.type) as? LocalState }.getOrNull()?.let {
             state = it; persist()
         }
+    }
+
+    fun hiddenItems(
+        scopes: Set<String>,
+    ): List<HiddenLibraryItem> {
+        if (scopes.isEmpty()) {
+            return emptyList()
+        }
+
+        return state.hiddenItems
+            .orEmpty()
+            .values
+            .filter {
+                it.scope in scopes
+            }
+            .sortedWith(
+                compareBy<HiddenLibraryItem> {
+                    it.kind
+                }.thenBy {
+                    it.title.lowercase(Locale.ROOT)
+                }
+            )
+    }
+
+    fun isHidden(
+        key: String,
+    ): Boolean =
+        key in state.hiddenItems.orEmpty()
+
+    fun setHidden(
+        item: HiddenLibraryItem,
+        hidden: Boolean,
+    ): Boolean = synchronized(lock) {
+        val items =
+            state.hiddenItems
+                .orEmpty()
+                .toMutableMap()
+
+        if (hidden) {
+            items[item.key] = item
+        } else {
+            items.remove(item.key)
+        }
+
+        state = state.copy(
+            hiddenItems = items
+        )
+
+        persist()
+        true
+    }
+
+    fun removeHidden(
+        key: String,
+    ): Boolean = synchronized(lock) {
+        val items =
+            state.hiddenItems
+                .orEmpty()
+                .toMutableMap()
+
+        items.remove(key)
+
+        state = state.copy(
+            hiddenItems = items
+        )
+
+        persist()
+        true
     }
 
     fun customTags(key: String): List<String> =

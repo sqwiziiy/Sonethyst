@@ -58,6 +58,21 @@ class DetailViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         viewModelScope.launch {
+            container.hiddenReload.drop(1).collect {
+                val kind = curKind
+                val id = curId
+
+                if (
+                    kind != null &&
+                    id != null &&
+                    kind != "playlist" &&
+                    kind != "liked"
+                ) {
+                    fetch(kind, id)
+                }
+            }
+        }
+        viewModelScope.launch {
             container.ratingChanges.collect { change ->
                 _state.update { current ->
                     val data = current.data

@@ -286,6 +286,11 @@ class AppContainer(context: Context) {
     val customTagReload: StateFlow<Int> =
         _customTagReload.asStateFlow()
 
+    // Hidden-track/album mutations update discovery surfaces independently.
+    private val _hiddenReload = MutableStateFlow(0)
+    val hiddenReload: StateFlow<Int> =
+        _hiddenReload.asStateFlow()
+
     // Rating mutations patch already-loaded Song objects in place instead of
     // forcing complete library/search/detail reloads.
     private val _ratingChanges =
@@ -355,6 +360,44 @@ class AppContainer(context: Context) {
 
         if (updated) {
             _customTagReload.value++
+        }
+
+        return updated
+    }
+
+    fun setHiddenLibraryItem(
+        kind: String,
+        id: String,
+        title: String,
+        subtitle: String,
+        artworkUrl: String,
+        hidden: Boolean = true,
+    ): Boolean {
+        val updated =
+            repository.setHiddenItem(
+                kind = kind,
+                id = id,
+                title = title,
+                subtitle = subtitle,
+                artworkUrl = artworkUrl,
+                hidden = hidden,
+            )
+
+        if (updated) {
+            _hiddenReload.value++
+        }
+
+        return updated
+    }
+
+    fun restoreHiddenLibraryItem(
+        key: String,
+    ): Boolean {
+        val updated =
+            repository.restoreHiddenItem(key)
+
+        if (updated) {
+            _hiddenReload.value++
         }
 
         return updated

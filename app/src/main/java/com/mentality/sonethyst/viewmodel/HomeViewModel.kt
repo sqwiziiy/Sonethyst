@@ -27,6 +27,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { container.accountEpoch.drop(1).collect { load() } }
         viewModelScope.launch { container.libraryReload.drop(1).collect { load() } }
         viewModelScope.launch { container.playlistReload.drop(1).collect { load() } }
+        viewModelScope.launch { container.hiddenReload.drop(1).collect { load() } }
     }
 
     fun load() {
