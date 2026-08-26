@@ -245,3 +245,14 @@ Only after the application foundation and UX are stable:
 - [ ] Keep artist, album and track metadata untranslated
 - [ ] Keep the Sonethyst brand name untranslated
 - [ ] Make new UI features localization-ready from the start
+
+## Radio / Internet radio
+
+- [ ] Improve Radio Browser search fallback: retry without `hidebroken=true` when the strict search returns no matches
+- [ ] Search alternate/transliterated/normalized station names when the original query returns no matches
+- [ ] Include locally saved custom radio stations in search results
+- [ ] Deduplicate radio stations by normalized stream URL instead of UUID alone
+- [ ] Prevent duplicate custom/favorite entries that point to the same stream URL
+- [ ] Add editing for custom radio stations (name and stream URL)
+- [ ] Add deletion for custom radio stations
+- [ ] Validate custom stream URLs before saving and expose useful playback/connection errors
