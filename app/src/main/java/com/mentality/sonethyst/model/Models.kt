@@ -82,6 +82,7 @@ enum class LibraryFilter(val label: String) {
     ARTISTS("Artists"),
     GENRES("Genres"),
     TAGS("Tags"),
+    VERSIONS("Versions"),
     HIDDEN("Hidden"),
     SONGS("Songs"),
     DOWNLOADED("Downloaded"),

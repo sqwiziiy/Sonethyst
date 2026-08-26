@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.HiddenLibraryItem
+import com.mentality.sonethyst.data.SongVersionFinder
+import com.mentality.sonethyst.data.SongVersionGroup
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
 import com.mentality.sonethyst.model.CustomTag
@@ -14,12 +16,14 @@ import com.mentality.sonethyst.model.LibraryLayout
 import com.mentality.sonethyst.model.LibrarySort
 import com.mentality.sonethyst.model.Playlist
 import com.mentality.sonethyst.model.Song
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class LibraryUiState(
     val filter: LibraryFilter = LibraryFilter.ALL,
@@ -31,6 +35,9 @@ data class LibraryUiState(
     val genres: List<Genre> = emptyList(),
     val customTags: List<CustomTag> = emptyList(),
     val hiddenItems: List<HiddenLibraryItem> = emptyList(),
+    val versionGroups: List<SongVersionGroup> = emptyList(),
+    val versionsLoading: Boolean = false,
+    val versionsLoaded: Boolean = false,
     val genresLoading: Boolean = false,
     val genresLoaded: Boolean = false,
     val supportsGenres: Boolean = false,
@@ -57,6 +64,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             container.offline.collect {
                 resetSongWindow()
                 resetGenres()
+                resetVersions()
                 load()
             }
         }
@@ -64,6 +72,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             container.accountEpoch.drop(1).collect {
                 resetSongWindow()
                 resetGenres()
+                resetVersions()
                 load()
             }
         }
@@ -72,10 +81,17 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                 val refreshGenres =
                     _state.value.genresLoaded
 
+                val refreshVersions =
+                    _state.value.versionsLoaded
+
                 load()
 
                 if (refreshGenres) {
                     refreshGenres(force = true)
+                }
+
+                if (refreshVersions) {
+                    refreshVersions(force = true)
                 }
             }
         }
@@ -93,6 +109,10 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             container.hiddenReload.drop(1).collect {
                 refreshHiddenItems()
                 refreshVisibleLibrary()
+
+                if (_state.value.versionsLoaded) {
+                    refreshVersions(force = true)
+                }
             }
         }
         viewModelScope.launch {
@@ -249,6 +269,70 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private fun refreshVersions(
+        force: Boolean = false,
+        refreshLocal: Boolean = false,
+    ) {
+        val current =
+            _state.value
+
+        if (
+            current.versionsLoading ||
+            (!force && current.versionsLoaded)
+        ) {
+            return
+        }
+
+        _state.update {
+            it.copy(
+                versionsLoading = true
+            )
+        }
+
+        viewModelScope.launch {
+            if (refreshLocal) {
+                runCatching {
+                    container.refreshLocalLibrary()
+                }
+            }
+
+            val candidates =
+                runCatching {
+                    container.repository
+                        .duplicateCandidates()
+                }.getOrDefault(
+                    emptyList()
+                )
+
+            val groups =
+                withContext(
+                    Dispatchers.Default
+                ) {
+                    SongVersionFinder.find(
+                        candidates
+                    )
+                }
+
+            _state.update {
+                it.copy(
+                    versionGroups = groups,
+                    versionsLoading = false,
+                    versionsLoaded = true,
+                )
+            }
+        }
+    }
+
+    private fun resetVersions() {
+        _state.update {
+            it.copy(
+                versionGroups = emptyList(),
+                versionsLoading = false,
+                versionsLoaded = false,
+            )
+        }
+    }
+
     private fun refreshHiddenItems() {
         _state.update {
             it.copy(
@@ -307,6 +391,13 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
 
         if (f == LibraryFilter.GENRES) {
             refreshGenres()
+        }
+
+        if (f == LibraryFilter.VERSIONS) {
+            refreshVersions(
+                force = true,
+                refreshLocal = true,
+            )
         }
     }
     fun setSort(s: LibrarySort) = _state.update { it.copy(sort = s) }

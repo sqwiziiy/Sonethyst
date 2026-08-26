@@ -63,6 +63,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mentality.sonethyst.data.SongVersionGroup
 import com.mentality.sonethyst.model.LibraryFilter
 import com.mentality.sonethyst.model.LibraryLayout
 import com.mentality.sonethyst.model.LibrarySort
@@ -305,6 +306,118 @@ fun LibraryScreen(
                     modifier = Modifier.size(72.dp)
                 )
             }
+            return@Column
+        }
+
+        if (filter == LibraryFilter.VERSIONS) {
+            when {
+                state.versionsLoading &&
+                    state.versionGroups.isEmpty() -> {
+                    Box(
+                        Modifier.fillMaxSize(),
+                        contentAlignment =
+                            Alignment.Center,
+                    ) {
+                        com.mentality.sonethyst.ui.components
+                            .LottieLoader(
+                                modifier =
+                                    Modifier.size(72.dp)
+                            )
+                    }
+                }
+
+                state.versionGroups.isEmpty() -> {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 28.dp),
+                        contentAlignment =
+                            Alignment.Center,
+                    ) {
+                        Text(
+                            "No alternate song versions found",
+                            color =
+                                MaterialTheme.colorScheme
+                                    .onSurfaceVariant,
+                        )
+                    }
+                }
+
+                else -> {
+                    val versionCount =
+                        state.versionGroups.sumOf {
+                            it.versions.size
+                        }
+
+                    LazyColumn(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp),
+                        contentPadding =
+                            PaddingValues(
+                                bottom = bottom
+                            ),
+                    ) {
+                        item(
+                            key = "versions-summary",
+                            contentType =
+                                "versions-summary",
+                        ) {
+                            Text(
+                                text =
+                                    "${state.versionGroups.size} song " +
+                                        "group${if (state.versionGroups.size == 1) "" else "s"}" +
+                                        " • $versionCount versions",
+                                style =
+                                    MaterialTheme.typography
+                                        .bodySmall,
+                                color =
+                                    MaterialTheme.colorScheme
+                                        .onSurfaceVariant,
+                                modifier =
+                                    Modifier.padding(
+                                        horizontal = 10.dp,
+                                        vertical = 6.dp,
+                                    ),
+                            )
+                        }
+
+                        items(
+                            count =
+                                state.versionGroups.size,
+                            key = { i ->
+                                val group =
+                                    state.versionGroups[i]
+
+                                "versions:" +
+                                    group.artist +
+                                    ":" +
+                                    group.title
+                            },
+                            contentType = {
+                                "song-version-group"
+                            },
+                        ) { i ->
+                            SongVersionGroupCard(
+                                group =
+                                    state.versionGroups[i],
+                                currentSongId =
+                                    currentSongId,
+                                isPlaying =
+                                    isPlaying,
+                                onPlay = { song ->
+                                    onPlayAll(
+                                        listOf(song),
+                                        0,
+                                    )
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+
             return@Column
         }
 
@@ -894,6 +1007,183 @@ private fun buildRows(
 
         addAll(deduped)
     }
+}
+
+@Composable
+private fun SongVersionGroupCard(
+    group: SongVersionGroup,
+    currentSongId: String,
+    isPlaying: Boolean,
+    onPlay: (Song) -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 5.dp)
+                .clip(
+                    RoundedCornerShape(18.dp)
+                )
+                .background(
+                    MaterialTheme.colorScheme
+                        .surfaceContainerHigh
+                        .copy(alpha = 0.45f)
+                )
+                .padding(12.dp),
+    ) {
+        Text(
+            text = group.title,
+            style =
+                MaterialTheme.typography
+                    .titleSmall,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        Text(
+            text =
+                "${group.artist} • " +
+                    "${group.versions.size} " +
+                    "version${if (group.versions.size == 1) "" else "s"}",
+            style =
+                MaterialTheme.typography
+                    .bodySmall,
+            color =
+                MaterialTheme.colorScheme
+                    .onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        Spacer(
+            Modifier.height(8.dp)
+        )
+
+        group.versions.forEach { version ->
+            val song = version.song
+
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(
+                            RoundedCornerShape(12.dp)
+                        )
+                        .clickable {
+                            onPlay(song)
+                        }
+                        .padding(6.dp),
+                verticalAlignment =
+                    Alignment.CenterVertically,
+            ) {
+                Artwork(
+                    song.artworkUrl,
+                    song.accent,
+                    Modifier.size(46.dp),
+                    corner = 10.dp,
+                )
+
+                Spacer(
+                    Modifier.width(10.dp)
+                )
+
+                Column(
+                    Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = version.label,
+                        style =
+                            MaterialTheme.typography
+                                .bodySmall,
+                        fontWeight =
+                            FontWeight.Bold,
+                        color =
+                            if (version.isOriginal) {
+                                MaterialTheme
+                                    .colorScheme
+                                    .primary
+                            } else {
+                                MaterialTheme
+                                    .colorScheme
+                                    .onSurface
+                            },
+                        maxLines = 1,
+                        overflow =
+                            TextOverflow.Ellipsis,
+                    )
+
+                    Text(
+                        text = songVersionSpec(song),
+                        style =
+                            MaterialTheme.typography
+                                .labelSmall,
+                        color =
+                            MaterialTheme.colorScheme
+                                .onSurfaceVariant,
+                        maxLines = 2,
+                        overflow =
+                            TextOverflow.Ellipsis,
+                    )
+                }
+
+                if (
+                    isPlaying &&
+                    song.id == currentSongId
+                ) {
+                    Icon(
+                        imageVector =
+                            Icons.Filled.PlayArrow,
+                        contentDescription =
+                            "Playing",
+                        tint =
+                            MaterialTheme.colorScheme
+                                .primary,
+                        modifier =
+                            Modifier.size(20.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun songVersionSpec(
+    song: Song,
+): String {
+    val parts =
+        mutableListOf<String>()
+
+    if (song.album.isNotBlank()) {
+        parts += song.album
+    }
+
+    if (song.suffix.isNotBlank()) {
+        parts += song.suffix.uppercase()
+    }
+
+    if (song.durationSec > 0) {
+        val minutes =
+            song.durationSec / 60
+
+        val seconds =
+            song.durationSec % 60
+
+        parts +=
+            "$minutes:" +
+                seconds
+                    .toString()
+                    .padStart(
+                        2,
+                        '0',
+                    )
+    }
+
+    return parts
+        .joinToString(" • ")
+        .ifBlank {
+            "Version information unavailable"
+        }
 }
 
 @Composable
