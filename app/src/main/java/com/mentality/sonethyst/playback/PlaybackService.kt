@@ -58,6 +58,24 @@ class PlaybackService : MediaLibraryService() {
     private val monoProcessor = MonoAudioProcessor()
     private val sonethystDsp = SonethystDspProcessor()
     private val convolver = ConvolutionProcessor()
+
+    /*
+     * Independent processing chain for the second local player.
+     *
+     * Roles swap after every crossfade, so both players must be
+     * capable of becoming the real primary player.
+     */
+    private var fadeMonoProcessor:
+        MonoAudioProcessor? = null
+
+    private var fadeSonethystDsp:
+        SonethystDspProcessor? = null
+
+    private var fadeConvolver:
+        ConvolutionProcessor? = null
+
+    private lateinit var playbackAudioAttributes:
+        AudioAttributes
     @Volatile private var lastIrPath: String = ""
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -113,10 +131,18 @@ class PlaybackService : MediaLibraryService() {
         val useFloat = bitPerfectUsb || (highRes && startupDspMode != DspMode.CUSTOM)
         useFloatOut = useFloat
 
-        val audioAttributes = AudioAttributes.Builder()
-            .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-            .setUsage(C.USAGE_MEDIA)
-            .build()
+        playbackAudioAttributes =
+            AudioAttributes.Builder()
+                .setContentType(
+                    C.AUDIO_CONTENT_TYPE_MUSIC
+                )
+                .setUsage(
+                    C.USAGE_MEDIA
+                )
+                .build()
+
+        val audioAttributes =
+            playbackAudioAttributes
 
         val renderersFactory = object : DefaultRenderersFactory(this) {
             override fun buildAudioSink(
@@ -234,24 +260,7 @@ class PlaybackService : MediaLibraryService() {
             runCatching { player.setAudioSessionId(container.audioSessionId) }
         }
 
-        player.addListener(object : Player.Listener {
-            override fun onEvents(p: Player, events: Player.Events) {
-                if (events.contains(Player.EVENT_SHUFFLE_MODE_ENABLED_CHANGED) ||
-                    events.contains(Player.EVENT_REPEAT_MODE_CHANGED)
-                ) updateCustomLayout()
-                if (events.contains(Player.EVENT_TIMELINE_CHANGED)) maybeNeutralize()
-                if (events.contains(Player.EVENT_TRACKS_CHANGED) ||
-                    events.contains(Player.EVENT_MEDIA_ITEM_TRANSITION) ||
-                    events.contains(Player.EVENT_PLAYBACK_STATE_CHANGED) ||
-                    events.contains(Player.EVENT_PLAYBACK_PARAMETERS_CHANGED)
-                ) updateSignalPath()
-                if (events.contains(Player.EVENT_MEDIA_ITEM_TRANSITION) ||
-                    events.contains(Player.EVENT_MEDIA_METADATA_CHANGED) ||
-                    events.contains(Player.EVENT_IS_PLAYING_CHANGED) ||
-                    events.contains(Player.EVENT_PLAYBACK_STATE_CHANGED)
-                ) publishNowPlaying()
-            }
-        })
+        attachPlaybackListener(player)
 
         mediaSession = MediaLibrarySession.Builder(this, player, MediaCallback())
             .setCustomLayout(buildCustomLayout())
@@ -264,7 +273,12 @@ class PlaybackService : MediaLibraryService() {
 
         scope.launch {
             store.playbackPrefs.collect { prefs ->
-                player.skipSilenceEnabled = prefs.skipSilence
+                player.skipSilenceEnabled =
+                    prefs.skipSilence
+
+                fadePlayer?.skipSilenceEnabled =
+                    prefs.skipSilence
+
                 monoAudioPref = prefs.monoAudio
                 crossfadeMs = prefs.crossfadeSec * 1000
                 preferHighResPref = prefs.preferHighRes
@@ -290,6 +304,73 @@ class PlaybackService : MediaLibraryService() {
             }
         }
     }
+
+    private fun attachPlaybackListener(
+        target: ExoPlayer,
+    ) {
+        target.addListener(
+            object : Player.Listener {
+                override fun onEvents(
+                    p: Player,
+                    events: Player.Events,
+                ) {
+                    if (
+                        events.contains(
+                            Player.EVENT_SHUFFLE_MODE_ENABLED_CHANGED
+                        ) ||
+                        events.contains(
+                            Player.EVENT_REPEAT_MODE_CHANGED
+                        )
+                    ) {
+                        updateCustomLayout()
+                    }
+
+                    if (
+                        events.contains(
+                            Player.EVENT_TIMELINE_CHANGED
+                        )
+                    ) {
+                        maybeNeutralize()
+                    }
+
+                    if (
+                        events.contains(
+                            Player.EVENT_TRACKS_CHANGED
+                        ) ||
+                        events.contains(
+                            Player.EVENT_MEDIA_ITEM_TRANSITION
+                        ) ||
+                        events.contains(
+                            Player.EVENT_PLAYBACK_STATE_CHANGED
+                        ) ||
+                        events.contains(
+                            Player.EVENT_PLAYBACK_PARAMETERS_CHANGED
+                        )
+                    ) {
+                        updateSignalPath()
+                    }
+
+                    if (
+                        events.contains(
+                            Player.EVENT_MEDIA_ITEM_TRANSITION
+                        ) ||
+                        events.contains(
+                            Player.EVENT_MEDIA_METADATA_CHANGED
+                        ) ||
+                        events.contains(
+                            Player.EVENT_IS_PLAYING_CHANGED
+                        ) ||
+                        events.contains(
+                            Player.EVENT_PLAYBACK_STATE_CHANGED
+                        )
+                    ) {
+                        publishNowPlaying()
+                    }
+                }
+            }
+        )
+    }
+
 
     // runtime-switchable via volatile flags no rebuild the two eq engines are mutually exclusive so they never stack
     private fun applyAudioEngine() {
@@ -318,21 +399,59 @@ class PlaybackService : MediaLibraryService() {
             compRatio = ap.dspCompRatio,
         )
         sonethystDsp.update(params)
-        sonethystDsp.enabled = mode == DspMode.CUSTOM
-        audioEffects?.setMasterEnabled(mode == DspMode.SYSTEM)
+        sonethystDsp.enabled =
+            mode == DspMode.CUSTOM
 
-        convolver.enabled = ap.dspConvEnabled
-        convolver.setMakeup(ap.dspConvMakeupDb)
+        fadeSonethystDsp?.let {
+            it.update(params)
+            it.enabled =
+                mode == DspMode.CUSTOM
+        }
+
+        audioEffects?.setMasterEnabled(
+            mode == DspMode.SYSTEM
+        )
+
+        convolver.enabled =
+            ap.dspConvEnabled
+
+        convolver.setMakeup(
+            ap.dspConvMakeupDb
+        )
+
+        fadeConvolver?.let {
+            it.enabled =
+                ap.dspConvEnabled
+
+            it.setMakeup(
+                ap.dspConvMakeupDb
+            )
+        }
         if (ap.dspConvIrPath != lastIrPath) {
             lastIrPath = ap.dspConvIrPath
             scope.launch(kotlinx.coroutines.Dispatchers.IO) {
                 val ir = ap.dspConvIrPath.takeIf { it.isNotBlank() }
                     ?.let { runCatching { ConvolutionProcessor.loadWav(java.io.File(it)) }.getOrNull() }
-                convolver.setImpulse(ir, ap.dspConvMakeupDb)
+                convolver.setImpulse(
+                    ir,
+                    ap.dspConvMakeupDb,
+                )
+
+                fadeConvolver?.setImpulse(
+                    ir,
+                    ap.dspConvMakeupDb,
+                )
             }
         }
         // mono in system/off runs in monoprocessor in custom its width=0 above
-        monoProcessor.enabled = monoAudioPref && mode != DspMode.CUSTOM
+        monoProcessor.enabled =
+            monoAudioPref &&
+                mode != DspMode.CUSTOM
+
+        fadeMonoProcessor?.enabled =
+            monoAudioPref &&
+                mode != DspMode.CUSTOM
+
         updateSignalPath()
     }
 
@@ -494,6 +613,7 @@ class PlaybackService : MediaLibraryService() {
         if (
             fade <= 0 ||
             bitPerfect ||
+            mediaSession?.player !== player ||
             !player.isPlaying ||
             xfadePreparing ||
             xfadeActive ||
@@ -632,16 +752,41 @@ class PlaybackService : MediaLibraryService() {
                 )
 
                 /*
-                 * Incoming song starts at 0.
+                 * Duplicate the LOGICAL queue, not the
+                 * playback position.
                  *
-                 * No copy of the outgoing timeline exists
-                 * in this player anymore.
+                 * This player starts directly on targetIndex.
+                 * After crossfade it becomes the real primary
+                 * player without rebuilding the queue.
                  */
-                tail.setMediaItem(
-                    target
+                val queue =
+                    (0 until player.mediaItemCount)
+                        .map {
+                            player.getMediaItemAt(it)
+                        }
+
+                tail.setMediaItems(
+                    queue,
+                    targetIndex,
+                    0L,
                 )
 
-                tail.seekTo(0L)
+                tail.repeatMode =
+                    player.repeatMode
+
+                tail.shuffleModeEnabled =
+                    player.shuffleModeEnabled
+
+                if (queue.isNotEmpty()) {
+                    runCatching {
+                        tail.setShuffleOrder(
+                            ShuffleOrder
+                                .UnshuffledShuffleOrder(
+                                    queue.size
+                                )
+                        )
+                    }
+                }
 
                 tail.prepare()
 
@@ -946,6 +1091,19 @@ class PlaybackService : MediaLibraryService() {
      * It remains audible while the main player catches
      * up silently.
      */
+    /*
+     * Crossfade ownership transfer.
+     *
+     * The incoming player has ALREADY emitted the beginning
+     * of the new song. Do not recreate it in the old player.
+     *
+     * Instead, swap roles:
+     *
+     * old primary -> standby
+     * incoming    -> primary
+     *
+     * There is deliberately no seekTo() here.
+     */
     private fun beginXfadePromotion() {
         if (
             !xfadeActive ||
@@ -954,9 +1112,6 @@ class PlaybackService : MediaLibraryService() {
             return
         }
 
-        val generation =
-            xfadeGeneration
-
         val targetId =
             xfadeTargetId
                 ?: run {
@@ -964,249 +1119,108 @@ class PlaybackService : MediaLibraryService() {
                     return
                 }
 
-        val tail =
+        val incoming =
             fadePlayer
                 ?: run {
                     cancelXfade()
                     return
                 }
 
+        if (
+            incoming.currentMediaItem
+                ?.mediaId != targetId ||
+            !incoming.isPlaying
+        ) {
+            cancelXfade()
+            return
+        }
+
+        val outgoing =
+            player
+
+        val incomingPosition =
+            incoming.currentPosition
+
+        val outgoingPosition =
+            outgoing.currentPosition
+
         xfadeActive = false
         xfadePromoting = true
 
         /*
-         * tail owns 100% of audible playback during
-         * preparation of main.
+         * Incoming already owns 100% of audible playback.
          */
-        tail.volume =
+        incoming.volume =
             xfadeInGain
 
-        player.volume = 0f
+        outgoing.volume = 0f
 
-        scope.launch {
-            /*
-             * Normally Media3 has naturally transitioned
-             * to the next item by now.
-             *
-             * If not, explicitly move it there while muted.
-             */
-            if (
-                player.currentMediaItem
-                    ?.mediaId != targetId
-            ) {
-                if (xfadeRepeatOne) {
-                    player.seekTo(
-                        xfadeTargetIndex,
-                        0L,
-                    )
-                } else if (
-                    xfadeTargetIndex >= 0 &&
-                    xfadeTargetIndex <
-                        player.mediaItemCount
-                ) {
-                    player.seekTo(
-                        xfadeTargetIndex,
-                        0L,
-                    )
-                } else {
-                    cancelXfade()
-                    return@launch
-                }
-            }
+        /*
+         * Swap service ownership FIRST.
+         *
+         * From this line onward every service operation that
+         * references `player` acts on the already-playing
+         * incoming decoder.
+         */
+        player = incoming
+        fadePlayer = outgoing
 
-            player.volume = 0f
-
-            /*
-             * Jump main to wherever the audible incoming
-             * player is NOW.
-             *
-             * Any buffering here is inaudible because
-             * fadePlayer keeps playing.
-             */
-            player.seekTo(
-                tail.currentPosition
+        /*
+         * Transfer Android audio-focus / noisy handling.
+         *
+         * Never setPreferredAudioDevice() on the standby
+         * player. That previously made secondary playback
+         * inaudible on real hardware.
+         */
+        runCatching {
+            outgoing.setAudioAttributes(
+                playbackAudioAttributes,
+                false,
             )
 
-            player.play()
+            outgoing.setHandleAudioBecomingNoisy(
+                false
+            )
 
-            if (
-                !waitForMainXfadeReady(
-                    generation,
-                    targetId,
-                    3000L,
-                )
-            ) {
-                android.util.Log.w(
-                    "SonethystXfade",
-                    "main takeover did not become ready"
-                )
+            incoming.setAudioAttributes(
+                playbackAudioAttributes,
+                true,
+            )
 
-                cancelXfade()
-                return@launch
-            }
-
-            /*
-             * main was muted while becoming ready, so tail
-             * moved further ahead. Re-sync under cover of
-             * the still-audible fadePlayer.
-             *
-             * Two corrections maximum; do not chase it
-             * forever.
-             */
-            for (attempt in 0 until 2) {
-                if (
-                    generation !=
-                        xfadeGeneration
-                ) {
-                    return@launch
-                }
-
-                val delta =
-                    kotlin.math.abs(
-                        tail.currentPosition -
-                            player.currentPosition
-                    )
-
-                if (delta <= 80L) {
-                    break
-                }
-
-                player.volume = 0f
-
-                player.seekTo(
-                    tail.currentPosition
-                )
-
-                if (
-                    !waitForMainXfadeReady(
-                        generation,
-                        targetId,
-                        1500L,
-                    )
-                ) {
-                    cancelXfade()
-                    return@launch
-                }
-            }
-
-            if (
-                generation !=
-                    xfadeGeneration ||
-                player.currentMediaItem
-                    ?.mediaId != targetId
-            ) {
-                return@launch
-            }
-
-            /*
-             * Both players now contain the INCOMING song.
-             *
-             * This ownership handoff is deliberately very
-             * short. Unlike the old implementation, we are
-             * not trying to keep two copies synchronized for
-             * five seconds.
-             */
-            val handoffMs = 180L
-
-            val handoffStart =
-                android.os.SystemClock
-                    .elapsedRealtime()
-
-            while (
-                generation ==
-                    xfadeGeneration
-            ) {
-                val handoffT =
-                    (
-                        (
-                            android.os.SystemClock
-                                .elapsedRealtime() -
-                                handoffStart
-                        ).toFloat() /
-                            handoffMs.toFloat()
-                    ).coerceIn(0f, 1f)
-
-                /*
-                 * Linear ownership transfer is intentional:
-                 * both players contain the same signal.
-                 * Equal-power would boost a correlated signal.
-                 */
-                tail.volume =
-                    (
-                        (1f - handoffT) *
-                            xfadeInGain
-                    ).coerceIn(0f, 1f)
-
-                player.volume =
-                    (
-                        handoffT *
-                            xfadeInGain
-                    ).coerceIn(0f, 1f)
-
-                if (handoffT >= 1f) {
-                    break
-                }
-
-                delay(5L)
-            }
-
-            if (
-                generation !=
-                    xfadeGeneration
-            ) {
-                return@launch
-            }
-
-            runCatching {
-                tail.volume = 0f
-                tail.pause()
-                tail.clearMediaItems()
-            }
-
-            player.volume =
-                replayGainMultiplier()
-
-            finishXfade()
-
-            android.util.Log.d(
-                "SonethystXfade",
-                "PROMOTED target=$targetId"
+            incoming.setHandleAudioBecomingNoisy(
+                true
             )
         }
-    }
 
+        /*
+         * MediaController / notification / system session now
+         * follow the SAME ExoPlayer which has been audible
+         * throughout the crossfade.
+         */
+        mediaSession?.player =
+            incoming
 
-    private suspend fun waitForMainXfadeReady(
-        generation: Int,
-        targetId: String,
-        timeoutMs: Long,
-    ): Boolean {
-        val deadline =
-            android.os.SystemClock
-                .elapsedRealtime() +
-                timeoutMs
-
-        while (
-            generation ==
-                xfadeGeneration &&
-            android.os.SystemClock
-                .elapsedRealtime() <
-                deadline
-        ) {
-            if (
-                player.currentMediaItem
-                    ?.mediaId == targetId &&
-                player.playbackState ==
-                    Player.STATE_READY &&
-                player.isPlaying
-            ) {
-                return true
-            }
-
-            delay(5L)
+        /*
+         * Old primary is silent and becomes standby for the
+         * next transition. Do not release it; the next
+         * prepareIncomingXfade() will clear/reuse it.
+         */
+        runCatching {
+            outgoing.pause()
         }
 
-        return false
+        finishXfade()
+
+        updateCustomLayout()
+        updateSignalPath()
+        publishNowPlaying()
+
+        android.util.Log.d(
+            "SonethystXfade",
+            "SWAP target=$targetId " +
+                "incomingPos=$incomingPosition " +
+                "oldPrimaryPos=$outgoingPosition"
+        )
     }
 
 
@@ -1282,67 +1296,177 @@ class PlaybackService : MediaLibraryService() {
             return it
         }
 
-        val attrs =
-            AudioAttributes.Builder()
-                .setContentType(
-                    C.AUDIO_CONTENT_TYPE_MUSIC
-                )
-                .setUsage(
-                    C.USAGE_MEDIA
-                )
-                .build()
-
         /*
-         * Same Sonethyst resolver as main.
-         *
-         * Do NOT force setPreferredAudioDevice() here:
-         * device testing showed that this can leave the
-         * secondary decoder running but inaudible.
+         * Each concurrently-playing ExoPlayer needs independent
+         * AudioProcessor instances.
          */
+        val secondaryMono =
+            MonoAudioProcessor()
+
+        val secondaryDsp =
+            SonethystDspProcessor()
+
+        val secondaryConvolver =
+            ConvolutionProcessor()
+
+        fadeMonoProcessor =
+            secondaryMono
+
+        fadeSonethystDsp =
+            secondaryDsp
+
+        fadeConvolver =
+            secondaryConvolver
+
+        val fadeRenderersFactory =
+            object :
+                DefaultRenderersFactory(this) {
+
+                override fun buildAudioSink(
+                    context: Context,
+                    enableFloatOutput: Boolean,
+                    enableAudioTrackPlaybackParams:
+                        Boolean,
+                ): AudioSink {
+                    val base =
+                        DefaultAudioSink.Builder(
+                            context
+                        )
+                            .setAudioProcessors(
+                                arrayOf(
+                                    secondaryMono,
+                                    secondaryDsp,
+                                    secondaryConvolver,
+                                )
+                            )
+                            .setEnableFloatOutput(
+                                useFloatOut
+                            )
+                            .setEnableAudioTrackPlaybackParams(
+                                useFloatOut ||
+                                    enableAudioTrackPlaybackParams
+                            )
+                            .build()
+
+                    return TappingAudioSink(
+                        base,
+                        container.visualizer,
+                    )
+                }
+            }
+
         val fadeMediaSourceFactory =
             androidx.media3.exoplayer.source
                 .DefaultMediaSourceFactory(
                     playbackDataSourceFactory
                 )
 
-        return ExoPlayer.Builder(this)
-            .setMediaSourceFactory(
-                fadeMediaSourceFactory
+        val tail =
+            ExoPlayer.Builder(
+                this,
+                fadeRenderersFactory,
             )
-            .setAudioAttributes(
-                attrs,
-                /* handleAudioFocus = */ false,
-            )
-            .setHandleAudioBecomingNoisy(false)
-            .build()
-            .also { tail ->
-                fadePlayer = tail
+                .setMediaSourceFactory(
+                    fadeMediaSourceFactory
+                )
+                .setAudioAttributes(
+                    playbackAudioAttributes,
+                    /* handleAudioFocus = */ false,
+                )
+                .setHandleAudioBecomingNoisy(
+                    false
+                )
+                .build()
 
-                tail.addListener(
-                    object : Player.Listener {
-                        override fun onPlayerError(
-                            error:
-                                androidx.media3.common
-                                    .PlaybackException,
-                        ) {
-                            android.util.Log.e(
-                                "SonethystXfade",
-                                "secondary player error",
-                                error,
-                            )
-                        }
-
-                        override fun onPlaybackStateChanged(
-                            playbackState: Int,
-                        ) {
-                            android.util.Log.d(
-                                "SonethystXfade",
-                                "secondary state=$playbackState",
-                            )
-                        }
-                    }
+        /*
+         * Shared audio-session ID keeps system DSP/effects
+         * consistent when roles swap.
+         */
+        if (
+            container.audioSessionId != 0
+        ) {
+            runCatching {
+                tail.setAudioSessionId(
+                    container.audioSessionId
                 )
             }
+        }
+
+        tail.skipSilenceEnabled =
+            player.skipSilenceEnabled
+
+        fadePlayer =
+            tail
+
+        attachPlaybackListener(
+            tail
+        )
+
+        tail.addListener(
+            object : Player.Listener {
+                override fun onPlayerError(
+                    error:
+                        androidx.media3.common
+                            .PlaybackException,
+                ) {
+                    android.util.Log.e(
+                        "SonethystXfade",
+                        "secondary player error",
+                        error,
+                    )
+                }
+
+                override fun onPlaybackStateChanged(
+                    playbackState: Int,
+                ) {
+                    android.util.Log.d(
+                        "SonethystXfade",
+                        "secondary state=$playbackState",
+                    )
+                }
+            }
+        )
+
+        /*
+         * Bring the newly-created chain to the current DSP
+         * state before it is ever made audible.
+         */
+        applyAudioEngine()
+
+        /*
+         * If an IR was already configured before the second
+         * player existed, load the same IR for this independent
+         * convolver as well.
+         */
+        lastAudioPrefs
+            ?.takeIf {
+                it.dspConvEnabled &&
+                    it.dspConvIrPath
+                        .isNotBlank()
+            }
+            ?.let { prefs ->
+                scope.launch(
+                    kotlinx.coroutines.Dispatchers.IO
+                ) {
+                    val ir =
+                        runCatching {
+                            ConvolutionProcessor
+                                .loadWav(
+                                    java.io.File(
+                                        prefs.dspConvIrPath
+                                    )
+                                )
+                        }.getOrNull()
+
+                    secondaryConvolver
+                        .setImpulse(
+                            ir,
+                            prefs.dspConvMakeupDb,
+                        )
+                }
+            }
+
+        return tail
     }
 
 
@@ -1776,6 +1900,14 @@ class PlaybackService : MediaLibraryService() {
 
     // casting hands the receiver a plain url so the dsp chain doesnt travel
     private fun switchToPlayer(toCast: Boolean) {
+        if (
+            xfadePreparing ||
+            xfadeActive ||
+            xfadePromoting
+        ) {
+            cancelXfade()
+        }
+
         val cp = castPlayer ?: return
         val from = mediaSession?.player ?: return
         val to: Player = if (toCast) cp else player
