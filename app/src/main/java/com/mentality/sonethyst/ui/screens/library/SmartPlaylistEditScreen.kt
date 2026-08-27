@@ -1,5 +1,9 @@
 package com.mentality.sonethyst.ui.screens.library
 
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +28,7 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -38,6 +43,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +51,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mentality.sonethyst.data.SmartPlaylist
 import com.mentality.sonethyst.data.SmartRule
+import com.mentality.sonethyst.data.resolveSmartPlaylistCover
+import com.mentality.sonethyst.model.Song
+import com.mentality.sonethyst.ui.components.Artwork
+import com.mentality.sonethyst.ui.components.PlaylistCoverSheet
+import com.mentality.sonethyst.util.accentFor
 import com.mentality.sonethyst.ui.screens.settings.SegmentedRow
 import com.mentality.sonethyst.ui.screens.settings.SettingsGroup
 import com.mentality.sonethyst.ui.screens.settings.SettingsTopBar
@@ -85,11 +96,77 @@ private fun opsFor(type: Int) = when (type) { TYPE_NUMBER -> NUM_OPS; TYPE_BOOL 
 fun SmartPlaylistEditScreen(
     contentPadding: PaddingValues,
     playlist: SmartPlaylist,
+    previewTracks: List<Song>,
     isNew: Boolean,
     onUpdate: ((SmartPlaylist) -> SmartPlaylist) -> Unit,
     onSave: () -> Unit,
     onBack: () -> Unit,
 ) {
+    var showCoverSheet by
+        remember {
+            mutableStateOf(false)
+        }
+
+    val context =
+        LocalContext.current
+
+    val customCoverLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.OpenDocument(),
+        ) { uri ->
+            if (uri != null) {
+                runCatching {
+                    context.contentResolver
+                        .takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                        )
+                }
+
+                onUpdate {
+                    it.copy(
+                        coverMode = "custom",
+                        coverValue =
+                            uri.toString(),
+                    )
+                }
+
+                showCoverSheet = false
+            }
+        }
+
+    val coverMode =
+        playlist.coverMode
+            .orEmpty()
+            .ifBlank {
+                "automatic"
+            }
+            .lowercase()
+
+    val coverUrl =
+        resolveSmartPlaylistCover(
+            playlist,
+            previewTracks,
+        )
+
+    val coverLabel =
+        when (coverMode) {
+            "first" ->
+                "First track"
+
+            "collage" ->
+                "2×2 collage"
+
+            "track" ->
+                "Track artwork"
+
+            "custom" ->
+                "Image from device"
+
+            else ->
+                "Automatic"
+        }
+
     Column(Modifier.fillMaxSize()) {
         SettingsTopBar(title = if (isNew) "New smart playlist" else "Edit smart playlist", onBack = onBack)
         Column(
@@ -103,6 +180,75 @@ fun SmartPlaylistEditScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             )
+            Spacer(Modifier.height(14.dp))
+
+            SettingsGroup {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            showCoverSheet = true
+                        }
+                        .padding(
+                            horizontal = 20.dp,
+                            vertical = 12.dp,
+                        ),
+                    verticalAlignment =
+                        Alignment.CenterVertically,
+                ) {
+                    Artwork(
+                        url = coverUrl,
+                        accent =
+                            accentFor(
+                                playlist.id
+                                    ?: "smart"
+                            ),
+                        modifier =
+                            Modifier.size(58.dp),
+                        corner = 12.dp,
+                    )
+
+                    Spacer(
+                        Modifier.width(14.dp)
+                    )
+
+                    Column(
+                        Modifier.weight(1f)
+                    ) {
+                        Text(
+                            "Playlist cover",
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .titleSmall,
+                            fontWeight =
+                                FontWeight.Medium,
+                        )
+
+                        Text(
+                            coverLabel,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .bodySmall,
+                            color =
+                                MaterialTheme
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                        )
+                    }
+
+                    Icon(
+                        Icons.Filled.Image,
+                        "Change cover",
+                        tint =
+                            MaterialTheme
+                                .colorScheme
+                                .primary,
+                    )
+                }
+            }
+
             Spacer(Modifier.height(14.dp))
 
             SettingsGroup {
@@ -169,6 +315,63 @@ fun SmartPlaylistEditScreen(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             ) { Text(if (isNew) "Create smart playlist" else "Save changes", fontWeight = FontWeight.Bold) }
         }
+    }
+
+    if (showCoverSheet) {
+        PlaylistCoverSheet(
+            tracks = previewTracks,
+            currentMode = coverMode,
+            onAutomatic = {
+                onUpdate {
+                    it.copy(
+                        coverMode =
+                            "automatic",
+                        coverValue = "",
+                    )
+                }
+
+                showCoverSheet = false
+            },
+            onFirstTrack = {
+                onUpdate {
+                    it.copy(
+                        coverMode = "first",
+                        coverValue = "",
+                    )
+                }
+
+                showCoverSheet = false
+            },
+            onCollage = {
+                onUpdate {
+                    it.copy(
+                        coverMode = "collage",
+                        coverValue = "",
+                    )
+                }
+
+                showCoverSheet = false
+            },
+            onTrack = { song ->
+                onUpdate {
+                    it.copy(
+                        coverMode = "track",
+                        coverValue =
+                            song.id,
+                    )
+                }
+
+                showCoverSheet = false
+            },
+            onChooseImage = {
+                customCoverLauncher.launch(
+                    arrayOf("image/*")
+                )
+            },
+            onDismiss = {
+                showCoverSheet = false
+            },
+        )
     }
 }
 

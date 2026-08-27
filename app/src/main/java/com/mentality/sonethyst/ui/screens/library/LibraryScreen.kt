@@ -1805,7 +1805,9 @@ private fun buildRows(
                     LibRow(
                         it.name ?: "Smart playlist",
                         "Smart playlist • $n rule${if (n == 1) "" else "s"}",
-                        "",
+                        state.smartPlaylistCovers[
+                            it.id.orEmpty()
+                        ].orEmpty(),
                         accentFor(it.id ?: "smart"),
                         it.id ?: "",
                         "smart",
@@ -1864,7 +1866,9 @@ private fun buildRows(
                     LibRow(
                         it.name ?: "Smart playlist",
                         "Smart playlist • $n rule${if (n == 1) "" else "s"}",
-                        "",
+                        state.smartPlaylistCovers[
+                            it.id.orEmpty()
+                        ].orEmpty(),
                         accentFor(it.id ?: "smart"),
                         it.id ?: "",
                         "smart",

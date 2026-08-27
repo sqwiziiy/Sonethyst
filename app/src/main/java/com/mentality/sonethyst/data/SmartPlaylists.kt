@@ -1,5 +1,6 @@
 package com.mentality.sonethyst.data
 
+import android.util.Base64
 import com.mentality.sonethyst.model.Song
 
 // field/op/value are plain strings so they stay stable across renames and safe for persisted json
@@ -18,7 +19,96 @@ data class SmartPlaylist(
     val sortBy: String? = "title",
     val descending: Boolean? = false,
     val limit: Int? = 0,                  // 0 = no limit
+    val coverMode: String? = "automatic",
+    val coverValue: String? = "",
 )
+
+fun resolveSmartPlaylistCover(
+    playlist: SmartPlaylist,
+    tracks: List<Song>,
+): String {
+    fun collage(): String {
+        val artwork =
+            tracks
+                .map { it.artworkUrl }
+                .filter { it.isNotBlank() }
+                .distinct()
+                .take(4)
+
+        if (artwork.size < 4) {
+            return artwork
+                .firstOrNull()
+                .orEmpty()
+        }
+
+        val encoded =
+            artwork.map { url ->
+                Base64.encodeToString(
+                    url.toByteArray(
+                        Charsets.UTF_8
+                    ),
+                    Base64.URL_SAFE or
+                        Base64.NO_WRAP,
+                )
+            }
+
+        return "sonethyst-collage:" +
+            encoded.joinToString(".")
+    }
+
+    val distinctArtwork =
+        tracks
+            .map { it.artworkUrl }
+            .filter { it.isNotBlank() }
+            .distinct()
+
+    val automatic =
+        if (distinctArtwork.size >= 4) {
+            collage()
+        } else {
+            distinctArtwork
+                .firstOrNull()
+                .orEmpty()
+        }
+
+    val mode =
+        playlist.coverMode
+            .orEmpty()
+            .lowercase()
+            .ifBlank { "automatic" }
+
+    return when (mode) {
+        "first" ->
+            tracks.firstOrNull()
+                ?.artworkUrl
+                .orEmpty()
+
+        "collage" ->
+            collage()
+
+        "track" ->
+            tracks
+                .firstOrNull {
+                    it.id ==
+                        playlist.coverValue
+                }
+                ?.artworkUrl
+                ?.takeIf {
+                    it.isNotBlank()
+                }
+                ?: automatic
+
+        "custom" ->
+            playlist.coverValue
+                ?.takeIf {
+                    it.isNotBlank()
+                }
+                ?: automatic
+
+        else ->
+            automatic
+    }
+}
 
 class SmartPlaylistEngine(
     private val playHistory: PlayHistoryStore,

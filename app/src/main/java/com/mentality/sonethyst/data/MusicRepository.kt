@@ -578,6 +578,65 @@ class MusicRepository(
     suspend fun allSongs(): List<Song> =
         if (offline) downloadedSongs() else backend?.allSongs().orEmpty()
 
+    suspend fun smartPlaylistTracks(
+        playlist: SmartPlaylist,
+    ): List<Song> {
+        val engine =
+            smartEngine ?: return emptyList()
+
+        return visibleSongs(
+            engine.evaluate(
+                playlist,
+                librarySongs(),
+            )
+        )
+    }
+
+    suspend fun smartPlaylistCovers(
+        playlists: List<SmartPlaylist>,
+    ): Map<String, String> {
+        if (playlists.isEmpty()) {
+            return emptyMap()
+        }
+
+        val engine = smartEngine
+        val source =
+            if (engine == null) {
+                emptyList()
+            } else {
+                librarySongs()
+            }
+
+        return playlists
+            .mapNotNull { playlist ->
+                val id =
+                    playlist.id
+                        ?.takeIf {
+                            it.isNotBlank()
+                        }
+                        ?: return@mapNotNull null
+
+                val tracks =
+                    if (engine == null) {
+                        emptyList()
+                    } else {
+                        visibleSongs(
+                            engine.evaluate(
+                                playlist,
+                                source,
+                            )
+                        )
+                    }
+
+                id to
+                    resolveSmartPlaylistCover(
+                        playlist,
+                        tracks,
+                    )
+            }
+            .toMap()
+    }
+
     suspend fun duplicateCandidates(): List<Song> {
         val songs =
             if (offline) {
@@ -1171,15 +1230,40 @@ class MusicRepository(
         }
 
         if (kind == "smart") {
-            val sp = smartPlaylistsProvider().firstOrNull { it.id == id } ?: return null
+            val sp =
+                smartPlaylistsProvider()
+                    .firstOrNull {
+                        it.id == id
+                    }
+                    ?: return null
+
             val tracks =
-                visibleSongs(
-                    smartEngine
-                        ?.evaluate(sp, librarySongs())
-                        .orEmpty()
-                )
+                smartPlaylistTracks(sp)
+
             return DetailData(
-                DetailInfo(sp.name ?: "Smart playlist", "Smart playlist • ${tracks.size} songs", tracks.firstOrNull()?.artworkUrl ?: "", accentFor(id), false, tracks.size, "Smart playlist"),
+                DetailInfo(
+                    title =
+                        sp.name
+                            ?: "Smart playlist",
+                    subtitle =
+                        "Smart playlist • ${tracks.size} songs",
+                    artUrl =
+                        resolveSmartPlaylistCover(
+                            sp,
+                            tracks,
+                        ),
+                    accent = accentFor(id),
+                    isArtist = false,
+                    songCount = tracks.size,
+                    typeLabel =
+                        "Smart playlist",
+                    playlistCoverMode =
+                        sp.coverMode
+                            .orEmpty()
+                            .ifBlank {
+                                "automatic"
+                            },
+                ),
                 tracks,
             )
         }

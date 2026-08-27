@@ -1009,9 +1009,15 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                         val smartVM: com.mentality.sonethyst.viewmodel.SmartPlaylistViewModel = viewModel()
                         androidx.compose.runtime.LaunchedEffect(smartId) { smartVM.load(smartId) }
                         val smartState by smartVM.state.collectAsStateWithLifecycle()
+                        val smartPreviewTracks by
+                            smartVM.previewTracks
+                                .collectAsStateWithLifecycle()
+
                         com.mentality.sonethyst.ui.screens.library.SmartPlaylistEditScreen(
                             contentPadding = inner,
                             playlist = smartState,
+                            previewTracks =
+                                smartPreviewTracks,
                             isNew = smartId.isBlank(),
                             onUpdate = smartVM::update,
                             onSave = { smartVM.save { navController.popBackStack() } },
@@ -1183,6 +1189,12 @@ onAddToPlaylist = {
                             onEditPlaylist = { name, desc ->
                                 scope.launch { container.repository.updatePlaylist(id, name, desc); detailVM.reload(kind, id) }
                             },
+                            onEditSmartPlaylist =
+                                if (kind == "smart") ({
+                                    navController.navigate(
+                                        Routes.smartEdit(id)
+                                    )
+                                }) else null,
                             onAddSongsToPlaylist =
                                 if (kind == "playlist") ({
                                     val existingIds =
@@ -1198,10 +1210,42 @@ onAddToPlaylist = {
                                     )
                                 }) else null,
                             onSetPlaylistCover =
-                                if (
+                                if (kind == "smart") ({
+                                    mode,
+                                    value ->
+
+                                    scope.launch {
+                                        val ok =
+                                            container
+                                                .settingsStore
+                                                .setSmartPlaylistCover(
+                                                    id,
+                                                    mode,
+                                                    value,
+                                                )
+
+                                        if (ok) {
+                                            detailVM.reload(
+                                                kind,
+                                                id,
+                                            )
+                                        }
+
+                                        confirm(
+                                            if (ok) {
+                                                "Smart playlist cover updated"
+                                            } else {
+                                                "Couldn't update smart playlist cover"
+                                            }
+                                        )
+                                    }
+                                }) else if (
                                     kind == "playlist" &&
                                     container.repository.supportsPlaylistCoverManagement
-                                ) ({ mode, value ->
+                                ) ({
+                                    mode,
+                                    value ->
+
                                     scope.launch {
                                         val ok =
                                             container.repository.setPlaylistCover(
@@ -1209,6 +1253,13 @@ onAddToPlaylist = {
                                                 mode,
                                                 value,
                                             )
+
+                                        if (ok) {
+                                            detailVM.reload(
+                                                kind,
+                                                id,
+                                            )
+                                        }
 
                                         confirm(
                                             if (ok) {
@@ -1220,7 +1271,20 @@ onAddToPlaylist = {
                                     }
                                 }) else null,
                             onDeletePlaylist = {
-                                scope.launch { container.repository.deletePlaylist(id); navController.popBackStack() }
+                                scope.launch {
+                                    if (kind == "smart") {
+                                        container.settingsStore
+                                            .deleteSmartPlaylist(
+                                                id
+                                            )
+                                    } else {
+                                        container.repository
+                                            .deletePlaylist(id)
+                                    }
+
+                                    navController
+                                        .popBackStack()
+                                }
                             },
                             onLoadMore = { detailVM.loadMore() },
                             canDownload = !localMode,

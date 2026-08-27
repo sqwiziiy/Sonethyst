@@ -115,6 +115,7 @@ fun DetailScreen(
     onDownloadAll: () -> Unit,
     onRemoveDownloads: () -> Unit,
     onEditPlaylist: (String, String) -> Unit,
+    onEditSmartPlaylist: (() -> Unit)? = null,
     onAddSongsToPlaylist: (() -> Unit)? = null,
     onSetPlaylistCover: ((String, String?) -> Unit)? = null,
     onDeletePlaylist: () -> Unit,
@@ -282,7 +283,12 @@ fun DetailScreen(
                     Spacer(Modifier.weight(1f))
                     Box {
                         Icon(Icons.Filled.MoreVert, "More", tint = Color.White, modifier = Modifier.size(40.dp).clip(CircleShape).clickable { headerMenu = true }.padding(8.dp))
-                        val isPlaylist = info.typeLabel.equals("Playlist", true)
+                        val isPlaylist =
+                            itemKind == "playlist"
+
+                        val isSmartPlaylist =
+                            itemKind == "smart"
+
                         DropdownMenu(expanded = headerMenu, onDismissRequest = { headerMenu = false }) {
                             DropdownMenuItem(text = { Text("Play") }, enabled = tracks.isNotEmpty(), onClick = { headerMenu = false; onPlayAll(tracks, 0) }, leadingIcon = { Icon(Icons.Filled.PlayArrow, null) })
                             DropdownMenuItem(text = { Text("Shuffle") }, enabled = tracks.isNotEmpty(), onClick = { headerMenu = false; onShufflePlay(tracks) }, leadingIcon = { Icon(Icons.Filled.Shuffle, null) })
@@ -313,22 +319,109 @@ fun DetailScreen(
                                 )
                             }
 
-                            if (isPlaylist) {
-                                if (onSetPlaylistCover != null) {
+                            if (
+                                isPlaylist ||
+                                isSmartPlaylist
+                            ) {
+                                if (
+                                    onSetPlaylistCover !=
+                                    null
+                                ) {
                                     DropdownMenuItem(
-                                        text = { Text("Change cover") },
+                                        text = {
+                                            Text(
+                                                "Change cover"
+                                            )
+                                        },
                                         onClick = {
-                                            headerMenu = false
-                                            showCoverSheet = true
+                                            headerMenu =
+                                                false
+                                            showCoverSheet =
+                                                true
                                         },
                                         leadingIcon = {
-                                            Icon(Icons.Filled.Image, null)
+                                            Icon(
+                                                Icons.Filled.Image,
+                                                null,
+                                            )
                                         },
                                     )
                                 }
 
-                                DropdownMenuItem(text = { Text("Edit playlist") }, onClick = { headerMenu = false; showEdit = true }, leadingIcon = { Icon(Icons.Filled.Edit, null) })
-                                DropdownMenuItem(text = { Text("Delete playlist") }, onClick = { headerMenu = false; onDeletePlaylist() }, leadingIcon = { Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error) })
+                                if (
+                                    isSmartPlaylist &&
+                                    onEditSmartPlaylist !=
+                                    null
+                                ) {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                "Edit smart playlist"
+                                            )
+                                        },
+                                        onClick = {
+                                            headerMenu =
+                                                false
+                                            onEditSmartPlaylist()
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Filled.Edit,
+                                                null,
+                                            )
+                                        },
+                                    )
+                                } else if (
+                                    isPlaylist
+                                ) {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                "Edit playlist"
+                                            )
+                                        },
+                                        onClick = {
+                                            headerMenu =
+                                                false
+                                            showEdit = true
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Filled.Edit,
+                                                null,
+                                            )
+                                        },
+                                    )
+                                }
+
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            if (
+                                                isSmartPlaylist
+                                            ) {
+                                                "Delete smart playlist"
+                                            } else {
+                                                "Delete playlist"
+                                            }
+                                        )
+                                    },
+                                    onClick = {
+                                        headerMenu =
+                                            false
+                                        onDeletePlaylist()
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Filled.Delete,
+                                            null,
+                                            tint =
+                                                MaterialTheme
+                                                    .colorScheme
+                                                    .error,
+                                        )
+                                    },
+                                )
                             }
                         }
                     }

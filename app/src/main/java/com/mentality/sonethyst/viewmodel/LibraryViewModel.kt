@@ -52,6 +52,7 @@ data class LibraryUiState(
     val likedCover: String = "",
     val supportsFolders: Boolean = false,
     val smartPlaylists: List<com.mentality.sonethyst.data.SmartPlaylist> = emptyList(),
+    val smartPlaylistCovers: Map<String, String> = emptyMap(),
 )
 
 class LibraryViewModel(app: Application) : AndroidViewModel(app) {
@@ -148,7 +149,23 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         }
         viewModelScope.launch {
             container.settingsStore.smartPlaylists.collect { sps ->
-                _state.update { s -> s.copy(smartPlaylists = sps) }
+                val covers =
+                    runCatching {
+                        container.repository
+                            .smartPlaylistCovers(
+                                sps
+                            )
+                    }.getOrDefault(
+                        emptyMap()
+                    )
+
+                _state.update { state ->
+                    state.copy(
+                        smartPlaylists = sps,
+                        smartPlaylistCovers =
+                            covers,
+                    )
+                }
             }
         }
     }
@@ -161,6 +178,18 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             val artists = container.repository.allArtists()
             val songs = container.repository.librarySongs(songLimit)
             val likedCount = container.repository.starredCount()
+
+            val smartCovers =
+                runCatching {
+                    container.repository
+                        .smartPlaylistCovers(
+                            _state.value
+                                .smartPlaylists
+                        )
+                }.getOrDefault(
+                    emptyMap()
+                )
+
             _state.update {
                 it.copy(
                     loading = false,
@@ -178,6 +207,8 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                     likedCover = songs.firstOrNull()?.artworkUrl ?: "",
                     supportsFolders = container.repository.supportsFolders,
                     supportsGenres = container.repository.supportsGenres,
+                    smartPlaylistCovers =
+                        smartCovers,
                     customTags = container.repository.allCustomTags(),
                     hiddenItems = container.repository.hiddenLibraryItems(),
                 )

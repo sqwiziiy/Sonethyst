@@ -560,6 +560,52 @@ class SettingsStore(private val context: Context) {
         p[Keys.SMART_PLAYLISTS] = gson.toJson(next)
     }
 
+    suspend fun setSmartPlaylistCover(
+        id: String,
+        mode: String,
+        value: String?,
+    ): Boolean {
+        var updated = false
+
+        context.dataStore.edit { p ->
+            val cur =
+                parseSmart(
+                    p[Keys.SMART_PLAYLISTS]
+                )
+
+            if (
+                cur.none {
+                    it.id == id
+                }
+            ) {
+                return@edit
+            }
+
+            val next =
+                cur.map { playlist ->
+                    if (playlist.id == id) {
+                        updated = true
+
+                        playlist.copy(
+                            coverMode =
+                                mode.ifBlank {
+                                    "automatic"
+                                },
+                            coverValue =
+                                value.orEmpty(),
+                        )
+                    } else {
+                        playlist
+                    }
+                }
+
+            p[Keys.SMART_PLAYLISTS] =
+                gson.toJson(next)
+        }
+
+        return updated
+    }
+
     suspend fun deleteSmartPlaylist(id: String) = context.dataStore.edit { p ->
         p[Keys.SMART_PLAYLISTS] = gson.toJson(parseSmart(p[Keys.SMART_PLAYLISTS]).filterNot { it.id == id })
     }
