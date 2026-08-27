@@ -618,10 +618,35 @@ class SettingsStore(private val context: Context) {
         else gson.fromJson<List<RadioStation>>(json, object : TypeToken<List<RadioStation>>() {}.type) ?: emptyList()
     }.getOrDefault(emptyList())
 
-    suspend fun saveRadioStation(s: RadioStation) = context.dataStore.edit { p ->
-        val cur = parseRadio(p[Keys.RADIO_FAVORITES])
-        val next = if (cur.any { it.uuid == s.uuid }) cur.map { if (it.uuid == s.uuid) s else it } else cur + s
-        p[Keys.RADIO_FAVORITES] = gson.toJson(next)
+    suspend fun saveRadioStation(
+        station: RadioStation,
+    ) = context.dataStore.edit { p ->
+        val cur =
+            parseRadio(
+                p[Keys.RADIO_FAVORITES]
+            )
+
+        val target =
+            normalizedRadioStreamUrl(
+                station.streamUrl
+            )
+
+        val next =
+            cur.filterNot { existing ->
+                existing.uuid ==
+                    station.uuid ||
+                    (
+                        target.isNotBlank() &&
+                            normalizedRadioStreamUrl(
+                                existing.streamUrl
+                            ) == target
+                    )
+            } + station
+
+        p[Keys.RADIO_FAVORITES] =
+            gson.toJson(
+                next
+            )
     }
 
     suspend fun deleteRadioStation(uuid: String) = context.dataStore.edit { p ->

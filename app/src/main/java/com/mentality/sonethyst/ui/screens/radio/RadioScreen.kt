@@ -28,10 +28,15 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -80,8 +85,21 @@ fun RadioScreen(
     var query by remember { mutableStateOf("") }
     var showAdd by remember { mutableStateOf(false) }
 
+    var editingStation by
+        remember {
+            mutableStateOf<RadioStation?>(
+                null
+            )
+        }
+
+    var deletingStation by
+        remember {
+            mutableStateOf<RadioStation?>(
+                null
+            )
+        }
+
     val playStation: (RadioStation) -> Unit = { st -> vm.registerPlay(st); onPlay(st.toSong()) }
-    val favoriteUuids = favorites.mapTo(HashSet()) { it.uuid }
     val browsing = state.query.isBlank() && state.activeTag.isBlank()
     val listed = if (browsing) state.popular else state.results
 
@@ -161,7 +179,29 @@ fun RadioScreen(
                     contentType = { "radio-station" },
                 ) { i ->
                     val st = favorites[i]
-                    StationRow(st, isFavorite = true, onPlay = { playStation(st) }, onToggleFavorite = { vm.toggleFavorite(st) })
+                    StationRow(
+                        st,
+                        isFavorite =
+                            vm.isFavorite(st),
+                        onPlay = {
+                            playStation(st)
+                        },
+                        onToggleFavorite = {
+                            vm.toggleFavorite(st)
+                        },
+                        onEdit =
+                            if (
+                                st.custom == true
+                            ) ({
+                                editingStation = st
+                            }) else null,
+                        onDelete =
+                            if (
+                                st.custom == true
+                            ) ({
+                                deletingStation = st
+                            }) else null,
+                    )
                 }
             }
 
@@ -193,16 +233,114 @@ fun RadioScreen(
                     contentType = { "radio-station" },
                 ) { i ->
                     val st = listed[i]
-                    StationRow(st, isFavorite = favoriteUuids.contains(st.uuid), onPlay = { playStation(st) }, onToggleFavorite = { vm.toggleFavorite(st) })
+                    StationRow(
+                        st,
+                        isFavorite =
+                            vm.isFavorite(st),
+                        onPlay = {
+                            playStation(st)
+                        },
+                        onToggleFavorite = {
+                            vm.toggleFavorite(st)
+                        },
+                        onEdit =
+                            if (
+                                st.custom == true
+                            ) ({
+                                editingStation = st
+                            }) else null,
+                        onDelete =
+                            if (
+                                st.custom == true
+                            ) ({
+                                deletingStation = st
+                            }) else null,
+                    )
                 }
             }
         }
     }
 
     if (showAdd) {
-        AddStreamDialog(
-            onAdd = { name, url -> vm.addCustom(name, url); showAdd = false },
-            onDismiss = { showAdd = false },
+        StreamEditorDialog(
+            title = "Add radio stream",
+            confirmLabel = "Add",
+            initialName = "",
+            initialUrl = "",
+            onSave = { name, url ->
+                vm.addCustom(
+                    name,
+                    url,
+                )
+            },
+            onDismiss = {
+                showAdd = false
+            },
+        )
+    }
+
+    editingStation?.let { station ->
+        StreamEditorDialog(
+            title = "Edit radio stream",
+            confirmLabel = "Save",
+            initialName =
+                station.name.orEmpty(),
+            initialUrl =
+                station.streamUrl.orEmpty(),
+            onSave = { name, url ->
+                vm.editCustom(
+                    station,
+                    name,
+                    url,
+                )
+            },
+            onDismiss = {
+                editingStation = null
+            },
+        )
+    }
+
+    deletingStation?.let { station ->
+        AlertDialog(
+            onDismissRequest = {
+                deletingStation = null
+            },
+            title = {
+                Text(
+                    "Delete custom station?",
+                    fontWeight =
+                        FontWeight.Bold,
+                )
+            },
+            text = {
+                Text(
+                    "“${station.displayName}” will be removed from Your stations."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        vm.deleteCustom(
+                            station
+                        )
+
+                        deletingStation =
+                            null
+                    }
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        deletingStation =
+                            null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            },
         )
     }
 }
@@ -223,7 +361,13 @@ private fun StationRow(
     isFavorite: Boolean,
     onPlay: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onEdit: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
 ) {
+    var menuOpen by
+        remember(station.uuid) {
+            mutableStateOf(false)
+        }
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
             .clip(RoundedCornerShape(16.dp)).clickable(onClick = onPlay).padding(horizontal = 8.dp, vertical = 8.dp),
@@ -245,12 +389,110 @@ private fun StationRow(
             }.joinToString(" • ")
             if (meta.isNotBlank()) Text(meta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        Icon(
-            if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-            if (isFavorite) "Unfavorite" else "Favorite",
-            tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onToggleFavorite).padding(8.dp),
-        )
+        if (
+            onEdit != null ||
+            onDelete != null
+        ) {
+            Box {
+                Icon(
+                    Icons.Filled.MoreVert,
+                    "Custom station settings",
+                    tint =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant,
+                    modifier =
+                        Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .clickable {
+                                menuOpen = true
+                            }
+                            .padding(8.dp),
+                )
+
+                DropdownMenu(
+                    expanded = menuOpen,
+                    onDismissRequest = {
+                        menuOpen = false
+                    },
+                ) {
+                    if (onEdit != null) {
+                        DropdownMenuItem(
+                            text = {
+                                Text("Edit")
+                            },
+                            onClick = {
+                                menuOpen = false
+                                onEdit()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Filled.Edit,
+                                    null,
+                                )
+                            },
+                        )
+                    }
+
+                    if (onDelete != null) {
+                        DropdownMenuItem(
+                            text = {
+                                Text("Delete")
+                            },
+                            onClick = {
+                                menuOpen = false
+                                onDelete()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Filled.Delete,
+                                    null,
+                                    tint =
+                                        MaterialTheme
+                                            .colorScheme
+                                            .error,
+                                )
+                            },
+                        )
+                    }
+                }
+            }
+        }
+
+        if (station.custom != true) {
+            Icon(
+                if (isFavorite) {
+                    Icons.Filled.Favorite
+                } else {
+                    Icons.Filled.FavoriteBorder
+                },
+                if (isFavorite) {
+                    "Unfavorite"
+                } else {
+                    "Favorite"
+                },
+                tint =
+                    if (isFavorite) {
+                        MaterialTheme
+                            .colorScheme
+                            .primary
+                    } else {
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
+                    },
+                modifier =
+                    Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable(
+                            onClick =
+                                onToggleFavorite
+                        )
+                        .padding(8.dp),
+            )
+        }
         Icon(
             Icons.Filled.PlayArrow, "Play",
             tint = MaterialTheme.colorScheme.primary,
@@ -260,20 +502,136 @@ private fun StationRow(
 }
 
 @Composable
-private fun AddStreamDialog(onAdd: (String, String) -> Unit, onDismiss: () -> Unit) {
-    var name by remember { mutableStateOf("") }
-    var url by remember { mutableStateOf("") }
+private fun StreamEditorDialog(
+    title: String,
+    confirmLabel: String,
+    initialName: String,
+    initialUrl: String,
+    onSave: (String, String) -> String?,
+    onDismiss: () -> Unit,
+) {
+    var name by
+        remember(initialName) {
+            mutableStateOf(
+                initialName
+            )
+        }
+
+    var url by
+        remember(initialUrl) {
+            mutableStateOf(
+                initialUrl
+            )
+        }
+
+    var error by
+        remember(
+            initialName,
+            initialUrl,
+        ) {
+            mutableStateOf<String?>(
+                null
+            )
+        }
+
     AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add radio stream", fontWeight = FontWeight.Bold) },
+        onDismissRequest =
+            onDismiss,
+        title = {
+            Text(
+                title,
+                fontWeight =
+                    FontWeight.Bold,
+            )
+        },
         text = {
             Column {
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name (optional)") }, singleLine = true)
-                Spacer(Modifier.height(10.dp))
-                OutlinedTextField(value = url, onValueChange = { url = it }, label = { Text("Stream URL") }, singleLine = true, placeholder = { Text("https://…") })
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                        error = null
+                    },
+                    label = {
+                        Text(
+                            "Name (optional)"
+                        )
+                    },
+                    singleLine = true,
+                )
+
+                Spacer(
+                    Modifier.height(10.dp)
+                )
+
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = {
+                        url = it
+                        error = null
+                    },
+                    label = {
+                        Text("Stream URL")
+                    },
+                    singleLine = true,
+                    placeholder = {
+                        Text("https://…")
+                    },
+                    isError =
+                        error != null,
+                )
+
+                if (error != null) {
+                    Spacer(
+                        Modifier.height(6.dp)
+                    )
+
+                    Text(
+                        error.orEmpty(),
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall,
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .error,
+                    )
+                }
             }
         },
-        confirmButton = { TextButton(onClick = { if (url.isNotBlank()) onAdd(name, url) }, enabled = url.isNotBlank()) { Text("Add") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = {
+            TextButton(
+                enabled =
+                    url.isNotBlank(),
+                onClick = {
+                    val validationError =
+                        onSave(
+                            name,
+                            url,
+                        )
+
+                    if (
+                        validationError ==
+                        null
+                    ) {
+                        onDismiss()
+                    } else {
+                        error =
+                            validationError
+                    }
+                },
+            ) {
+                Text(confirmLabel)
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick =
+                    onDismiss
+            ) {
+                Text("Cancel")
+            }
+        },
     )
 }

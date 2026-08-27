@@ -120,6 +120,17 @@ Sonethyst is an independent Android music player fork based on Aurora.
 - [x] Persist Repeat mode (Off/All/One) across track/queue changes, playback actions, service recreation, and app restarts
 - [x] Use current track artwork accent for active Shuffle/Repeat controls
 
+## Radio reliability
+
+- [x] Retry station search without `hidebroken=true` when strict Radio Browser search returns no matches
+- [x] Search alternate, transliterated and normalized station names
+- [x] Include locally saved custom stations in radio search results
+- [x] Deduplicate stations by normalized stream URL instead of UUID
+- [x] Prevent duplicate custom/favorite stations that resolve to the same stream URL
+- [x] Edit custom radio station name and stream URL
+- [x] Delete custom radio stations with confirmation
+- [x] Validate custom stream URLs and show useful user-facing errors
+
 ## Phase 3 — Metadata
 
 - [ ] Batch tag editing

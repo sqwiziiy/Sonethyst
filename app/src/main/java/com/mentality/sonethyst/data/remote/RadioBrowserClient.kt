@@ -38,12 +38,22 @@ class RadioBrowserClient {
     suspend fun topStations(limit: Int = 80): List<RadioStation>? =
         get("json/stations/topclick/$limit", "hidebroken" to "true")
 
-    suspend fun search(query: String, limit: Int = 80): List<RadioStation>? {
-        if (query.isBlank()) return emptyList()
+    suspend fun search(
+        query: String,
+        limit: Int = 80,
+        hideBroken: Boolean = true,
+    ): List<RadioStation>? {
+        if (query.isBlank()) {
+            return emptyList()
+        }
+
         return get(
             "json/stations/search",
-            "name" to query, "limit" to limit.toString(), "hidebroken" to "true",
-            "order" to "clickcount", "reverse" to "true",
+            "name" to query,
+            "limit" to limit.toString(),
+            "hidebroken" to hideBroken.toString(),
+            "order" to "clickcount",
+            "reverse" to "true",
         )
     }
 
@@ -57,7 +67,13 @@ class RadioBrowserClient {
     }
 
     suspend fun registerClick(uuid: String) {
-        if (uuid.isBlank() || uuid.startsWith("custom:")) return
+        if (
+            uuid.isBlank() ||
+            uuid.startsWith("custom:") ||
+            uuid.startsWith("fallback:")
+        ) {
+            return
+        }
         runCatching { request("json/url/$uuid") }
     }
 
