@@ -227,9 +227,31 @@ class LocalBackend(
 
     override suspend fun radio(seedId: String): List<Song> {
         library.ensureLoaded()
-        val seed = library.song(seedId)
-        val sameArtist = seed?.let { s -> library.songsByArtistId(s.artistId).filter { it.id != seedId } }.orEmpty()
-        val rest = library.songs.filter { it.id != seedId && it !in sameArtist }.shuffled()
+        val seed =
+            library.song(seedId)
+
+        val sameArtist =
+            seed
+                ?.let { song ->
+                    library
+                        .primaryArtistId(song)
+                        ?.let {
+                            library
+                                .songsByArtistId(it)
+                        }
+                }
+                .orEmpty()
+                .filter {
+                    it.id != seedId
+                }
+
+        val rest =
+            library.songs
+                .filter {
+                    it.id != seedId &&
+                        it !in sameArtist
+                }
+                .shuffled()
         return (sameArtist.shuffled() + rest)
             .take(40)
             .withRatings()

@@ -376,7 +376,16 @@ class MusicRepository(
             .groupBy { it.albumId }
             .map { (aid, songs) ->
                 val f = songs.first()
-                DownloadRow(aid, "album", f.album.ifBlank { "Album" }, f.artist, fileUri(f.coverPath), accentFor(aid))
+                DownloadRow(
+                    aid,
+                    "album",
+                    f.album.ifBlank { "Album" },
+                    f.albumArtist
+                        ?.takeIf { it.isNotBlank() }
+                        ?: f.artist,
+                    fileUri(f.coverPath),
+                    accentFor(aid),
+                )
             }
         return (colRows + inferred).sortedBy { it.title }
     }
@@ -386,7 +395,17 @@ class MusicRepository(
         .groupBy { it.albumId }
         .map { (albumId, songs) ->
             val first = songs.first()
-            Album(id = albumId, title = first.album.ifBlank { "Album" }, artist = first.artist, artworkUrl = first.toSong().artworkUrl, year = 0, songCount = songs.size)
+            Album(
+                id = albumId,
+                title = first.album.ifBlank { "Album" },
+                artist =
+                    first.albumArtist
+                        ?.takeIf { it.isNotBlank() }
+                        ?: first.artist,
+                artworkUrl = first.toSong().artworkUrl,
+                year = 0,
+                songCount = songs.size,
+            )
         }
         .sortedBy { it.title }
 

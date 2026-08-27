@@ -35,6 +35,9 @@ data class DownloadedSong(
     val sampleRateHz: Int = 0,
     val bitDepth: Int = 0,
     val serverId: String? = "",
+    // nullable for backward-compatible Gson loading
+    val albumArtist: String? = "",
+    val artists: List<String>? = emptyList(),
 ) {
     fun toSong(): Song = Song(
         id = id,
@@ -51,6 +54,8 @@ data class DownloadedSong(
         bitrateKbps = bitrateKbps,
         sampleRateHz = sampleRateHz,
         bitDepth = bitDepth,
+        albumArtist = albumArtist ?: "",
+        artists = artists.orEmpty(),
     )
 }
 
@@ -170,6 +175,8 @@ class DownloadManager(
                 sampleRateHz = song.sampleRateHz,
                 bitDepth = song.bitDepth,
                 serverId = currentServerIdProvider(),
+                albumArtist = song.albumArtist,
+                artists = song.artists,
             )
             _downloads.update { it + (song.id to entry) }
             saveIndex()

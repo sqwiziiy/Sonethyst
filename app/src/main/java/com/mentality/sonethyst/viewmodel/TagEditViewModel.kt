@@ -51,6 +51,8 @@ class TagEditViewModel(app: Application) : AndroidViewModel(app) {
                 title = song?.title.orEmpty(),
                 artist = song?.artist.orEmpty(),
                 album = song?.album.orEmpty(),
+                albumArtist =
+                    song?.albumArtist.orEmpty(),
             )
             _state.update {
                 it.copy(loading = false, songId = songId, path = path, artUrl = song?.artworkUrl.orEmpty(), tags = tags, durationSec = song?.durationSec ?: 0, localFile = localFile)

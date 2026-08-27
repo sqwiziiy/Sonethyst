@@ -77,7 +77,11 @@ fun TagEditScreen(
                 saving = false
                 if (ok) {
                     confirm("Tags saved")
-                    runCatching { container.refreshLocalLibrary() }
+                    runCatching {
+                        container.refreshLocalLibrary(
+                            state.path
+                        )
+                    }
                     onBack()
                 } else confirm("Save failed")
             }

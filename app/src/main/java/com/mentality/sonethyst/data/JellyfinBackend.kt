@@ -33,12 +33,37 @@ class JellyfinBackend(
 
     private fun BaseItemDto.toSong(): Song {
         val bitrate = maxBitrateProvider()
+
+        val artistNames =
+            Artists.orEmpty()
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .ifEmpty {
+                    ArtistItems.orEmpty()
+                        .mapNotNull {
+                            it.Name
+                                ?.trim()
+                                ?.takeIf(String::isNotBlank)
+                        }
+                }
+                .distinct()
+
+        val displayArtist =
+            artistNames
+                .joinToString(", ")
+                .ifBlank {
+                    AlbumArtist
+                        ?.trim()
+                        ?.takeIf(String::isNotBlank)
+                        ?: "Unknown artist"
+                }
+
         val source = MediaSources?.firstOrNull()
         val audioStream = source?.MediaStreams?.firstOrNull { it.Type == "Audio" }
         val base = Song(
             id = Id,
             title = Name ?: "Unknown",
-            artist = Artists?.firstOrNull() ?: AlbumArtist ?: "Unknown artist",
+            artist = displayArtist,
             album = Album ?: "",
             artworkUrl = client.coverArtUrl(imageId()),
             durationSec = ((RunTimeTicks ?: 0L) / TICKS_PER_SEC).toInt(),
@@ -64,6 +89,8 @@ class JellyfinBackend(
                     .toInt()
                     .coerceIn(0, 5),
             path = Path ?: "",
+            albumArtist = AlbumArtist.orEmpty(),
+            artists = artistNames,
         )
         return localize(base)
     }

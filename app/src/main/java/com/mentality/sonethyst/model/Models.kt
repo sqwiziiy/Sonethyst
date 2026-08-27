@@ -24,6 +24,20 @@ data class Song(
     val genres: List<String> = emptyList(),
     val rating: Int = 0,            // 0 = unrated, 1..5 = personal rating
     val path: String = "",   // source file path when the backend exposes one (M3U export)
+
+    /*
+     * Metadata identity.
+     *
+     * `artist` remains the ready-to-display legacy string.
+     * `artists` preserves individual track artists when the
+     * source actually exposes them.
+     *
+     * Album Artist is intentionally independent: a compilation
+     * can contain many track artists while belonging to one
+     * album artist.
+     */
+    val albumArtist: String = "",
+    val artists: List<String> = emptyList(),
 )
 
 data class Album(

@@ -26,10 +26,17 @@ class SubsonicBackend(
 
     private fun SongDto.toModel(): Song {
         val bitrate = maxBitrateProvider()
+
+        val artistName =
+            artist
+                ?.trim()
+                ?.takeIf(String::isNotBlank)
+                ?: "Unknown artist"
+
         val base = Song(
             id = id,
             title = title,
-            artist = artist ?: "Unknown artist",
+            artist = artistName,
             album = album ?: "",
             artworkUrl = c.coverArtUrl(coverArt ?: id),
             durationSec = duration,
@@ -53,6 +60,12 @@ class SubsonicBackend(
             replayGainAlbum = replayGain?.albumGain?.toFloat() ?: 0f,
             rating = userRating.coerceIn(0, 5),
             path = path ?: "",
+            artists =
+                if (artistName == "Unknown artist") {
+                    emptyList()
+                } else {
+                    listOf(artistName)
+                },
         )
         return localize(base)
     }

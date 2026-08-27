@@ -124,7 +124,30 @@ class SpotifyBackend(
     }
 
     private fun SpTrack.toSong(fallbackArt: String = "", fallbackAlbum: String = "", fallbackAlbumId: String = ""): Song {
-        val artistName = artists?.mapNotNull { it.name }?.joinToString(", ")?.ifBlank { null } ?: "Unknown artist"
+        val artistNames =
+            artists.orEmpty()
+                .mapNotNull {
+                    it.name
+                        ?.trim()
+                        ?.takeIf(String::isNotBlank)
+                }
+                .distinct()
+
+        val artistName =
+            artistNames
+                .joinToString(", ")
+                .ifBlank { "Unknown artist" }
+
+        val albumArtist =
+            album?.artists.orEmpty()
+                .mapNotNull {
+                    it.name
+                        ?.trim()
+                        ?.takeIf(String::isNotBlank)
+                }
+                .distinct()
+                .joinToString(", ")
+
         val art = img(album?.images).ifBlank { fallbackArt }
         val durSec = (durationMs / 1000).toInt()
         val sid = id ?: ""
@@ -140,6 +163,8 @@ class SpotifyBackend(
             streamUrl = sentinel(sid, name ?: "", artistName, durSec),
             albumId = album?.id ?: fallbackAlbumId,
             artistId = artists?.firstOrNull()?.id ?: "",
+            albumArtist = albumArtist,
+            artists = artistNames,
         )
         return localize(song)
     }

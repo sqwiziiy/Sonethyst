@@ -26,6 +26,12 @@ class LocalLibrary(
     @Volatile private var loaded = false
     private val mutex = Mutex()
 
+    private val metadataEnrichMutex =
+        Mutex()
+
+    private val tagMetadataCache =
+        LocalTagMetadataCache(context)
+
     @Volatile var songs: List<Song> = emptyList(); private set
     @Volatile var albums: List<Album> = emptyList(); private set
     @Volatile var artists: List<Artist> = emptyList(); private set
@@ -59,6 +65,44 @@ class LocalLibrary(
 
     suspend fun refresh() {
         mutex.withLock { scan(); loaded = true }
+    }
+
+    /*
+     * Populate real file-tag identity in the background.
+     *
+     * scan() itself never parses every audio file, preserving
+     * fast MediaStore-backed library loading.
+     */
+    suspend fun enrichMissingTagMetadata():
+        Boolean =
+        metadataEnrichMutex.withLock {
+            ensureLoaded()
+
+            val paths =
+                songs
+                    .map { it.path }
+                    .filter {
+                        it.isNotBlank()
+                    }
+                    .distinct()
+
+            tagMetadataCache
+                .enrichMissing(paths)
+        }
+
+    /*
+     * Used after editing one local file. Only that file is
+     * reparsed, so metadata changes can appear immediately.
+     */
+    suspend fun refreshTagMetadata(
+        path: String,
+    ): Boolean =
+        tagMetadataCache.refresh(path)
+
+    fun invalidateTagMetadata(
+        path: String,
+    ) {
+        tagMetadataCache.invalidate(path)
     }
 
     fun song(id: String): Song? = byId[id]
@@ -138,9 +182,102 @@ class LocalLibrary(
         }
         return prefix.joinToString("/")
     }
-    fun songsIn(album: Album): List<Song> = songs.filter { it.albumId == album.id }
-    fun songsByAlbumId(albumId: String): List<Song> = songs.filter { it.albumId == albumId }
-    fun songsByArtistId(artistId: String): List<Song> = songs.filter { it.artistId == artistId }
+    fun songsIn(album: Album): List<Song> =
+        songs.filter {
+            it.albumId == album.id
+        }
+
+    fun songsByAlbumId(
+        albumId: String,
+    ): List<Song> =
+        songs.filter {
+            it.albumId == albumId
+        }
+
+    private fun artistNamesFor(
+        song: Song,
+    ): List<String> {
+        val explicit =
+            song.artists
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinctBy {
+                    it.lowercase()
+                }
+
+        if (explicit.isNotEmpty()) {
+            return explicit
+        }
+
+        return song.artist
+            .trim()
+            .takeIf {
+                it.isNotBlank() &&
+                    it != "Unknown artist"
+            }
+            ?.let(::listOf)
+            .orEmpty()
+    }
+
+    private fun localArtistId(
+        name: String,
+    ): String {
+        val normalized =
+            name
+                .trim()
+                .lowercase()
+
+        val uuid =
+            java.util.UUID
+                .nameUUIDFromBytes(
+                    normalized.toByteArray(
+                        Charsets.UTF_8
+                    )
+                )
+
+        return "local_artist_$uuid"
+    }
+
+    fun primaryArtistId(
+        song: Song,
+    ): String? =
+        artistNamesFor(song)
+            .firstOrNull()
+            ?.let(::localArtistId)
+
+    fun songsByArtistId(
+        artistId: String,
+    ): List<Song> {
+        /*
+         * New artist pages use stable logical IDs.
+         */
+        val logicalName =
+            artists
+                .firstOrNull {
+                    it.id == artistId
+                }
+                ?.name
+
+        if (logicalName != null) {
+            return songs.filter { song ->
+                artistNamesFor(song)
+                    .any {
+                        it.equals(
+                            logicalName,
+                            ignoreCase = true,
+                        )
+                    }
+            }
+        }
+
+        /*
+         * Compatibility for older references using the raw
+         * MediaStore ARTIST_ID.
+         */
+        return songs.filter {
+            it.artistId == artistId
+        }
+    }
 
     fun songsByGenre(genre: String): List<Song> =
         songs.filter { song ->
@@ -148,9 +285,18 @@ class LocalLibrary(
                 it.equals(genre, ignoreCase = true)
             }
         }
-    fun albumsByArtistId(artistId: String): List<Album> =
-        songs.filter { it.artistId == artistId }.map { it.albumId }.distinct()
-            .mapNotNull { aid -> albums.firstOrNull { it.id == aid } }
+    fun albumsByArtistId(
+        artistId: String,
+    ): List<Album> =
+        songsByArtistId(artistId)
+            .map { it.albumId }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .mapNotNull { aid ->
+                albums.firstOrNull {
+                    it.id == aid
+                }
+            }
 
     private fun albumArtUri(albumId: Long): String =
         if (albumId <= 0) "" else ContentUris.withAppendedId(ALBUM_ART_BASE, albumId).toString()
@@ -292,6 +438,45 @@ class LocalLibrary(
                             ""
                         }
 
+                    /*
+                     * Fast path: disk cache only.
+                     *
+                     * A cache miss deliberately falls back to
+                     * MediaStore instead of opening the audio
+                     * file inside the main library scan.
+                     */
+                    val tagIdentity =
+                        if (data.isNotBlank()) {
+                            tagMetadataCache
+                                .get(data)
+                        } else {
+                            null
+                        }
+
+                    val effectiveArtists =
+                        tagIdentity
+                            ?.artists
+                            .orEmpty()
+                            .ifEmpty {
+                                if (
+                                    artistName ==
+                                        "Unknown artist"
+                                ) {
+                                    emptyList()
+                                } else {
+                                    listOf(
+                                        artistName
+                                    )
+                                }
+                            }
+
+                    val displayArtist =
+                        effectiveArtists
+                            .joinToString(", ")
+                            .ifBlank {
+                                artistName
+                            }
+
                     val directory =
                         if (data.contains('/')) {
                             normalizeFolder(
@@ -327,7 +512,7 @@ class LocalLibrary(
                     out += Song(
                         id = id.toString(),
                         title = title,
-                        artist = artistName,
+                        artist = displayArtist,
                         album = albumName,
                         artworkUrl = art,
                         durationSec = durSec,
@@ -341,6 +526,12 @@ class LocalLibrary(
                         replayGainTrack = rg?.first ?: 0f,
                         replayGainAlbum = rg?.second ?: 0f,
                         genres = genres,
+                        albumArtist =
+                            tagIdentity
+                                ?.albumArtist
+                                .orEmpty(),
+                        artists =
+                            effectiveArtists,
                     )
                 }
             }
@@ -395,26 +586,95 @@ class LocalLibrary(
         albums = out.groupBy { it.albumId }
             .map { (aid, tracks) ->
                 val f = tracks.first()
+
+                val albumArtists =
+                    tracks
+                        .map { it.albumArtist.trim() }
+                        .filter { it.isNotBlank() }
+                        .distinct()
+
+                val trackArtists =
+                    tracks
+                        .map { it.artist }
+                        .filter { it.isNotBlank() }
+                        .distinct()
+
+                val displayArtist =
+                    when {
+                        albumArtists.size == 1 ->
+                            albumArtists.first()
+
+                        trackArtists.size == 1 ->
+                            trackArtists.first()
+
+                        else ->
+                            "Various artists"
+                    }
+
                 Album(
                     id = aid,
                     title = f.album,
-                    artist = tracks.map { it.artist }.distinct().let { if (it.size == 1) it.first() else "Various artists" },
+                    artist = displayArtist,
                     artworkUrl = tracks.firstOrNull { it.artworkUrl.isNotBlank() }?.artworkUrl ?: "",
                     year = albumYear[aid] ?: 0,
                     songCount = tracks.size,
                 )
             }
             .sortedByDescending { albumDateAdded[it.id] ?: 0L }
-        artists = out.groupBy { it.artistId }
-            .map { (aid, tracks) ->
-                Artist(
-                    id = aid,
-                    name = tracks.first().artist,
-                    imageUrl = tracks.firstOrNull { it.artworkUrl.isNotBlank() }?.artworkUrl ?: "",
-                    monthlyListeners = 0,
-                )
-            }
-            .sortedBy { it.name.lowercase() }
+        val artistBuckets =
+            linkedMapOf<
+                String,
+                Pair<
+                    String,
+                    MutableList<Song>,
+                >,
+            >()
+
+        out.forEach { song ->
+            artistNamesFor(song)
+                .forEach { rawName ->
+                    val name =
+                        rawName.trim()
+
+                    val key =
+                        name.lowercase()
+
+                    val bucket =
+                        artistBuckets
+                            .getOrPut(key) {
+                                name to
+                                    mutableListOf()
+                            }
+
+                    bucket.second +=
+                        song
+                }
+        }
+
+        artists =
+            artistBuckets
+                .values
+                .map { (name, tracks) ->
+                    Artist(
+                        id =
+                            localArtistId(
+                                name
+                            ),
+                        name = name,
+                        imageUrl =
+                            tracks
+                                .firstOrNull {
+                                    it.artworkUrl
+                                        .isNotBlank()
+                                }
+                                ?.artworkUrl
+                                .orEmpty(),
+                        monthlyListeners = 0,
+                    )
+                }
+                .sortedBy {
+                    it.name.lowercase()
+                }
     }
 
     private companion object {

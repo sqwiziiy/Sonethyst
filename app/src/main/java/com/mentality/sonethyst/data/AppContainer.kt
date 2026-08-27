@@ -403,9 +403,47 @@ class AppContainer(context: Context) {
         return updated
     }
 
-    suspend fun refreshLocalLibrary() {
+    suspend fun refreshLocalLibrary(
+        changedPath: String = "",
+    ) {
+        /*
+         * When one file was edited, refresh its real tags
+         * BEFORE rebuilding the MediaStore-backed models.
+         */
+        if (changedPath.isNotBlank()) {
+            localLibrary
+                .refreshTagMetadata(
+                    changedPath
+                )
+        }
+
         localLibrary.refresh()
         _libraryReload.value++
+
+        /*
+         * A normal MediaStore refresh may discover new or
+         * externally modified files. Parse only cache misses
+         * asynchronously, then publish one more lightweight
+         * library refresh if metadata was actually learned.
+         */
+        if (changedPath.isBlank()) {
+            scheduleLocalTagMetadataWarmup()
+        }
+    }
+
+    private fun scheduleLocalTagMetadataWarmup() {
+        scope.launch {
+            val changed =
+                runCatching {
+                    localLibrary
+                        .enrichMissingTagMetadata()
+                }.getOrDefault(false)
+
+            if (changed) {
+                localLibrary.refresh()
+                _libraryReload.value++
+            }
+        }
     }
 
     private fun recomputeOffline() {
@@ -425,6 +463,13 @@ class AppContainer(context: Context) {
     }
 
     init {
+        /*
+         * Warm Album Artist / multi-artist file metadata in
+         * the background. The first MediaStore library scan
+         * stays fast; future launches hit the disk cache.
+         */
+        scheduleLocalTagMetadataWarmup()
+
         // scan() is idempotent only processes tracks not already in the vector store
         scope.launch {
             if (runCatching { settingsStore.sonicAutoAnalyze.first() }.getOrDefault(false)) sonicEngine.scan()
