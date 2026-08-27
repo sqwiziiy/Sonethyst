@@ -844,12 +844,18 @@ class PlaybackService : MediaLibraryService() {
                         player.currentPosition
 
                 /*
-                 * Too late.
+                 * A manual seek may land directly inside the
+                 * requested crossfade window.
                  *
-                 * Do not destroy normal playback just
-                 * because crossfade could not preload.
+                 * That is not a reason to abandon crossfade:
+                 * once the incoming decoder becomes READY we
+                 * can start immediately and shorten the fade
+                 * to whatever time remains.
+                 *
+                 * Abort only when there is effectively no
+                 * useful transition time left.
                  */
-                if (left <= fade + 200L) {
+                if (left < 250L) {
                     abortPreparedXfade(
                         generation
                     )
@@ -1520,6 +1526,54 @@ class PlaybackService : MediaLibraryService() {
 
 
     private inner class MediaCallback : MediaLibrarySession.Callback {
+
+        /*
+         * Crossfade is reserved for NATURAL track completion.
+         *
+         * Any explicit navigation/seek from the app, system UI,
+         * Bluetooth controls or Android Auto immediately cancels
+         * the prepared/running dual-player transition before the
+         * requested Player command is executed.
+         */
+        @Suppress("DEPRECATION")
+        override fun onPlayerCommandRequest(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            playerCommand: Int,
+        ): Int {
+            val manualNavigation =
+                when (playerCommand) {
+                    Player.COMMAND_SEEK_TO_NEXT,
+                    Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM,
+                    Player.COMMAND_SEEK_TO_PREVIOUS,
+                    Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM,
+                    Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM,
+                    Player.COMMAND_SEEK_TO_DEFAULT_POSITION,
+                    Player.COMMAND_SEEK_TO_MEDIA_ITEM,
+                    -> true
+
+                    else -> false
+                }
+
+            if (
+                manualNavigation &&
+                (
+                    xfadePreparing ||
+                    xfadeActive ||
+                    xfadePromoting
+                )
+            ) {
+                android.util.Log.d(
+                    "SonethystXfade",
+                    "CANCEL manual playerCommand=$playerCommand"
+                )
+
+                cancelXfade()
+            }
+
+            return SessionResult.RESULT_SUCCESS
+        }
+
         override fun onConnect(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
