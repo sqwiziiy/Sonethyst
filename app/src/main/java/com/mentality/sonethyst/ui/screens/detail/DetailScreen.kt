@@ -122,7 +122,7 @@ fun DetailScreen(
     onLoadMore: () -> Unit = {},
     canDownload: Boolean = true,
     isPinned: Boolean = false,
-    onTogglePin: () -> Unit = {},
+    onTogglePin: (() -> Unit)? = null,
     onEditTags: ((Song) -> Unit)? = null,
     serverTagEditing: Boolean = false,
     artistInfo: com.mentality.sonethyst.data.remote.ArtistInfo? = null,
@@ -293,11 +293,33 @@ fun DetailScreen(
                             DropdownMenuItem(text = { Text("Play") }, enabled = tracks.isNotEmpty(), onClick = { headerMenu = false; onPlayAll(tracks, 0) }, leadingIcon = { Icon(Icons.Filled.PlayArrow, null) })
                             DropdownMenuItem(text = { Text("Shuffle") }, enabled = tracks.isNotEmpty(), onClick = { headerMenu = false; onShufflePlay(tracks) }, leadingIcon = { Icon(Icons.Filled.Shuffle, null) })
                             DropdownMenuItem(text = { Text("Add all to queue") }, enabled = tracks.isNotEmpty(), onClick = { headerMenu = false; tracks.forEach { onAddToQueue(it) } }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.QueueMusic, null) })
-                            DropdownMenuItem(
-                                text = { Text(if (isPinned) "Unpin from Library" else "Pin to Library") },
-                                onClick = { headerMenu = false; onTogglePin() },
-                                leadingIcon = { Icon(if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin, null) },
-                            )
+                            if (onTogglePin != null) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            if (isPinned) {
+                                                "Unpin from Library"
+                                            } else {
+                                                "Pin to Library"
+                                            }
+                                        )
+                                    },
+                                    onClick = {
+                                        headerMenu = false
+                                        onTogglePin()
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            if (isPinned) {
+                                                Icons.Filled.PushPin
+                                            } else {
+                                                Icons.Outlined.PushPin
+                                            },
+                                            null,
+                                        )
+                                    },
+                                )
+                            }
                             if (
                                 itemKind == "album" &&
                                 onHideItem != null

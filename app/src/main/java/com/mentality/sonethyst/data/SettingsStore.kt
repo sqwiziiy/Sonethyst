@@ -231,14 +231,15 @@ data class DiscordAccount(
     val appId: String = "",
 )
 
-// scoped to serverId so a pin persists across logouts but only reappears on that connection
+// scopeKey isolates accounts; serverId remains for legacy-pin compatibility
 data class Pin(
     val id: String = "",
-    val kind: String = "",        // album | playlist | artist
+    val kind: String = "",        // album | playlist | artist | smart
     val title: String = "",
     val subtitle: String = "",
     val coverUrl: String = "",
     val serverId: String = "",
+    val scopeKey: String = "",
 )
 
 data class EqBinding(
@@ -985,11 +986,160 @@ class SettingsStore(private val context: Context) {
         p[Keys.EQ_BINDINGS] = gson.toJson(parseBindings(p[Keys.EQ_BINDINGS]).filterNot { it.deviceKey == deviceKey })
     }
 
-    suspend fun togglePin(pin: Pin) = context.dataStore.edit { p ->
-        val cur = parsePins(p[Keys.PINS])
-        fun same(x: Pin) = x.id == pin.id && x.kind == pin.kind && x.serverId == pin.serverId
-        val next = if (cur.any(::same)) cur.filterNot(::same) else cur + pin
-        p[Keys.PINS] = gson.toJson(next)
+    suspend fun togglePin(
+        pin: Pin,
+    ) = context.dataStore.edit { p ->
+        val cur =
+            parsePins(
+                p[Keys.PINS]
+            )
+
+        fun same(x: Pin): Boolean {
+            if (
+                x.id != pin.id ||
+                x.kind != pin.kind
+            ) {
+                return false
+            }
+
+            return if (
+                pin.scopeKey.isNotBlank()
+            ) {
+                x.scopeKey == pin.scopeKey ||
+                    (
+                        x.scopeKey.isBlank() &&
+                            x.serverId ==
+                                pin.serverId
+                    )
+            } else {
+                x.serverId ==
+                    pin.serverId
+            }
+        }
+
+        val next =
+            if (cur.any(::same)) {
+                cur.filterNot(::same)
+            } else {
+                cur + pin
+            }
+
+        p[Keys.PINS] =
+            gson.toJson(next)
+    }
+
+    suspend fun movePin(
+        id: String,
+        kind: String,
+        scopeKey: String,
+        serverId: String,
+        delta: Int,
+        withinKind: Boolean = false,
+    ) = context.dataStore.edit { p ->
+        if (delta == 0) {
+            return@edit
+        }
+
+        val cur =
+            parsePins(
+                p[Keys.PINS]
+            )
+
+        fun inScope(pin: Pin): Boolean =
+            pin.scopeKey == scopeKey ||
+                (
+                    pin.scopeKey.isBlank() &&
+                        pin.serverId ==
+                            serverId
+                )
+
+        val scopedIndices =
+            cur.indices.filter { index ->
+                val pin =
+                    cur[index]
+
+                inScope(pin) &&
+                    (
+                        !withinKind ||
+                            pin.kind == kind
+                    )
+            }
+
+        val position =
+            scopedIndices.indexOfFirst { index ->
+                cur[index].id == id &&
+                    cur[index].kind == kind
+            }
+
+        if (position < 0) {
+            return@edit
+        }
+
+        val targetPosition =
+            (position + delta)
+                .coerceIn(
+                    0,
+                    scopedIndices.lastIndex,
+                )
+
+        if (targetPosition == position) {
+            return@edit
+        }
+
+        val from =
+            scopedIndices[position]
+
+        val to =
+            scopedIndices[targetPosition]
+
+        val next =
+            cur.toMutableList()
+
+        val temp =
+            next[from]
+
+        next[from] =
+            next[to]
+
+        next[to] =
+            temp
+
+        p[Keys.PINS] =
+            gson.toJson(next)
+    }
+
+    suspend fun prunePins(
+        scopeKey: String,
+        validKeys: Set<Pair<String, String>>,
+    ) {
+        if (scopeKey.isBlank()) {
+            return
+        }
+
+        context.dataStore.edit { p ->
+            val cur =
+                parsePins(
+                    p[Keys.PINS]
+                )
+
+            /*
+             * Only prune account-scoped pins.
+             * Legacy server-only pins are intentionally left intact
+             * because their original account is unknowable.
+             */
+            val next =
+                cur.filterNot { pin ->
+                    pin.scopeKey ==
+                        scopeKey &&
+                        (pin.kind to pin.id) !in
+                            validKeys
+                }
+
+            if (next.size != cur.size) {
+                p[Keys.PINS] =
+                    gson.toJson(next)
+            }
+        }
     }
 
     suspend fun setPlaylistLiked(id: String, liked: Boolean) = context.dataStore.edit { p ->

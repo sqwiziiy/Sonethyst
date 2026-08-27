@@ -69,6 +69,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.mentality.sonethyst.SonethystApplication
+import com.mentality.sonethyst.data.accountKey
 import com.mentality.sonethyst.navigation.Routes
 import com.mentality.sonethyst.navigation.topLevelDestinations
 import com.mentality.sonethyst.ui.components.AmbientBackground
@@ -118,12 +119,36 @@ fun SonethystApp() {
         session?.let {
             container.repository.supportsRatings
         } ?: false
-    // pins scoped to the active connection
-    val currentServer = session?.server ?: ""
-    val allPins by container.settingsStore.pins.collectAsStateWithLifecycle(initialValue = emptyList())
-    val pins = remember(allPins, currentServer) {
-        allPins.filter { it.serverId == currentServer }
-    }
+    // Account-safe pin scope. serverId remains for old stored pins.
+    val currentServer =
+        session?.server ?: ""
+
+    val currentPinScope =
+        session?.accountKey()
+            .orEmpty()
+
+    val allPins by
+        container.settingsStore.pins
+            .collectAsStateWithLifecycle(
+                initialValue = emptyList()
+            )
+
+    val pins =
+        remember(
+            allPins,
+            currentPinScope,
+            currentServer,
+        ) {
+            allPins.filter { pin ->
+                pin.scopeKey ==
+                    currentPinScope ||
+                    (
+                        pin.scopeKey.isBlank() &&
+                            pin.serverId ==
+                                currentServer
+                    )
+            }
+        }
     val gesturePrefs by container.settingsStore.gesturePrefs.collectAsStateWithLifecycle(initialValue = com.mentality.sonethyst.data.GesturePrefs())
     val offlineMode by container.offline.collectAsStateWithLifecycle()
 
@@ -767,6 +792,76 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                     composable(Routes.LIBRARY) {
                         val libraryVM: LibraryViewModel = viewModel()
                         val libraryState by libraryVM.state.collectAsStateWithLifecycle()
+
+                        /*
+                         * Drop deleted account-scoped pins once the current
+                         * Library snapshot is complete.
+                         */
+                        androidx.compose.runtime.LaunchedEffect(
+                            libraryState.loading,
+                            libraryState.albums,
+                            libraryState.artists,
+                            libraryState.playlists,
+                            libraryState.smartPlaylists,
+                            currentPinScope,
+                        ) {
+                            if (
+                                !libraryState.loading &&
+                                currentPinScope.isNotBlank()
+                            ) {
+                                val validPins =
+                                    buildSet<
+                                        Pair<String, String>
+                                    > {
+                                        libraryState.albums
+                                            .forEach {
+                                                add(
+                                                    "album" to
+                                                        it.id
+                                                )
+                                            }
+
+                                        libraryState.artists
+                                            .forEach {
+                                                add(
+                                                    "artist" to
+                                                        it.id
+                                                )
+                                            }
+
+                                        libraryState.playlists
+                                            .forEach {
+                                                add(
+                                                    "playlist" to
+                                                        it.id
+                                                )
+                                            }
+
+                                        libraryState.smartPlaylists
+                                            .forEach {
+                                                val id =
+                                                    it.id
+                                                        .orEmpty()
+
+                                                if (
+                                                    id.isNotBlank()
+                                                ) {
+                                                    add(
+                                                        "smart" to
+                                                            id
+                                                    )
+                                                }
+                                            }
+                                    }
+
+                                container.settingsStore
+                                    .prunePins(
+                                        currentPinScope,
+                                        validPins,
+                                    )
+                            }
+                        }
+
                         // m3u export staged here written once the user picks a file
                         var pendingM3u by remember { mutableStateOf<String?>(null) }
                         val exportM3uLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("audio/x-mpegurl")) { uri ->
@@ -910,6 +1005,40 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             },
                             canDownload = !localMode,
                             pins = pins,
+                            onTogglePin = { pin ->
+                                scope.launch {
+                                    container.settingsStore
+                                        .togglePin(
+                                            pin.copy(
+                                                serverId =
+                                                    currentServer,
+                                                scopeKey =
+                                                    currentPinScope,
+                                            )
+                                        )
+                                }
+                            },
+                            onMovePin = {
+                                kind,
+                                id,
+                                delta,
+                                withinKind ->
+
+                                scope.launch {
+                                    container.settingsStore
+                                        .movePin(
+                                            id = id,
+                                            kind = kind,
+                                            scopeKey =
+                                                currentPinScope,
+                                            serverId =
+                                                currentServer,
+                                            delta = delta,
+                                            withinKind =
+                                                withinKind,
+                                        )
+                                }
+                            },
                             onEditTags = { song -> navController.navigate(Routes.tagEdit(song.id)) },
                             serverTagEditing = serverTagEditing,
                             onSetRating =
@@ -1288,18 +1417,45 @@ onAddToPlaylist = {
                             },
                             onLoadMore = { detailVM.loadMore() },
                             canDownload = !localMode,
-                            isPinned = pins.any { it.id == id && it.kind == kind },
-                            onTogglePin = {
-                                val d = detailState.data
-                                val pin = com.mentality.sonethyst.data.Pin(
-                                    id = id, kind = kind,
-                                    title = d?.info?.title ?: kind,
-                                    subtitle = d?.info?.subtitle ?: "",
-                                    coverUrl = d?.info?.artUrl ?: "",
-                                    serverId = currentServer,
-                                )
-                                scope.launch { container.settingsStore.togglePin(pin) }
-                            },
+                            isPinned =
+                                pins.any {
+                                    it.id == id &&
+                                        it.kind == kind
+                                },
+                            onTogglePin =
+                                if (
+                                    kind == "album" ||
+                                    kind == "artist" ||
+                                    kind == "playlist" ||
+                                    kind == "smart"
+                                ) ({
+                                    val d =
+                                        detailState.data
+
+                                    val pin =
+                                        com.mentality.sonethyst.data.Pin(
+                                            id = id,
+                                            kind = kind,
+                                            title =
+                                                d?.info?.title
+                                                    ?: kind,
+                                            subtitle =
+                                                d?.info?.subtitle
+                                                    ?: "",
+                                            coverUrl =
+                                                d?.info?.artUrl
+                                                    ?: "",
+                                            serverId =
+                                                currentServer,
+                                            scopeKey =
+                                                currentPinScope,
+                                        )
+
+                                    scope.launch {
+                                        container.settingsStore
+                                            .togglePin(pin)
+                                    }
+                                }) else null,
                             onEditTags = { song -> navController.navigate(Routes.tagEdit(song.id)) },
                             serverTagEditing = serverTagEditing,
                             artistInfo = detailState.artistInfo,

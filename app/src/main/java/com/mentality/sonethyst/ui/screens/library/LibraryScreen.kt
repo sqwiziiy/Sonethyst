@@ -34,6 +34,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Podcasts
@@ -98,10 +101,15 @@ private data class LibRow(
     val circle: Boolean = false,
     val menu: Boolean = true,
     val hideable: Boolean = false,
+    val pinned: Boolean = false,
+    val canMovePinUp: Boolean = false,
+    val canMovePinDown: Boolean = false,
+    val pinMoveWithinKind: Boolean = false,
 )
 
 private class LibActions(
     val isLiked: (String) -> Boolean,
+    val isPinned: (String, String) -> Boolean,
     val onPlay: (LibRow) -> Unit,
     val onShuffle: (LibRow) -> Unit,
     val onQueue: (LibRow) -> Unit,
@@ -111,6 +119,8 @@ private class LibActions(
     val onDeleteSmart: (LibRow) -> Unit,
     val onExport: (LibRow) -> Unit,
     val onHide: (LibRow) -> Unit,
+    val onTogglePin: (LibRow) -> Unit,
+    val onMovePin: (LibRow, Int, Boolean) -> Unit,
 )
 
 @Composable
@@ -157,6 +167,11 @@ fun LibraryScreen(
     onMovePlaylistToFolder: (String, String) -> Unit,
     canDownload: Boolean = true,
     pins: List<com.mentality.sonethyst.data.Pin> = emptyList(),
+    onTogglePin:
+        (com.mentality.sonethyst.data.Pin) -> Unit = {},
+    onMovePin:
+        (String, String, Int, Boolean) -> Unit =
+        { _, _, _, _ -> },
     onEditTags: ((Song) -> Unit)? = null,
     serverTagEditing: Boolean = false,
     onSetRating: ((Song, Int) -> Unit)? = null,
@@ -306,9 +321,20 @@ fun LibraryScreen(
         onDeleteSmart,
         onExportPlaylist,
         onHideAlbum,
+        pins,
+        onTogglePin,
+        onMovePin,
     ) {
         LibActions(
-            isLiked = { id -> likedIds.contains(id) },
+            isLiked = { id ->
+                likedIds.contains(id)
+            },
+            isPinned = { kind, id ->
+                pins.any {
+                    it.kind == kind &&
+                        it.id == id
+                }
+            },
             onPlay = { r -> onPlayCollection(r.id, r.kind) },
             onShuffle = { r -> onShuffleCollection(r.id, r.kind) },
             onQueue = { r -> onQueueCollection(r.id, r.kind) },
@@ -326,6 +352,29 @@ fun LibraryScreen(
                         r.art,
                     )
                 }
+            },
+            onTogglePin = { r ->
+                onTogglePin(
+                    com.mentality.sonethyst.data.Pin(
+                        id = r.id,
+                        kind = r.kind,
+                        title = r.title,
+                        subtitle = r.subtitle,
+                        coverUrl = r.art,
+                    )
+                )
+            },
+            onMovePin = {
+                r,
+                delta,
+                withinKind ->
+
+                onMovePin(
+                    r.kind,
+                    r.id,
+                    delta,
+                    withinKind,
+                )
             },
         )
     }
@@ -1054,12 +1103,52 @@ fun LibraryScreen(
                             currentPlaylistFolderId
                     }
 
+            val pinnedPlaylistOrder =
+                pins
+                    .filter {
+                        it.kind ==
+                            "playlist"
+                    }
+                    .map {
+                        it.id
+                    }
+
+            val pinnedPlaylistIds =
+                pinnedPlaylistOrder
+                    .toSet()
+
+            val pinnedPlaylistRank =
+                pinnedPlaylistOrder
+                    .mapIndexed {
+                        index,
+                        id ->
+
+                        id to index
+                    }
+                    .toMap()
+
             val folderPlaylists =
                 state.playlists
                     .filter {
                         it.folderId ==
                             currentPlaylistFolderId
                     }
+                    .sortedWith(
+                        compareBy<Playlist> {
+                            if (
+                                it.id in
+                                    pinnedPlaylistIds
+                            ) {
+                                0
+                            } else {
+                                1
+                            }
+                        }.thenBy {
+                            pinnedPlaylistRank[
+                                it.id
+                            ] ?: Int.MAX_VALUE
+                        }
+                    )
 
             Column(
                 Modifier.fillMaxSize()
@@ -1228,6 +1317,50 @@ fun LibraryScreen(
     
                             PlaylistFolderPlaylistRow(
                                 playlist = playlist,
+                                isPinned =
+                                    playlist.id in
+                                        pinnedPlaylistIds,
+                                canMovePinUp =
+                                    pinnedPlaylistOrder
+                                        .indexOf(
+                                            playlist.id
+                                        ) > 0,
+                                canMovePinDown =
+                                    pinnedPlaylistOrder
+                                        .indexOf(
+                                            playlist.id
+                                        ).let {
+                                            index ->
+                                            index >= 0 &&
+                                                index <
+                                                pinnedPlaylistOrder
+                                                    .lastIndex
+                                        },
+                                onMovePin = {
+                                    delta ->
+                                    onMovePin(
+                                        "playlist",
+                                        playlist.id,
+                                        delta,
+                                        true,
+                                    )
+                                },
+                                onTogglePin = {
+                                    onTogglePin(
+                                        com.mentality.sonethyst.data.Pin(
+                                            id =
+                                                playlist.id,
+                                            kind =
+                                                "playlist",
+                                            title =
+                                                playlist.title,
+                                            subtitle =
+                                                "Playlist • ${playlist.songCount} songs",
+                                            coverUrl =
+                                                playlist.coverUrl,
+                                        )
+                                    )
+                                },
                                 onOpen = {
                                     onOpenDetail(
                                         "playlist",
@@ -1324,6 +1457,50 @@ fun LibraryScreen(
                             PlaylistGridItem(
                                 playlist =
                                     playlist,
+                                isPinned =
+                                    playlist.id in
+                                        pinnedPlaylistIds,
+                                canMovePinUp =
+                                    pinnedPlaylistOrder
+                                        .indexOf(
+                                            playlist.id
+                                        ) > 0,
+                                canMovePinDown =
+                                    pinnedPlaylistOrder
+                                        .indexOf(
+                                            playlist.id
+                                        ).let {
+                                            index ->
+                                            index >= 0 &&
+                                                index <
+                                                pinnedPlaylistOrder
+                                                    .lastIndex
+                                        },
+                                onMovePin = {
+                                    delta ->
+                                    onMovePin(
+                                        "playlist",
+                                        playlist.id,
+                                        delta,
+                                        true,
+                                    )
+                                },
+                                onTogglePin = {
+                                    onTogglePin(
+                                        com.mentality.sonethyst.data.Pin(
+                                            id =
+                                                playlist.id,
+                                            kind =
+                                                "playlist",
+                                            title =
+                                                playlist.title,
+                                            subtitle =
+                                                "Playlist • ${playlist.songCount} songs",
+                                            coverUrl =
+                                                playlist.coverUrl,
+                                        )
+                                    )
+                                },
                                 onOpen = {
                                     onOpenDetail(
                                         "playlist",
@@ -1674,6 +1851,7 @@ fun LibraryScreen(
                 state.albums,
                 filter,
                 sort,
+                pins,
             ) {
                 buildRows(state, filter, sort, pins)
             }
@@ -1682,6 +1860,7 @@ fun LibraryScreen(
                 state.artists,
                 filter,
                 sort,
+                pins,
             ) {
                 buildRows(state, filter, sort, pins)
             }
@@ -1952,54 +2131,218 @@ private fun buildRows(
     }
 
     if (
-        filter == LibraryFilter.ALBUMS ||
-        filter == LibraryFilter.ARTISTS ||
         filter == LibraryFilter.GENRES ||
         filter == LibraryFilter.TAGS
     ) {
         return sorted
     }
 
-    val visibleAlbumIds =
-        state.albums
-            .mapTo(mutableSetOf()) { it.id }
+    /*
+     * Resolve every pin against current Library state.
+     *
+     * Stored title/artwork are only compatibility snapshots;
+     * visible pinned rows always use live metadata.
+     */
+    val resolvedPins =
+        pins.mapNotNull { pin ->
+            when (pin.kind) {
+                "playlist" ->
+                    state.playlists
+                        .firstOrNull {
+                            it.id == pin.id
+                        }
+                        ?.let { playlist ->
+                            LibRow(
+                                title =
+                                    playlist.title,
+                                subtitle =
+                                    "Pinned • Playlist • " +
+                                        "${playlist.songCount} songs",
+                                art =
+                                    playlist.coverUrl,
+                                accent =
+                                    playlist.accent,
+                                id =
+                                    playlist.id,
+                                kind =
+                                    "playlist",
+                            )
+                        }
 
-    val displayPins =
-        pins.filterNot {
-            it.kind == "album" &&
-                it.id !in visibleAlbumIds
+                "smart" ->
+                    state.smartPlaylists
+                        .firstOrNull {
+                            it.id == pin.id
+                        }
+                        ?.let { playlist ->
+                            val ruleCount =
+                                playlist.rules
+                                    .orEmpty()
+                                    .size
+
+                            LibRow(
+                                title =
+                                    playlist.name
+                                        ?: "Smart playlist",
+                                subtitle =
+                                    "Pinned • Smart playlist • " +
+                                        "$ruleCount rule" +
+                                        if (
+                                            ruleCount == 1
+                                        ) {
+                                            ""
+                                        } else {
+                                            "s"
+                                        },
+                                art =
+                                    state.smartPlaylistCovers[
+                                        playlist.id
+                                            .orEmpty()
+                                    ].orEmpty(),
+                                accent =
+                                    accentFor(
+                                        playlist.id
+                                            ?: "smart"
+                                    ),
+                                id =
+                                    playlist.id
+                                        .orEmpty(),
+                                kind =
+                                    "smart",
+                            )
+                        }
+
+                "album" ->
+                    state.albums
+                        .firstOrNull {
+                            it.id == pin.id
+                        }
+                        ?.let { album ->
+                            LibRow(
+                                title = album.title,
+                                subtitle =
+                                    "Pinned • Album • " +
+                                        album.artist,
+                                art =
+                                    album.artworkUrl,
+                                accent =
+                                    accentFor(
+                                        album.id
+                                    ),
+                                id = album.id,
+                                kind = "album",
+                                hideable = true,
+                            )
+                        }
+
+                "artist" ->
+                    state.artists
+                        .firstOrNull {
+                            it.id == pin.id
+                        }
+                        ?.let { artist ->
+                            LibRow(
+                                title = artist.name,
+                                subtitle =
+                                    "Pinned • Artist",
+                                art =
+                                    artist.imageUrl,
+                                accent =
+                                    accentFor(
+                                        artist.id
+                                    ),
+                                id = artist.id,
+                                kind = "artist",
+                                circle = true,
+                            )
+                        }
+
+                else ->
+                    null
+            }
         }
-
-    val pinned: Set<Pair<String, String>> =
-        if (displayPins.isEmpty()) {
-            emptySet()
-        } else {
-            displayPins.mapTo(mutableSetOf()) {
+            .distinctBy {
                 it.kind to it.id
             }
+
+    val categoryPins =
+        when (filter) {
+            LibraryFilter.ALL ->
+                resolvedPins
+
+            LibraryFilter.ALBUMS ->
+                resolvedPins.filter {
+                    it.kind == "album"
+                }
+
+            LibraryFilter.ARTISTS ->
+                resolvedPins.filter {
+                    it.kind == "artist"
+                }
+
+            else ->
+                emptyList()
         }
 
-    val deduped = if (pinned.isEmpty()) {
-        sorted
-    } else {
-        sorted.filterNot { (it.kind to it.id) in pinned }
-    }
+    val pinnedRows =
+        categoryPins.mapIndexed {
+            index,
+            row ->
+
+            row.copy(
+                pinned = true,
+                canMovePinUp =
+                    index > 0,
+                canMovePinDown =
+                    index <
+                        categoryPins.lastIndex,
+                pinMoveWithinKind =
+                    filter !=
+                        LibraryFilter.ALL,
+            )
+        }
+
+    val pinned:
+        Set<Pair<String, String>> =
+        pinnedRows.mapTo(
+            mutableSetOf()
+        ) {
+            it.kind to it.id
+        }
+
+    /*
+     * Deduplicate only on All, where pinned rows are inserted.
+     *
+     * Previously this also ran in Playlists, which made a pinned
+     * playlist disappear from that category entirely.
+     */
+    val deduped =
+        if (
+            (
+                filter ==
+                    LibraryFilter.ALL ||
+                filter ==
+                    LibraryFilter.ALBUMS ||
+                filter ==
+                    LibraryFilter.ARTISTS
+            ) &&
+            pinned.isNotEmpty()
+        ) {
+            sorted.filterNot {
+                (it.kind to it.id) in
+                    pinned
+            }
+        } else {
+            sorted
+        }
 
     return buildList<LibRow> {
-        if (filter == LibraryFilter.ALL) {
-            displayPins.forEach {
-                add(
-                    LibRow(
-                        it.title,
-                        "Pinned • ${it.kind.replaceFirstChar { c -> c.uppercase() }}",
-                        it.coverUrl,
-                        accentFor(it.id),
-                        it.id,
-                        it.kind,
-                        circle = it.kind == "artist",
-                    )
-                )
-            }
+        if (
+            filter == LibraryFilter.ALL ||
+            filter == LibraryFilter.ALBUMS ||
+            filter == LibraryFilter.ARTISTS
+        ) {
+            addAll(pinnedRows)
         }
 
         add(
@@ -2436,6 +2779,11 @@ private fun PlaylistFolderGridItem(
 @Composable
 private fun PlaylistGridItem(
     playlist: Playlist,
+    isPinned: Boolean,
+    canMovePinUp: Boolean,
+    canMovePinDown: Boolean,
+    onMovePin: (Int) -> Unit,
+    onTogglePin: () -> Unit,
     onOpen: () -> Unit,
     onMove: () -> Unit,
     onDelete: () -> Unit,
@@ -2489,7 +2837,11 @@ private fun PlaylistGridItem(
                 )
 
                 Text(
-                    "${playlist.songCount} songs",
+                    if (isPinned) {
+                        "Pinned • ${playlist.songCount} songs"
+                    } else {
+                        "${playlist.songCount} songs"
+                    },
                     style =
                         MaterialTheme.typography
                             .bodySmall,
@@ -2519,6 +2871,70 @@ private fun PlaylistGridItem(
                         menuOpen = false
                     },
                 ) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                if (isPinned) {
+                                    "Unpin from Library"
+                                } else {
+                                    "Pin to Library"
+                                }
+                            )
+                        },
+                        onClick = {
+                            menuOpen = false
+                            onTogglePin()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.PushPin,
+                                null,
+                            )
+                        },
+                    )
+
+                    if (isPinned) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "Move pin up"
+                                )
+                            },
+                            enabled =
+                                canMovePinUp,
+                            onClick = {
+                                menuOpen = false
+                                onMovePin(-1)
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Filled.ArrowUpward,
+                                    null,
+                                )
+                            },
+                        )
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "Move pin down"
+                                )
+                            },
+                            enabled =
+                                canMovePinDown,
+                            onClick = {
+                                menuOpen = false
+                                onMovePin(1)
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Filled.ArrowDownward,
+                                    null,
+                                )
+                            },
+                        )
+                    }
+
                     DropdownMenuItem(
                         text = {
                             Text("Move to folder")
@@ -2715,6 +3131,11 @@ private fun PlaylistFolderRow(
 @Composable
 private fun PlaylistFolderPlaylistRow(
     playlist: Playlist,
+    isPinned: Boolean,
+    canMovePinUp: Boolean,
+    canMovePinDown: Boolean,
+    onMovePin: (Int) -> Unit,
+    onTogglePin: () -> Unit,
     onOpen: () -> Unit,
     onMove: () -> Unit,
     onDelete: () -> Unit,
@@ -2775,7 +3196,14 @@ private fun PlaylistFolderPlaylistRow(
 
             Text(
                 text =
-                    "${playlist.songCount} song" +
+                    (
+                        if (isPinned) {
+                            "Pinned • "
+                        } else {
+                            ""
+                        }
+                    ) +
+                        "${playlist.songCount} song" +
                         if (
                             playlist.songCount == 1
                         ) {
@@ -2816,6 +3244,70 @@ private fun PlaylistFolderPlaylistRow(
                     menuOpen = false
                 },
             ) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            if (isPinned) {
+                                "Unpin from Library"
+                            } else {
+                                "Pin to Library"
+                            }
+                        )
+                    },
+                    onClick = {
+                        menuOpen = false
+                        onTogglePin()
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Filled.PushPin,
+                            null,
+                        )
+                    },
+                )
+
+                if (isPinned) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                "Move pin up"
+                            )
+                        },
+                        enabled =
+                            canMovePinUp,
+                        onClick = {
+                            menuOpen = false
+                            onMovePin(-1)
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.ArrowUpward,
+                                null,
+                            )
+                        },
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                "Move pin down"
+                            )
+                        },
+                        enabled =
+                            canMovePinDown,
+                        onClick = {
+                            menuOpen = false
+                            onMovePin(1)
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.ArrowDownward,
+                                null,
+                            )
+                        },
+                    )
+                }
+
                 DropdownMenuItem(
                     text = {
                         Text("Move to folder")
@@ -3457,11 +3949,92 @@ private fun CollectionMenu(row: LibRow, actions: LibActions, expanded: Boolean, 
     val isVirtual = row.kind == "liked"
     val isSmart = row.kind == "smart"
     val isPlaylist = row.kind == "playlist"
+    val pinnable =
+        row.kind == "album" ||
+            row.kind == "artist" ||
+            row.kind == "playlist" ||
+            row.kind == "smart"
+    val pinned =
+        actions.isPinned(
+            row.kind,
+            row.id,
+        )
     val liked = actions.isLiked(row.id)
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
         DropdownMenuItem(text = { Text("Play") }, onClick = { onDismiss(); actions.onPlay(row) }, leadingIcon = { Icon(Icons.Filled.PlayArrow, null) })
         DropdownMenuItem(text = { Text("Shuffle") }, onClick = { onDismiss(); actions.onShuffle(row) }, leadingIcon = { Icon(Icons.Filled.Shuffle, null) })
         DropdownMenuItem(text = { Text("Add to queue") }, onClick = { onDismiss(); actions.onQueue(row) }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.QueueMusic, null) })
+
+        if (pinnable) {
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        if (pinned) {
+                            "Unpin from Library"
+                        } else {
+                            "Pin to Library"
+                        }
+                    )
+                },
+                onClick = {
+                    onDismiss()
+                    actions.onTogglePin(row)
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Filled.PushPin,
+                        null,
+                    )
+                },
+            )
+        }
+
+        if (row.pinned) {
+            DropdownMenuItem(
+                text = {
+                    Text("Move pin up")
+                },
+                enabled =
+                    row.canMovePinUp,
+                onClick = {
+                    onDismiss()
+                    actions.onMovePin(
+                        row,
+                        -1,
+                        row.pinMoveWithinKind,
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Filled.ArrowUpward,
+                        null,
+                    )
+                },
+            )
+
+            DropdownMenuItem(
+                text = {
+                    Text("Move pin down")
+                },
+                enabled =
+                    row.canMovePinDown,
+                onClick = {
+                    onDismiss()
+                    actions.onMovePin(
+                        row,
+                        1,
+                        row.pinMoveWithinKind,
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Filled.ArrowDownward,
+                        null,
+                    )
+                },
+            )
+        }
+
         if (isPlaylist || isSmart || isVirtual) {
             DropdownMenuItem(
                 text = { Text("Export as M3U") },
