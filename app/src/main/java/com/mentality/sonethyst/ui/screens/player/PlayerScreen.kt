@@ -286,6 +286,7 @@ fun PlayerScreen(
                     com.mentality.sonethyst.ui.components.LottieEqualizer(
                         modifier = Modifier.size(28.dp),
                         isPlaying = true,
+                        color = accent,
                     )
                     Spacer(Modifier.width(10.dp))
                 }
@@ -298,7 +299,8 @@ fun PlayerScreen(
                         Text(
                             "${state.keyName} · ${state.camelot} · ${state.bpm} BPM",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary, maxLines = 1,
+                            color = accent,
+                            maxLines = 1,
                         )
                     }
                 }
@@ -362,7 +364,7 @@ fun PlayerScreen(
             ) {
                 Icon(
                     Icons.Filled.Shuffle, "Shuffle",
-                    tint = if (state.shuffle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = if (state.shuffle) accent else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onToggleShuffle).padding(8.dp),
                 )
                 Icon(
@@ -393,7 +395,7 @@ fun PlayerScreen(
                 Icon(
                     imageVector = if (state.repeat == RepeatMode.ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
                     contentDescription = "Repeat",
-                    tint = if (state.repeat != RepeatMode.OFF) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = if (state.repeat != RepeatMode.OFF) accent else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onCycleRepeat).padding(8.dp),
                 )
             }
@@ -406,14 +408,25 @@ fun PlayerScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    BottomUtil(Icons.Filled.Speed, "Speed ${"%.1f".format(state.speed)}x", onOpenSpeedPitch)
+                    BottomUtil(
+                        Icons.Filled.Speed,
+                        "Speed ${"%.1f".format(state.speed)}x",
+                        onOpenSpeedPitch,
+                        accent = accent,
+                    )
                     BottomUtil(
                         Icons.Filled.Lyrics,
                         "Lyrics",
                         { showLyrics = !showLyrics },
+                        accent = accent,
                         active = showLyrics,
                     )
-                    BottomUtil(Icons.AutoMirrored.Filled.QueueMusic, "Queue", onOpenQueue)
+                    BottomUtil(
+                        Icons.AutoMirrored.Filled.QueueMusic,
+                        "Queue",
+                        onOpenQueue,
+                        accent = accent,
+                    )
                 }
             } else {
                 Spacer(Modifier.height(12.dp))
@@ -443,14 +456,43 @@ private fun isLossless(suffix: String): Boolean =
     suffix.lowercase() in setOf("flac", "alac", "wav", "aiff", "aif", "ape", "wv", "dsf", "dff", "m4a")
 
 @Composable
-private fun BottomUtil(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit, active: Boolean = false) {
+private fun BottomUtil(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    accent: Color,
+    active: Boolean = false,
+) {
     Row(
         Modifier.clip(RoundedCornerShape(50)).clickable(onClick = onClick).padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, label, tint = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        Icon(
+            icon,
+            label,
+            tint =
+                if (active) {
+                    accent
+                } else {
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant
+                },
+            modifier = Modifier.size(20.dp),
+        )
         Spacer(Modifier.width(6.dp))
-        Text(label, style = MaterialTheme.typography.labelMedium, color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            label,
+            style =
+                MaterialTheme.typography
+                    .labelMedium,
+            color =
+                if (active) {
+                    accent
+                } else {
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant
+                },
+        )
     }
 }
 

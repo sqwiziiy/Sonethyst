@@ -65,6 +65,8 @@ data class PlaybackPrefs(
     val scrobble: Boolean = true,
     val autoplayRadio: Boolean = false,
     val bitPerfectUsb: Boolean = false,
+    // 0 = off, 1 = all, 2 = one
+    val repeatMode: Int = 0,
 )
 
 object VisualizerStyle {
@@ -289,6 +291,7 @@ class SettingsStore(private val context: Context) {
         val DOWNLOAD_BITRATE = intPreferencesKey("download_bitrate")
         val PREFER_HIRES = booleanPreferencesKey("prefer_hires")
         val BIT_PERFECT_USB = booleanPreferencesKey("bit_perfect_usb")
+        val PLAYBACK_REPEAT = intPreferencesKey("playback_repeat")
         val VIZ_STYLE = intPreferencesKey("viz_style")
         val VIZ_COLOR_SOURCE = intPreferencesKey("viz_color_source")
         val VIZ_PRIMARY = intPreferencesKey("viz_primary")
@@ -627,6 +630,9 @@ class SettingsStore(private val context: Context) {
             scrobble = p[Keys.SCROBBLE] ?: true,
             autoplayRadio = p[Keys.AUTOPLAY_RADIO] ?: false,
             bitPerfectUsb = p[Keys.BIT_PERFECT_USB] ?: false,
+            repeatMode =
+                (p[Keys.PLAYBACK_REPEAT] ?: 0)
+                    .coerceIn(0, 2),
         )
     }
 
@@ -899,6 +905,12 @@ class SettingsStore(private val context: Context) {
     suspend fun setDownloadBitrate(v: Int) = context.dataStore.edit { it[Keys.DOWNLOAD_BITRATE] = v }
     suspend fun setPreferHighRes(v: Boolean) = context.dataStore.edit { it[Keys.PREFER_HIRES] = v }
     suspend fun setBitPerfectUsb(v: Boolean) = context.dataStore.edit { it[Keys.BIT_PERFECT_USB] = v }
+
+    suspend fun setPlaybackRepeatMode(v: Int) =
+        context.dataStore.edit {
+            it[Keys.PLAYBACK_REPEAT] =
+                v.coerceIn(0, 2)
+        }
     suspend fun setScrobble(v: Boolean) = context.dataStore.edit { it[Keys.SCROBBLE] = v }
     suspend fun setAutoplayRadio(v: Boolean) = context.dataStore.edit { it[Keys.AUTOPLAY_RADIO] = v }
     suspend fun setOfflineMode(v: Boolean) = context.dataStore.edit { it[Keys.OFFLINE] = v }

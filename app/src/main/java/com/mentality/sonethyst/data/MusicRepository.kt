@@ -65,6 +65,112 @@ class MusicRepository(
     private val backend: MediaBackend? get() = backendProvider()
     private val offline: Boolean get() = offlineProvider()
 
+    private fun playlistStorageKey(
+        playlistId: String,
+    ): String? {
+        if (playlistId.isBlank()) {
+            return null
+        }
+
+        val activeBackend =
+            backend ?: return null
+
+        return activeBackend
+            .customTagKey(playlistId)
+            .takeIf {
+                it.isNotBlank()
+            }
+    }
+
+    fun playlistFolders(): List<PlaylistFolder> =
+        localStore.playlistFolders()
+
+    fun createPlaylistFolder(
+        name: String,
+        parentId: String = "",
+    ): String? {
+        val id =
+            localStore.createPlaylistFolder(
+                name = name,
+                parentId = parentId,
+            )
+
+        if (id != null) {
+            onPlaylistChanged()
+        }
+
+        return id
+    }
+
+    fun renamePlaylistFolder(
+        id: String,
+        name: String,
+    ): Boolean {
+        val updated =
+            localStore.renamePlaylistFolder(
+                id = id,
+                name = name,
+            )
+
+        if (updated) {
+            onPlaylistChanged()
+        }
+
+        return updated
+    }
+
+    fun movePlaylistFolder(
+        id: String,
+        parentId: String,
+    ): Boolean {
+        val updated =
+            localStore.movePlaylistFolder(
+                id = id,
+                parentId = parentId,
+            )
+
+        if (updated) {
+            onPlaylistChanged()
+        }
+
+        return updated
+    }
+
+    fun deletePlaylistFolder(
+        id: String,
+    ): Boolean {
+        val updated =
+            localStore.deletePlaylistFolder(id)
+
+        if (updated) {
+            onPlaylistChanged()
+        }
+
+        return updated
+    }
+
+    fun movePlaylistToFolder(
+        playlistId: String,
+        folderId: String,
+    ): Boolean {
+        val key =
+            playlistStorageKey(
+                playlistId
+            ) ?: return false
+
+        val updated =
+            localStore.setPlaylistFolder(
+                playlistKey = key,
+                folderId = folderId,
+            )
+
+        if (updated) {
+            onPlaylistChanged()
+        }
+
+        return updated
+    }
+
     private fun hiddenStorageIdentity(
         kind: String,
         id: String,
@@ -438,8 +544,36 @@ class MusicRepository(
         return songs.values.toList()
     }
 
-    suspend fun allPlaylists(): List<Playlist> =
-        if (offline) emptyList() else backend?.allPlaylists().orEmpty()
+    suspend fun allPlaylists(): List<Playlist> {
+        if (offline) {
+            return emptyList()
+        }
+
+        val activeBackend =
+            backend ?: return emptyList()
+
+        return activeBackend
+            .allPlaylists()
+            .map { playlist ->
+                val key =
+                    playlistStorageKey(
+                        playlist.id
+                    )
+
+                val folderId =
+                    if (key == null) {
+                        ""
+                    } else {
+                        localStore.playlistFolderId(
+                            key
+                        )
+                    }
+
+                playlist.copy(
+                    folderId = folderId
+                )
+            }
+    }
 
     suspend fun allSongs(): List<Song> =
         if (offline) downloadedSongs() else backend?.allSongs().orEmpty()
@@ -579,8 +713,92 @@ class MusicRepository(
         return backend?.radio(seedId).orEmpty()
     }
 
-    suspend fun createPlaylist(name: String): Boolean =
-        playlistMutationResult(backend?.createPlaylist(name) ?: false)
+    suspend fun createPlaylist(
+        name: String,
+        folderId: String = "",
+    ): Boolean {
+        val activeBackend =
+            backend ?: return false
+
+        val safeName =
+            name.trim()
+
+        if (safeName.isBlank()) {
+            return false
+        }
+
+        if (
+            folderId.isNotBlank() &&
+            localStore.playlistFolders()
+                .none {
+                    it.id == folderId
+                }
+        ) {
+            return false
+        }
+
+        /*
+         * Prefer the backend operation that gives us the new id immediately.
+         * MergedBackend returns the correctly wrapped id here.
+         */
+        var playlistId =
+            activeBackend.createPlaylistWithId(
+                safeName
+            )
+
+        /*
+         * Compatibility fallback for a backend that cannot return the
+         * created id directly.
+         */
+        if (playlistId == null) {
+            val before =
+                activeBackend.allPlaylists()
+                    .mapTo(
+                        mutableSetOf()
+                    ) {
+                        it.id
+                    }
+
+            if (
+                !activeBackend.createPlaylist(
+                    safeName
+                )
+            ) {
+                return false
+            }
+
+            playlistId =
+                activeBackend.allPlaylists()
+                    .firstOrNull {
+                        it.id !in before
+                    }
+                    ?.id
+        }
+
+        if (playlistId == null) {
+            onPlaylistChanged()
+            return folderId.isBlank()
+        }
+
+        if (folderId.isNotBlank()) {
+            val key =
+                playlistStorageKey(
+                    playlistId
+                ) ?: return false
+
+            if (
+                !localStore.setPlaylistFolder(
+                    playlistKey = key,
+                    folderId = folderId,
+                )
+            ) {
+                return false
+            }
+        }
+
+        onPlaylistChanged()
+        return true
+    }
 
     suspend fun addToPlaylist(playlistId: String, trackIds: List<String>): Boolean =
         playlistMutationResult(backend?.addToPlaylist(playlistId, trackIds) ?: false)

@@ -588,7 +588,11 @@ fun SonethystApp() {
 
     ModalNavigationDrawer(
         drawerState = drawerState,
-        gesturesEnabled = showChrome && onTopLevel,
+        gesturesEnabled =
+            drawerState.currentValue ==
+                DrawerValue.Open ||
+                currentRoute != Routes.LIBRARY,
+
         drawerContent = {
             ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surface) {
                 SidebarContent(
@@ -832,7 +836,17 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             onDownload = onDownload,
                             onRemoveDownload = onRemoveDownload,
                             onOpenSearch = { navigateTopLevel(Routes.SEARCH) },
-                            onCreatePlaylist = { name -> scope.launch { container.repository.createPlaylist(name); libraryVM.load() } },
+                            onCreatePlaylist = { name, folderId ->
+                                scope.launch {
+                                    container.repository
+                                        .createPlaylist(
+                                            name,
+                                            folderId,
+                                        )
+
+                                    libraryVM.load()
+                                }
+                            },
                             onCreateSmart = { navController.navigate(Routes.smartEdit()) },
                             onEditSmart = { id -> navController.navigate(Routes.smartEdit(id)) },
                             onDeleteSmart = { id -> scope.launch { container.settingsStore.deleteSmartPlaylist(id) } },
@@ -855,7 +869,45 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                                 if (tracks.isNotEmpty()) confirm("Added ${tracks.size} to queue")
                             } },
                             onToggleLikeKind = { id, kind -> playerVM.toggleLike(id, kind) },
-                            onDeletePlaylist = { id -> scope.launch { container.repository.deletePlaylist(id); libraryVM.load() } },
+                            onDeletePlaylist = { id ->
+                                scope.launch {
+                                    container.repository
+                                        .deletePlaylist(id)
+                                    libraryVM.load()
+                                }
+                            },
+                            onCreatePlaylistFolder = { name, parentId ->
+                                container.repository
+                                    .createPlaylistFolder(
+                                        name,
+                                        parentId,
+                                    )
+                            },
+                            onRenamePlaylistFolder = { id, name ->
+                                container.repository
+                                    .renamePlaylistFolder(
+                                        id,
+                                        name,
+                                    )
+                            },
+                            onMovePlaylistFolder = { id, parentId ->
+                                container.repository
+                                    .movePlaylistFolder(
+                                        id,
+                                        parentId,
+                                    )
+                            },
+                            onDeletePlaylistFolder = { id ->
+                                container.repository
+                                    .deletePlaylistFolder(id)
+                            },
+                            onMovePlaylistToFolder = { playlistId, folderId ->
+                                container.repository
+                                    .movePlaylistToFolder(
+                                        playlistId,
+                                        folderId,
+                                    )
+                            },
                             canDownload = !localMode,
                             pins = pins,
                             onEditTags = { song -> navController.navigate(Routes.tagEdit(song.id)) },

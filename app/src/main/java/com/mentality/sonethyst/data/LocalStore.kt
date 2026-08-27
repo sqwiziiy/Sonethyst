@@ -19,6 +19,12 @@ data class HiddenLibraryItem(
 )
 
 // fields nullable-safe for gson forward compat
+data class PlaylistFolder(
+    val id: String = "",
+    val name: String = "",
+    val parentId: String = "",
+)
+
 data class LocalPlaylist(
     val id: String = "",
     val title: String? = "",
@@ -34,6 +40,8 @@ private data class LocalState(
     val ratings: Map<String, Int>? = emptyMap(),
     val customTags: Map<String, List<String>>? = emptyMap(),
     val hiddenItems: Map<String, HiddenLibraryItem>? = emptyMap(),
+    val playlistFolders: List<PlaylistFolder>? = emptyList(),
+    val playlistFolderAssignments: Map<String, String>? = emptyMap(),
 )
 
 class LocalStore(context: Context) {
@@ -50,6 +58,335 @@ class LocalStore(context: Context) {
 
     private fun persist() {
         runCatching { file.writeText(gson.toJson(state)) }
+    }
+
+    fun playlistFolders(): List<PlaylistFolder> =
+        state.playlistFolders
+            .orEmpty()
+            .sortedWith(
+                compareBy<PlaylistFolder> {
+                    it.parentId
+                }.thenBy {
+                    it.name.lowercase(Locale.ROOT)
+                }
+            )
+
+    fun playlistFolderId(
+        playlistKey: String,
+    ): String {
+        val folderId =
+            state.playlistFolderAssignments
+                .orEmpty()[playlistKey]
+                .orEmpty()
+
+        if (folderId.isBlank()) {
+            return ""
+        }
+
+        return if (
+            state.playlistFolders
+                .orEmpty()
+                .any { it.id == folderId }
+        ) {
+            folderId
+        } else {
+            ""
+        }
+    }
+
+    fun createPlaylistFolder(
+        name: String,
+        parentId: String = "",
+    ): String? = synchronized(lock) {
+        val safeName =
+            name.trim()
+                .take(80)
+
+        if (safeName.isBlank()) {
+            return@synchronized null
+        }
+
+        val folders =
+            state.playlistFolders.orEmpty()
+
+        if (
+            parentId.isNotBlank() &&
+            folders.none { it.id == parentId }
+        ) {
+            return@synchronized null
+        }
+
+        val duplicate =
+            folders.any {
+                it.parentId == parentId &&
+                    it.name.equals(
+                        safeName,
+                        ignoreCase = true,
+                    )
+            }
+
+        if (duplicate) {
+            return@synchronized null
+        }
+
+        val id =
+            "playlist-folder-" +
+                UUID.randomUUID()
+                    .toString()
+                    .take(8)
+
+        state =
+            state.copy(
+                playlistFolders =
+                    folders +
+                        PlaylistFolder(
+                            id = id,
+                            name = safeName,
+                            parentId = parentId,
+                        )
+            )
+
+        persist()
+        id
+    }
+
+    fun renamePlaylistFolder(
+        id: String,
+        name: String,
+    ): Boolean = synchronized(lock) {
+        val safeName =
+            name.trim()
+                .take(80)
+
+        val folders =
+            state.playlistFolders.orEmpty()
+
+        val target =
+            folders.firstOrNull {
+                it.id == id
+            } ?: return@synchronized false
+
+        if (safeName.isBlank()) {
+            return@synchronized false
+        }
+
+        val duplicate =
+            folders.any {
+                it.id != id &&
+                    it.parentId ==
+                        target.parentId &&
+                    it.name.equals(
+                        safeName,
+                        ignoreCase = true,
+                    )
+            }
+
+        if (duplicate) {
+            return@synchronized false
+        }
+
+        state =
+            state.copy(
+                playlistFolders =
+                    folders.map {
+                        if (it.id == id) {
+                            it.copy(
+                                name = safeName
+                            )
+                        } else {
+                            it
+                        }
+                    }
+            )
+
+        persist()
+        true
+    }
+
+    fun movePlaylistFolder(
+        id: String,
+        parentId: String,
+    ): Boolean = synchronized(lock) {
+        val folders =
+            state.playlistFolders.orEmpty()
+
+        if (
+            id.isBlank() ||
+            id == parentId ||
+            folders.none { it.id == id } ||
+            (
+                parentId.isNotBlank() &&
+                    folders.none {
+                        it.id == parentId
+                    }
+            )
+        ) {
+            return@synchronized false
+        }
+
+        /*
+         * Reject moving a folder into one of its descendants.
+         */
+        var cursor =
+            parentId
+
+        while (cursor.isNotBlank()) {
+            if (cursor == id) {
+                return@synchronized false
+            }
+
+            cursor =
+                folders.firstOrNull {
+                    it.id == cursor
+                }?.parentId.orEmpty()
+        }
+
+        state =
+            state.copy(
+                playlistFolders =
+                    folders.map {
+                        if (it.id == id) {
+                            it.copy(
+                                parentId = parentId
+                            )
+                        } else {
+                            it
+                        }
+                    }
+            )
+
+        persist()
+        true
+    }
+
+    fun deletePlaylistFolder(
+        id: String,
+    ): Boolean = synchronized(lock) {
+        val folders =
+            state.playlistFolders.orEmpty()
+
+        val target =
+            folders.firstOrNull {
+                it.id == id
+            } ?: return@synchronized false
+
+        /*
+         * Deleting a folder never deletes playlists.
+         *
+         * Child folders and contained playlists move one level up.
+         */
+        val parentId =
+            target.parentId
+
+        val nextFolders =
+            folders
+                .filterNot {
+                    it.id == id
+                }
+                .map {
+                    if (it.parentId == id) {
+                        it.copy(
+                            parentId = parentId
+                        )
+                    } else {
+                        it
+                    }
+                }
+
+        val assignments =
+            state.playlistFolderAssignments
+                .orEmpty()
+                .toMutableMap()
+
+        assignments
+            .filterValues {
+                it == id
+            }
+            .keys
+            .toList()
+            .forEach { key ->
+                if (parentId.isBlank()) {
+                    assignments.remove(key)
+                } else {
+                    assignments[key] =
+                        parentId
+                }
+            }
+
+        state =
+            state.copy(
+                playlistFolders =
+                    nextFolders,
+                playlistFolderAssignments =
+                    assignments,
+            )
+
+        persist()
+        true
+    }
+
+    fun setPlaylistFolder(
+        playlistKey: String,
+        folderId: String,
+    ): Boolean = synchronized(lock) {
+        if (playlistKey.isBlank()) {
+            return@synchronized false
+        }
+
+        if (
+            folderId.isNotBlank() &&
+            state.playlistFolders
+                .orEmpty()
+                .none {
+                    it.id == folderId
+                }
+        ) {
+            return@synchronized false
+        }
+
+        val assignments =
+            state.playlistFolderAssignments
+                .orEmpty()
+                .toMutableMap()
+
+        if (folderId.isBlank()) {
+            assignments.remove(
+                playlistKey
+            )
+        } else {
+            assignments[playlistKey] =
+                folderId
+        }
+
+        state =
+            state.copy(
+                playlistFolderAssignments =
+                    assignments
+            )
+
+        persist()
+        true
+    }
+
+    fun removePlaylistFolderAssignment(
+        playlistKey: String,
+    ) = synchronized(lock) {
+        val assignments =
+            state.playlistFolderAssignments
+                .orEmpty()
+                .toMutableMap()
+
+        assignments.remove(
+            playlistKey
+        )
+
+        state =
+            state.copy(
+                playlistFolderAssignments =
+                    assignments
+            )
+
+        persist()
     }
 
     fun playlists(): List<LocalPlaylist> = state.playlists.orEmpty()

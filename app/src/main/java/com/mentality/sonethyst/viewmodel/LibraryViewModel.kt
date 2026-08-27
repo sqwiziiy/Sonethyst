@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.HiddenLibraryItem
+import com.mentality.sonethyst.data.PlaylistFolder
 import com.mentality.sonethyst.data.SongVersionFinder
 import com.mentality.sonethyst.data.SongVersionGroup
 import com.mentality.sonethyst.model.Album
@@ -42,6 +43,7 @@ data class LibraryUiState(
     val genresLoaded: Boolean = false,
     val supportsGenres: Boolean = false,
     val playlists: List<Playlist> = emptyList(),
+    val playlistFolders: List<PlaylistFolder> = emptyList(),
     val songs: List<Song> = emptyList(),
     val songsLoadingMore: Boolean = false,
     val canLoadMoreSongs: Boolean = false,
@@ -163,6 +165,9 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                 it.copy(
                     loading = false,
                     playlists = playlists,
+                    playlistFolders =
+                        container.repository
+                            .playlistFolders(),
                     albums = albums,
                     artists = artists,
                     songs = songs,
@@ -374,8 +379,20 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun refreshPlaylists() {
         viewModelScope.launch {
-            val playlists = container.repository.allPlaylists()
-            _state.update { it.copy(playlists = playlists) }
+            val playlists =
+                container.repository
+                    .allPlaylists()
+
+            val folders =
+                container.repository
+                    .playlistFolders()
+
+            _state.update {
+                it.copy(
+                    playlists = playlists,
+                    playlistFolders = folders,
+                )
+            }
         }
     }
 

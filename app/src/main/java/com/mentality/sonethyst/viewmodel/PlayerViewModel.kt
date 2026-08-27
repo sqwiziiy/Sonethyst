@@ -255,22 +255,84 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         val songs = sq.tracks.orEmpty().map { it.toSong() }.filter { it.id.isNotEmpty() && it.streamUrl.isNotEmpty() }
         if (songs.isEmpty()) return
         songById = songs.associateBy { it.id }
-        val idx = sq.currentIndex.coerceIn(0, songs.lastIndex)
-        c.setMediaItems(songs.map { toMediaItem(it) }, idx, sq.positionSec.toLong() * 1000)
-        c.playbackParameters = currentParams()
-        c.repeatMode = when (sq.repeat) { 1 -> Player.REPEAT_MODE_ALL; 2 -> Player.REPEAT_MODE_ONE; else -> Player.REPEAT_MODE_OFF }
-        c.prepare()   // buffer at saved position but stay paused
+        val idx =
+            sq.currentIndex
+                .coerceIn(
+                    0,
+                    songs.lastIndex,
+                )
+
+        /*
+         * Shuffle/Repeat belong to the player, not this SavedQueue.
+         * PlaybackService has already restored the persistent modes.
+         */
+        val keepShuffle =
+            sq.shuffle
+
+        val keepRepeat =
+            c.repeatMode
+
+        c.setMediaItems(
+            songs.map {
+                toMediaItem(it)
+            },
+            idx,
+            sq.positionSec
+                .toLong() * 1000,
+        )
+
+        c.playbackParameters =
+            currentParams()
+
+        c.prepare()
+
         _state.update {
-            it.copy(queue = songs, current = songs[idx], positionSec = sq.positionSec.toFloat(), isPlaying = false, currentIndex = idx, shuffle = sq.shuffle,
-                repeat = when (sq.repeat) { 1 -> RepeatMode.ALL; 2 -> RepeatMode.ONE; else -> RepeatMode.OFF })
+            it.copy(
+                queue = songs,
+                current = songs[idx],
+                positionSec =
+                    sq.positionSec.toFloat(),
+                isPlaying = false,
+                currentIndex = idx,
+                shuffle = keepShuffle,
+                repeat =
+                    when (keepRepeat) {
+                        Player.REPEAT_MODE_ALL ->
+                            RepeatMode.ALL
+
+                        Player.REPEAT_MODE_ONE ->
+                            RepeatMode.ONE
+
+                        else ->
+                            RepeatMode.OFF
+                    },
+            )
         }
-        if (sq.shuffle) {
-            // queue is already in saved order tell the service shuffle is on and remember that order
+
+        if (keepShuffle) {
+            /*
+             * SavedQueue already stores the actual physical order.
+             * Tell the service Shuffle is still enabled and give it
+             * a restore snapshot for this newly-created timeline.
+             */
             c.sendCustomCommand(
-                SessionCommand(PlaybackService.CMD_SHUFFLE, android.os.Bundle().apply {
-                    putInt("target", 1)
-                    putStringArrayList("order", ArrayList(songs.map { it.id }))
-                }),
+                SessionCommand(
+                    PlaybackService.CMD_SHUFFLE,
+                    android.os.Bundle().apply {
+                        putInt(
+                            "target",
+                            1,
+                        )
+                        putStringArrayList(
+                            "order",
+                            ArrayList(
+                                songs.map {
+                                    it.id
+                                }
+                            ),
+                        )
+                    },
+                ),
                 android.os.Bundle.EMPTY,
             )
         }
@@ -447,15 +509,47 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         container.haptic()
         playingAccountKey = container.currentAccountKey()
         songById = songs.associateBy { it.id }
-        val items = songs.map { toMediaItem(it) }
-        val idx = startIndex.coerceIn(0, songs.lastIndex)
-        c.setMediaItems(items, idx, 0L)
-        c.playbackParameters = currentParams()
+        val items =
+            songs.map {
+                toMediaItem(it)
+            }
+
+        val idx =
+            startIndex.coerceIn(
+                0,
+                songs.lastIndex,
+            )
+
+        c.setMediaItems(
+            items,
+            idx,
+            0L,
+        )
+
+        c.playbackParameters =
+            currentParams()
+
         c.prepare()
         c.play()
-        // fresh context plays in order make sure shuffle is off
+
+        /*
+         * Normal Play starts a new queue in its natural order.
+         *
+         * Shuffle belongs to the previous queue and must not leak
+         * into this album/playlist. Repeat is intentionally left
+         * untouched.
+         */
         sendShuffle(0)
-        _state.update { it.copy(queue = songs, current = songs[idx], positionSec = 0f, isPlaying = true) }
+
+        _state.update {
+            it.copy(
+                queue = songs,
+                current = songs[idx],
+                positionSec = 0f,
+                isPlaying = true,
+                shuffle = false,
+            )
+        }
     }
 
     fun play(song: Song) = playAll(listOf(song), 0)
@@ -659,12 +753,16 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun cycleRepeat() {
-        val c = controller ?: return
-        c.repeatMode = when (c.repeatMode) {
-            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
-            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
-            else -> Player.REPEAT_MODE_OFF
-        }
+        val c =
+            controller ?: return
+
+        c.sendCustomCommand(
+            SessionCommand(
+                PlaybackService.CMD_REPEAT,
+                android.os.Bundle.EMPTY,
+            ),
+            android.os.Bundle.EMPTY,
+        )
     }
 
     fun toggleLikeCurrent() = toggleLike(_state.value.current.id)

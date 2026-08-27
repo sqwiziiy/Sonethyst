@@ -102,6 +102,24 @@ Sonethyst is an independent Android music player fork based on Aurora.
 - [ ] Playlist folders
 - [ ] Pinning improvements
 
+## Immediate UX polish discovered during Phase 2
+
+- [ ] Android Back inside a playlist folder must navigate to the parent folder before leaving Library
+- [ ] Make Library sort/layout controls context-aware; never expose controls that do nothing
+- [ ] Add horizontal swipe navigation between Library category tabs
+- [ ] Add explicit empty states for Genres and every other empty Library category
+- [ ] Prevent ambiguous duplicate playlist/folder names inside the same playlist-folder scope
+- [ ] Use semantic fallback artwork/icons for Folders, Radio, Podcasts and other virtual collections instead of a generic gradient
+- [ ] Bring Smart Playlist UI to parity with applicable regular-playlist options, especially playlist-cover management
+- [ ] Ensure Smart Playlist cover mode/artwork is reflected everywhere the smart playlist is displayed
+- [ ] Use the current track artwork accent consistently for track-scoped Now Playing details such as key/Camelot/BPM and active Lyrics
+- [ ] Keep the MiniPlayer/Home liked heart on the selected app/theme accent; artwork-derived heart color is reserved for full Now Playing
+- [ ] Remove or implement the no-op Home notification bell; do not expose dead controls
+
+- [x] Preserve Shuffle within the current queue and across app/service restart, but reset it when a new album/playlist/track is started normally; explicit Shuffle Play starts the new queue shuffled
+- [x] Persist Repeat mode (Off/All/One) across track/queue changes, playback actions, service recreation, and app restarts
+- [x] Use current track artwork accent for active Shuffle/Repeat controls
+
 ## Phase 3 — Metadata
 
 - [ ] Batch tag editing

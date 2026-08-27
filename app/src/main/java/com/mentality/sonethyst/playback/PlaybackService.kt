@@ -194,6 +194,31 @@ class PlaybackService : MediaLibraryService() {
             )
         }
         player = playerBuilder.build()
+
+        // Shuffle and repeat are player preferences, not queue
+        // properties. Restore them even when there is no queue yet.
+        val startupPlaybackState =
+            runBlocking {
+                container.settingsStore
+                    .playbackPrefs
+                    .first()
+            }
+
+        player.repeatMode =
+            when (
+                startupPlaybackState
+                    .repeatMode
+            ) {
+                1 ->
+                    Player.REPEAT_MODE_ALL
+
+                2 ->
+                    Player.REPEAT_MODE_ONE
+
+                else ->
+                    Player.REPEAT_MODE_OFF
+            }
+
         if (bitPerfectUsb) usbSink?.attachToPlayer(player)
 
         // usb host permission isnt persisted across process restarts so re-acquire on startup else sink silently falls back to normal output
@@ -1575,22 +1600,74 @@ class PlaybackService : MediaLibraryService() {
     }
 
     private fun cycleRepeat() {
-        player.repeatMode = when (player.repeatMode) {
-            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
-            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
-            else -> Player.REPEAT_MODE_OFF
+        val next =
+            when (player.repeatMode) {
+                Player.REPEAT_MODE_OFF ->
+                    Player.REPEAT_MODE_ALL
+
+                Player.REPEAT_MODE_ALL ->
+                    Player.REPEAT_MODE_ONE
+
+                else ->
+                    Player.REPEAT_MODE_OFF
+            }
+
+        player.repeatMode = next
+
+        scope.launch {
+            container.settingsStore
+                .setPlaybackRepeatMode(
+                    when (next) {
+                        Player.REPEAT_MODE_ALL -> 1
+                        Player.REPEAT_MODE_ONE -> 2
+                        else -> 0
+                    }
+                )
         }
     }
 
     // physical shuffle reorders the actual items shuffleModeEnabled is just a ui flag with an identity ShuffleOrder so playback follows our order not a second random one
     private fun setShuffle(target: Int, providedOrder: List<String>?) {
-        val enable = when (target) {
-            1 -> true
-            0 -> false
-            else -> !player.shuffleModeEnabled
+        val enable =
+            when (target) {
+                1 -> true
+                0 -> false
+                else ->
+                    !player.shuffleModeEnabled
+            }
+
+        /*
+         * A queue replacement must not make Shuffle look enabled
+         * while leaving the new queue in plain order.
+         *
+         * originalOrder may belong to the previous album/playlist,
+         * so only treat the current state as a real no-op when that
+         * snapshot still describes this exact timeline.
+         */
+        val timelineIds =
+            currentIds()
+
+        val originalMatchesTimeline =
+            originalOrder?.let { original ->
+                original.size ==
+                    timelineIds.size &&
+                    original.toSet() ==
+                    timelineIds.toSet()
+            } ?: false
+
+        // A provided order is a fresh shuffle-play and always
+        // needs to be accepted.
+        if (
+            providedOrder == null &&
+            enable ==
+                player.shuffleModeEnabled &&
+            (
+                !enable ||
+                    originalMatchesTimeline
+            )
+        ) {
+            return
         }
-        // a provided order is a fresh shuffle-play always reapply otherwise skip no-ops
-        if (providedOrder == null && enable == player.shuffleModeEnabled && enable == (originalOrder != null)) return
 
         if (enable && providedOrder != null) {
             // caller already shuffled just remember the real order for restore
@@ -1617,15 +1694,45 @@ class PlaybackService : MediaLibraryService() {
             pendingNeutralize = true
             maybeNeutralize()
         } else {
-            val orig = originalOrder
+            val orig =
+                originalOrder
+
             if (orig != null) {
-                val present = currentIds()
-                // restore snapshot order keep newly-added items at the end
-                val restored = orig.filter { it in present } + present.filter { it !in orig }
-                applyOrder(restored)
+                val present =
+                    currentIds()
+
+                /*
+                 * Restore the pre-shuffle order only when the
+                 * snapshot actually belongs to THIS queue.
+                 *
+                 * If another album/playlist has just replaced the
+                 * timeline, originalOrder belongs to the old queue
+                 * and must simply be discarded.
+                 */
+                val sameTimeline =
+                    orig.size ==
+                        present.size &&
+                        orig.toSet() ==
+                            present.toSet()
+
+                if (sameTimeline) {
+                    val restored =
+                        orig.filter {
+                            it in present
+                        } +
+                            present.filter {
+                                it !in orig
+                            }
+
+                    applyOrder(restored)
+                }
             }
-            player.shuffleModeEnabled = false
-            originalOrder = null
+
+            player.shuffleModeEnabled =
+                false
+
+            originalOrder =
+                null
         }
     }
 

@@ -1,6 +1,13 @@
 package com.mentality.sonethyst.ui.screens.library
 
 import androidx.compose.foundation.background
+import androidx.compose.animation.core.tween
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +34,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DriveFileMove
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Podcasts
+import androidx.compose.material.icons.filled.Radio
+import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -64,9 +77,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mentality.sonethyst.data.SongVersionGroup
+import com.mentality.sonethyst.data.PlaylistFolder
 import com.mentality.sonethyst.model.LibraryFilter
 import com.mentality.sonethyst.model.LibraryLayout
 import com.mentality.sonethyst.model.LibrarySort
+import com.mentality.sonethyst.model.Playlist
 import com.mentality.sonethyst.model.Song
 import com.mentality.sonethyst.ui.components.Artwork
 import com.mentality.sonethyst.ui.components.SongRow
@@ -121,7 +136,7 @@ fun LibraryScreen(
     onDownload: (Song) -> Unit,
     onRemoveDownload: (String) -> Unit,
     onOpenSearch: () -> Unit,
-    onCreatePlaylist: (String) -> Unit,
+    onCreatePlaylist: (String, String) -> Unit,
     onCreateSmart: () -> Unit,
     onEditSmart: (String) -> Unit,
     onDeleteSmart: (String) -> Unit,
@@ -135,6 +150,11 @@ fun LibraryScreen(
     onQueueCollection: (String, String) -> Unit,
     onToggleLikeKind: (String, String) -> Unit,
     onDeletePlaylist: (String) -> Unit,
+    onCreatePlaylistFolder: (String, String) -> Unit,
+    onRenamePlaylistFolder: (String, String) -> Unit,
+    onMovePlaylistFolder: (String, String) -> Unit,
+    onDeletePlaylistFolder: (String) -> Unit,
+    onMovePlaylistToFolder: (String, String) -> Unit,
     canDownload: Boolean = true,
     pins: List<com.mentality.sonethyst.data.Pin> = emptyList(),
     onEditTags: ((Song) -> Unit)? = null,
@@ -148,10 +168,131 @@ fun LibraryScreen(
         (com.mentality.sonethyst.data.HiddenLibraryItem) -> Unit = {},
 ) {
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    var showCreate by remember { mutableStateOf(false) }
+    var showCreateMenu by remember {
+        mutableStateOf(false)
+    }
+
+    var showCreatePlaylist by remember {
+        mutableStateOf(false)
+    }
+    var currentPlaylistFolderId by
+        remember {
+            mutableStateOf("")
+        }
+
+    var createFolderParentId by
+        remember {
+            mutableStateOf<String?>(null)
+        }
+
+    var renameFolder by
+        remember {
+            mutableStateOf<PlaylistFolder?>(null)
+        }
+
+    var movePlaylist by
+        remember {
+            mutableStateOf<Playlist?>(null)
+        }
+
+    var moveFolder by
+        remember {
+            mutableStateOf<PlaylistFolder?>(null)
+        }
+
+    androidx.compose.runtime.LaunchedEffect(
+        state.playlistFolders,
+        currentPlaylistFolderId,
+    ) {
+        // playlist-folder-navigation-validity
+        if (
+            currentPlaylistFolderId.isNotBlank() &&
+            state.playlistFolders.none {
+                it.id == currentPlaylistFolderId
+            }
+        ) {
+            currentPlaylistFolderId = ""
+        }
+    }
+
+    // playlist-folder-android-back
+    androidx.activity.compose.BackHandler(
+        enabled =
+            state.filter == LibraryFilter.PLAYLISTS &&
+                currentPlaylistFolderId.isNotBlank(),
+    ) {
+        val current =
+            state.playlistFolders
+                .firstOrNull {
+                    it.id ==
+                        currentPlaylistFolderId
+                }
+
+        currentPlaylistFolderId =
+            current?.parentId.orEmpty()
+    }
+
     val filter = state.filter
     val sort = state.sort
     val layout = state.layout
+
+    // library-context-controls-state
+    val availableSorts =
+        when (filter) {
+            LibraryFilter.SONGS ->
+                listOf(
+                    LibrarySort.RECENT,
+                    LibrarySort.ALPHABETICAL,
+                    LibrarySort.CREATOR,
+                )
+
+            LibraryFilter.ALBUMS ->
+                listOf(
+                    LibrarySort.ALPHABETICAL,
+                    LibrarySort.CREATOR,
+                )
+
+            else ->
+                emptyList()
+        }
+
+    val displayedSort =
+        if (sort in availableSorts) {
+            sort
+        } else {
+            availableSorts.firstOrNull()
+                ?: sort
+        }
+
+    val showSortControl =
+        availableSorts.size > 1
+
+    val supportsLayoutToggle =
+        when (filter) {
+            LibraryFilter.ALL,
+            LibraryFilter.PLAYLISTS,
+            LibraryFilter.ALBUMS,
+            LibraryFilter.ARTISTS,
+            LibraryFilter.GENRES,
+            LibraryFilter.TAGS,
+            LibraryFilter.DOWNLOADED,
+            -> true
+
+            else -> false
+        }
+
+    androidx.compose.runtime.LaunchedEffect(
+        filter
+    ) {
+        if (
+            availableSorts.isNotEmpty() &&
+            sort !in availableSorts
+        ) {
+            onSort(
+                availableSorts.first()
+            )
+        }
+    }
     val libColumns = com.mentality.sonethyst.ui.theme.LocalUiPrefs.current.libraryColumns.coerceIn(2, 4)
 
     val actions = remember(
@@ -201,11 +342,130 @@ fun LibraryScreen(
         }
     }
 
+    // library-category-pager
+    val categoryPagerState =
+        androidx.compose.foundation.pager
+            .rememberPagerState(
+                initialPage =
+                    visibleFilters
+                        .indexOf(filter)
+                        .coerceAtLeast(0),
+                pageCount = {
+                    visibleFilters.size
+                },
+            )
+
+    val filterRowState =
+        androidx.compose.foundation.lazy
+            .rememberLazyListState()
+
+    val pagerDisplayFilter =
+        visibleFilters
+            .getOrNull(
+                categoryPagerState.currentPage
+            )
+            ?: filter
+
+    val drawerEdgeThreshold =
+        with(LocalDensity.current) {
+            72.dp.toPx()
+        }
+
+    /*
+     * Chip -> pager.
+     *
+     * Clicking a Library category changes the ViewModel filter,
+     * then the pager follows it with the same page animation used
+     * by a real swipe.
+     */
+    androidx.compose.runtime.LaunchedEffect(
+        filter,
+        visibleFilters,
+    ) {
+        val target =
+            visibleFilters.indexOf(filter)
+
+        if (
+            target >= 0 &&
+            target !=
+                categoryPagerState.currentPage
+        ) {
+            categoryPagerState
+                .animateScrollToPage(
+                    target
+                )
+        }
+    }
+
+    /*
+     * Pager -> ViewModel.
+     *
+     * Do not change the real filter while the finger is still
+     * dragging. Commit it only once the pager settles.
+     */
+    androidx.compose.runtime.LaunchedEffect(
+        categoryPagerState.currentPage,
+        categoryPagerState.isScrollInProgress,
+        visibleFilters,
+    ) {
+        if (
+            !categoryPagerState
+                .isScrollInProgress
+        ) {
+            val settledFilter =
+                visibleFilters
+                    .getOrNull(
+                        categoryPagerState
+                            .currentPage
+                    )
+
+            if (
+                settledFilter != null &&
+                settledFilter != filter
+            ) {
+                onFilter(
+                    settledFilter
+                )
+            }
+        }
+    }
+
+    /*
+     * Keep the selected chip visible while paging through more
+     * categories than fit on screen.
+     */
+    androidx.compose.runtime.LaunchedEffect(
+        categoryPagerState.currentPage,
+        visibleFilters,
+    ) {
+        val index =
+            categoryPagerState
+                .currentPage
+                .coerceIn(
+                    0,
+                    (visibleFilters.size - 1)
+                        .coerceAtLeast(0),
+                )
+
+        if (visibleFilters.isNotEmpty()) {
+            filterRowState
+                .animateScrollToItem(
+                    index
+                )
+        }
+    }
+
     val userInitials = remember(username) {
         username.take(2).uppercase().ifBlank { "ME" }
     }
 
-    Column(Modifier.fillMaxWidth().padding(top = topInset)) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(
+                top = topInset
+            )
+    ) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier.size(36.dp).clip(CircleShape)
@@ -216,21 +476,269 @@ fun LibraryScreen(
             Spacer(Modifier.width(12.dp))
             Text("Your Library", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             Icon(Icons.Filled.Search, "Search", modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onOpenSearch).padding(8.dp))
-            Icon(Icons.Filled.Add, "Create playlist", modifier = Modifier.size(40.dp).clip(CircleShape).clickable { showCreate = true }.padding(8.dp))
+            Box {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = "Create",
+                    modifier =
+                        Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .clickable {
+                                showCreateMenu = true
+                            }
+                            .padding(8.dp),
+                )
+
+                DropdownMenu(
+                    expanded = showCreateMenu,
+                    onDismissRequest = {
+                        showCreateMenu = false
+                    },
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Text("New playlist")
+                        },
+                        onClick = {
+                            showCreateMenu = false
+                            showCreatePlaylist = true
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.AutoMirrored.Filled.QueueMusic,
+                                null,
+                            )
+                        },
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Text("New folder")
+                        },
+                        onClick = {
+                            showCreateMenu = false
+
+                            createFolderParentId =
+                                if (
+                                    filter ==
+                                        LibraryFilter.PLAYLISTS
+                                ) {
+                                    currentPlaylistFolderId
+                                } else {
+                                    ""
+                                }
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.CreateNewFolder,
+                                null,
+                            )
+                        },
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Text("Smart playlist")
+                        },
+                        onClick = {
+                            showCreateMenu = false
+                            onCreateSmart()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.GridView,
+                                null,
+                            )
+                        },
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Text("Import playlist")
+                        },
+                        onClick = {
+                            showCreateMenu = false
+                            onImportM3u()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.IosShare,
+                                null,
+                            )
+                        },
+                    )
+                }
+            }
         }
 
-        if (showCreate) {
+        createFolderParentId?.let { parentId ->
+            PlaylistFolderNameDialog(
+                title = "New folder",
+                initialName = "",
+                confirmLabel = "Create",
+                existingNames =
+                    (
+                        state.playlistFolders
+                            .filter {
+                                it.parentId ==
+                                    parentId
+                            }
+                            .map {
+                                it.name
+                            } +
+                        state.playlists
+                            .filter {
+                                it.folderId ==
+                                    parentId
+                            }
+                            .map {
+                                it.title
+                            }
+                    ).toSet(),
+                onConfirm = { name ->
+                    onCreatePlaylistFolder(
+                        name,
+                        parentId,
+                    )
+                    createFolderParentId = null
+                },
+                onDismiss = {
+                    createFolderParentId = null
+                },
+            )
+        }
+
+        renameFolder?.let { folder ->
+            PlaylistFolderNameDialog(
+                title = "Rename folder",
+                initialName = folder.name,
+                confirmLabel = "Rename",
+                existingNames =
+                    (
+                        state.playlistFolders
+                            .filter {
+                                it.id != folder.id &&
+                                    it.parentId ==
+                                        folder.parentId
+                            }
+                            .map {
+                                it.name
+                            } +
+                        state.playlists
+                            .filter {
+                                it.folderId ==
+                                    folder.parentId
+                            }
+                            .map {
+                                it.title
+                            }
+                    ).toSet(),
+                onConfirm = { name ->
+                    onRenamePlaylistFolder(
+                        folder.id,
+                        name,
+                    )
+                    renameFolder = null
+                },
+                onDismiss = {
+                    renameFolder = null
+                },
+            )
+        }
+
+        moveFolder?.let { folder ->
+            MovePlaylistFolderTreeDialog(
+                folder = folder,
+                folders = state.playlistFolders,
+                onMove = { parentId ->
+                    onMovePlaylistFolder(
+                        folder.id,
+                        parentId,
+                    )
+                    moveFolder = null
+                },
+                onDismiss = {
+                    moveFolder = null
+                },
+            )
+        }
+
+        movePlaylist?.let { playlist ->
+            MovePlaylistFolderDialog(
+                playlist = playlist,
+                folders = state.playlistFolders,
+                onMove = { folderId ->
+                    onMovePlaylistToFolder(
+                        playlist.id,
+                        folderId,
+                    )
+                    movePlaylist = null
+                },
+                onDismiss = {
+                    movePlaylist = null
+                },
+            )
+        }
+
+        if (showCreatePlaylist) {
+            val targetFolderId =
+                if (
+                    filter ==
+                        LibraryFilter.PLAYLISTS
+                ) {
+                    currentPlaylistFolderId
+                } else {
+                    ""
+                }
+
+            val existingNames =
+                (
+                    state.playlists
+                        .filter {
+                            it.folderId ==
+                                targetFolderId
+                        }
+                        .map {
+                            it.title
+                        } +
+                    state.playlistFolders
+                        .filter {
+                            it.parentId ==
+                                targetFolderId
+                        }
+                        .map {
+                            it.name
+                        }
+                ).toSet()
+
             CreatePlaylistDialog(
-                onCreate = { name -> onCreatePlaylist(name); showCreate = false },
-                onCreateSmart = { showCreate = false; onCreateSmart() },
-                onImportM3u = { showCreate = false; onImportM3u() },
-                onDismiss = { showCreate = false },
+                existingNames = existingNames,
+                onCreate = { name ->
+                    onCreatePlaylist(
+                        name,
+                        targetFolderId,
+                    )
+
+                    showCreatePlaylist = false
+                },
+                onDismiss = {
+                    showCreatePlaylist = false
+                },
             )
         }
 
         Spacer(Modifier.height(12.dp))
 
-        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyRow(
+            state = filterRowState,
+            contentPadding =
+                PaddingValues(
+                    horizontal = 16.dp
+                ),
+            horizontalArrangement =
+                Arrangement.spacedBy(8.dp),
+        ) {
             if (filter != LibraryFilter.ALL) {
                 item {
                     Box(
@@ -247,50 +755,249 @@ fun LibraryScreen(
             ) { i ->
                 val f = visibleFilters[i]
                 if (f == LibraryFilter.ALL && filter != LibraryFilter.ALL) return@items
-                FilterChip(f.label, selected = f == filter) { onFilter(f) }
+                FilterChip(
+                    f.label,
+                    selected =
+                        f == pagerDisplayFilter,
+                ) {
+                    onFilter(f)
+                }
             }
         }
 
         Spacer(Modifier.height(12.dp))
 
-        var sortMenu by remember { mutableStateOf(false) }
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box {
-                Row(
-                    Modifier.clip(RoundedCornerShape(50)).clickable { sortMenu = true }.padding(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Filled.SwapVert, null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(sort.label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium)
+        // library-context-controls
+        if (
+            showSortControl ||
+            supportsLayoutToggle
+        ) {
+            var sortMenu by
+                remember {
+                    mutableStateOf(false)
                 }
-                DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
-                    LibrarySort.entries.forEach { s ->
-                        DropdownMenuItem(
-                            text = { Text(s.label) },
-                            onClick = { onSort(s); sortMenu = false },
-                            trailingIcon = { if (s == sort) Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary) },
-                        )
+
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                verticalAlignment =
+                    Alignment.CenterVertically,
+            ) {
+                if (showSortControl) {
+                    Box {
+                        Row(
+                            Modifier
+                                .clip(
+                                    RoundedCornerShape(50)
+                                )
+                                .clickable {
+                                    sortMenu = true
+                                }
+                                .padding(6.dp),
+                            verticalAlignment =
+                                Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                Icons.Filled.SwapVert,
+                                null,
+                                modifier =
+                                    Modifier.size(18.dp),
+                            )
+
+                            Spacer(
+                                Modifier.width(6.dp)
+                            )
+
+                            Text(
+                                displayedSort.label,
+                                style =
+                                    MaterialTheme.typography
+                                        .labelLarge,
+                                fontWeight =
+                                    FontWeight.Medium,
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = sortMenu,
+                            onDismissRequest = {
+                                sortMenu = false
+                            },
+                        ) {
+                            availableSorts.forEach {
+                                option ->
+
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            option.label
+                                        )
+                                    },
+                                    onClick = {
+                                        onSort(option)
+                                        sortMenu = false
+                                    },
+                                    trailingIcon = {
+                                        if (
+                                            option ==
+                                            displayedSort
+                                        ) {
+                                            Icon(
+                                                Icons.Filled.Check,
+                                                null,
+                                                tint =
+                                                    MaterialTheme
+                                                        .colorScheme
+                                                        .primary,
+                                            )
+                                        }
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
+
+                Spacer(
+                    Modifier.weight(1f)
+                )
+
+                if (supportsLayoutToggle) {
+                    Icon(
+                        imageVector =
+                            if (
+                                layout ==
+                                LibraryLayout.LIST
+                            ) {
+                                Icons.Filled.GridView
+                            } else {
+                                Icons.AutoMirrored
+                                    .Filled.List
+                            },
+                        contentDescription =
+                            "Toggle layout",
+                        modifier =
+                            Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .clickable(
+                                    onClick =
+                                        onToggleLayout
+                                )
+                                .padding(8.dp),
+                    )
+                }
             }
-            Spacer(Modifier.weight(1f))
-            Icon(
-                imageVector = if (layout == LibraryLayout.LIST) Icons.Filled.GridView else Icons.AutoMirrored.Filled.List,
-                contentDescription = "Toggle layout",
-                modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onToggleLayout).padding(8.dp),
-            )
         }
 
         Spacer(Modifier.height(4.dp))
 
         val bottom = contentPadding.calculateBottomPadding() + 24.dp
 
+
+
+
+        androidx.compose.foundation.pager.HorizontalPager(
+            state = categoryPagerState,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    /*
+                     * HorizontalPager owns horizontal drag
+                     * consumption. This naturally cancels:
+                     *
+                     * - vertical list scrolling once horizontal
+                     *   paging wins the gesture;
+                     * - clicks on playlists/folders after a drag.
+                     *
+                     * This observer never consumes events. It only
+                     * handles the special gesture beyond the first
+                     * page: All -> drawer.
+                     */
+                    .pointerInput(
+                        visibleFilters,
+                    ) {
+                        awaitEachGesture {
+                            val down =
+                                awaitFirstDown(
+                                    requireUnconsumed =
+                                        false
+                                )
+
+                            /*
+                             * Capture page at finger-down.
+                             *
+                             * Critical: a swipe
+                             * Playlists -> All must NOT also open
+                             * the drawer when currentPage becomes
+                             * zero halfway through that same drag.
+                             */
+                            val pageAtDown =
+                                categoryPagerState
+                                    .currentPage
+
+                            var last =
+                                down.position
+
+                            while (true) {
+                                val event =
+                                    awaitPointerEvent()
+
+                                val change =
+                                    event.changes
+                                        .firstOrNull {
+                                            it.id ==
+                                                down.id
+                                        }
+                                        ?: break
+
+                                last =
+                                    change.position
+
+                                if (!change.pressed) {
+                                    break
+                                }
+                            }
+
+                            if (pageAtDown != 0) {
+                                return@awaitEachGesture
+                            }
+
+                            val dx =
+                                last.x -
+                                    down.position.x
+
+                            val dy =
+                                last.y -
+                                    down.position.y
+
+                            if (
+                                dx >
+                                    drawerEdgeThreshold &&
+                                abs(dx) >
+                                    abs(dy) * 1.2f
+                            ) {
+                                onOpenDrawer()
+                            }
+                        }
+                    },
+        ) { page ->
+            /*
+             * Each page renders its real neighboring Library
+             * category. Therefore the next/previous content is
+             * visible before the finger is released.
+             */
+            val filter =
+                visibleFilters[page]
+
+
+
         if (state.loading && state.albums.isEmpty() && state.playlists.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 com.mentality.sonethyst.ui.components.LottieLoader(modifier = Modifier.size(72.dp))
             }
-            return@Column
+            return@HorizontalPager
         }
 
         if (
@@ -306,7 +1013,339 @@ fun LibraryScreen(
                     modifier = Modifier.size(72.dp)
                 )
             }
-            return@Column
+            return@HorizontalPager
+        }
+
+        if (
+            filter == LibraryFilter.GENRES &&
+            !state.genresLoading &&
+            state.genres.isEmpty()
+        ) {
+            Box(
+                Modifier.fillMaxSize(),
+                contentAlignment =
+                    Alignment.Center,
+            ) {
+                Text(
+                    "No genres found",
+                    color =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant,
+                )
+            }
+
+            return@HorizontalPager
+        }
+
+        if (filter == LibraryFilter.PLAYLISTS) {
+            // playlist-folder-browser
+
+            val currentFolder =
+                state.playlistFolders
+                    .firstOrNull {
+                        it.id ==
+                            currentPlaylistFolderId
+                    }
+
+            val childFolders =
+                state.playlistFolders
+                    .filter {
+                        it.parentId ==
+                            currentPlaylistFolderId
+                    }
+
+            val folderPlaylists =
+                state.playlists
+                    .filter {
+                        it.folderId ==
+                            currentPlaylistFolderId
+                    }
+
+            Column(
+                Modifier.fillMaxSize()
+            ) {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                start = 14.dp,
+                                end = 8.dp,
+                                top = 2.dp,
+                                bottom = 6.dp,
+                            ),
+                    verticalAlignment =
+                        Alignment.CenterVertically,
+                ) {
+                    if (currentFolder != null) {
+                        Icon(
+                            imageVector =
+                                Icons.Filled.ArrowBack,
+                            contentDescription =
+                                "Parent folder",
+                            modifier =
+                                Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .clickable {
+                                        currentPlaylistFolderId =
+                                            currentFolder
+                                                .parentId
+                                    }
+                                    .padding(8.dp),
+                        )
+
+                        Spacer(
+                            Modifier.width(4.dp)
+                        )
+                    }
+
+                    Column(
+                        Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text =
+                                currentFolder?.name
+                                    ?: "Playlists",
+                            style =
+                                MaterialTheme.typography
+                                    .titleMedium,
+                            fontWeight =
+                                FontWeight.Bold,
+                            maxLines = 1,
+                            overflow =
+                                TextOverflow.Ellipsis,
+                        )
+
+                        if (currentFolder != null) {
+                            Text(
+                                text =
+                                    "${childFolders.size} folders • " +
+                                        "${folderPlaylists.size} playlists",
+                                style =
+                                    MaterialTheme.typography
+                                        .labelSmall,
+                                color =
+                                    MaterialTheme
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                            )
+                        }
+                    }
+
+                }
+
+                if (
+                    childFolders.isEmpty() &&
+                    folderPlaylists.isEmpty()
+                ) {
+                    Box(
+                        modifier =
+                            Modifier.fillMaxSize(),
+                        contentAlignment =
+                            Alignment.Center,
+                    ) {
+                        Text(
+                            text =
+                                if (currentFolder == null) {
+                                    "No playlists or folders yet"
+                                } else {
+                                    "This folder is empty"
+                                },
+                            color =
+                                MaterialTheme
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                        )
+                    }
+
+                    return@HorizontalPager
+                }
+
+                if (
+                    layout ==
+                    LibraryLayout.LIST
+                ) {
+                    LazyColumn(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    horizontal = 8.dp
+                                ),
+                        contentPadding =
+                            PaddingValues(
+                                bottom = bottom
+                            ),
+                    ) {
+                        items(
+                            count =
+                                childFolders.size,
+                            key = { i ->
+                                "playlist-folder:" +
+                                    childFolders[i].id
+                            },
+                            contentType = {
+                                "playlist-folder"
+                            },
+                        ) { i ->
+                            PlaylistFolderRow(
+                                folder =
+                                    childFolders[i],
+                                onOpen = {
+                                    currentPlaylistFolderId =
+                                        childFolders[i].id
+                                },
+                                onRename = {
+                                    renameFolder =
+                                        childFolders[i]
+                                },
+                                onMove = {
+                                    moveFolder =
+                                        childFolders[i]
+                                },
+                                onDelete = {
+                                    onDeletePlaylistFolder(
+                                        childFolders[i].id
+                                    )
+                                },
+                            )
+                        }
+    
+                        items(
+                            count =
+                                folderPlaylists.size,
+                            key = { i ->
+                                "folder-playlist:" +
+                                    folderPlaylists[i].id
+                            },
+                            contentType = {
+                                "playlist"
+                            },
+                        ) { i ->
+                            val playlist =
+                                folderPlaylists[i]
+    
+                            PlaylistFolderPlaylistRow(
+                                playlist = playlist,
+                                onOpen = {
+                                    onOpenDetail(
+                                        "playlist",
+                                        playlist.id,
+                                    )
+                                },
+                                onMove = {
+                                    movePlaylist =
+                                        playlist
+                                },
+                                onDelete = {
+                                    onDeletePlaylist(
+                                        playlist.id
+                                    )
+                                },
+                            )
+                        }
+                    }
+                } else {
+                    LazyVerticalGrid(
+                        columns =
+                            GridCells.Fixed(
+                                libColumns
+                            ),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    horizontal = 12.dp
+                                ),
+                        contentPadding =
+                            PaddingValues(
+                                bottom = bottom
+                            ),
+                        horizontalArrangement =
+                            Arrangement.spacedBy(
+                                10.dp
+                            ),
+                        verticalArrangement =
+                            Arrangement.spacedBy(
+                                10.dp
+                            ),
+                    ) {
+                        items(
+                            count =
+                                childFolders.size,
+                            key = { i ->
+                                "playlist-folder-grid:" +
+                                    childFolders[i].id
+                            },
+                            contentType = {
+                                "playlist-folder-grid"
+                            },
+                        ) { i ->
+                            val folder =
+                                childFolders[i]
+
+                            PlaylistFolderGridItem(
+                                folder = folder,
+                                onOpen = {
+                                    currentPlaylistFolderId =
+                                        folder.id
+                                },
+                                onRename = {
+                                    renameFolder =
+                                        folder
+                                },
+                                onMove = {
+                                    moveFolder =
+                                        folder
+                                },
+                                onDelete = {
+                                    onDeletePlaylistFolder(
+                                        folder.id
+                                    )
+                                },
+                            )
+                        }
+
+                        items(
+                            count =
+                                folderPlaylists.size,
+                            key = { i ->
+                                "playlist-grid:" +
+                                    folderPlaylists[i].id
+                            },
+                            contentType = {
+                                "playlist-grid"
+                            },
+                        ) { i ->
+                            val playlist =
+                                folderPlaylists[i]
+
+                            PlaylistGridItem(
+                                playlist =
+                                    playlist,
+                                onOpen = {
+                                    onOpenDetail(
+                                        "playlist",
+                                        playlist.id,
+                                    )
+                                },
+                                onMove = {
+                                    movePlaylist =
+                                        playlist
+                                },
+                                onDelete = {
+                                    onDeletePlaylist(
+                                        playlist.id
+                                    )
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+
+            return@HorizontalPager
         }
 
         if (filter == LibraryFilter.VERSIONS) {
@@ -418,7 +1457,7 @@ fun LibraryScreen(
                 }
             }
 
-            return@Column
+            return@HorizontalPager
         }
 
         if (filter == LibraryFilter.SONGS) {
@@ -511,7 +1550,7 @@ fun LibraryScreen(
                     }
                 }
             }
-            return@Column
+            return@HorizontalPager
         }
 
         if (filter == LibraryFilter.HIDDEN) {
@@ -529,7 +1568,7 @@ fun LibraryScreen(
                                 .onSurfaceVariant,
                     )
                 }
-                return@Column
+                return@HorizontalPager
             }
 
             LazyColumn(
@@ -553,7 +1592,7 @@ fun LibraryScreen(
                 }
             }
 
-            return@Column
+            return@HorizontalPager
         }
 
         if (filter == LibraryFilter.DOWNLOADED) {
@@ -573,7 +1612,7 @@ fun LibraryScreen(
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No downloads yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                return@Column
+                return@HorizontalPager
             }
             if (layout == LibraryLayout.LIST) {
                 LazyColumn(Modifier.fillMaxWidth().padding(horizontal = 8.dp), contentPadding = PaddingValues(bottom = bottom)) {
@@ -600,7 +1639,7 @@ fun LibraryScreen(
                     }
                 }
             }
-            return@Column
+            return@HorizontalPager
         }
 
         val rows = when (filter) {
@@ -681,7 +1720,7 @@ fun LibraryScreen(
                             .onSurfaceVariant,
                 )
             }
-            return@Column
+            return@HorizontalPager
         }
 
         val openRow: (LibRow) -> Unit = remember(
@@ -734,7 +1773,11 @@ fun LibraryScreen(
                 }
             }
         }
-    }
+    
+        
+
+        }
+}
 }
 
 private fun sortedSongs(songs: List<Song>, sort: LibrarySort): List<Song> = when (sort) {
@@ -1010,6 +2053,66 @@ private fun buildRows(
 }
 
 @Composable
+private fun LibraryCollectionArtwork(
+    row: LibRow,
+    modifier: Modifier,
+) {
+    val virtualIcon =
+        when (row.kind) {
+            "folders" ->
+                Icons.Filled.Folder
+
+            "radio" ->
+                Icons.Filled.Radio
+
+            "podcasts" ->
+                Icons.Filled.Podcasts
+
+            else ->
+                null
+        }
+
+    if (virtualIcon != null) {
+        Box(
+            modifier =
+                modifier
+                    .clip(
+                        RoundedCornerShape(14.dp)
+                    )
+                    .background(
+                        MaterialTheme.colorScheme
+                            .primaryContainer
+                    ),
+            contentAlignment =
+                Alignment.Center,
+        ) {
+            Icon(
+                imageVector =
+                    virtualIcon,
+                contentDescription = null,
+                tint =
+                    MaterialTheme.colorScheme
+                        .onPrimaryContainer,
+                modifier =
+                    Modifier.fillMaxSize(0.48f),
+            )
+        }
+    } else {
+        Artwork(
+            row.art,
+            row.accent,
+            modifier,
+            corner =
+                if (row.circle) {
+                    200.dp
+                } else {
+                    14.dp
+                },
+        )
+    }
+}
+
+@Composable
 private fun SongVersionGroupCard(
     group: SongVersionGroup,
     currentSongId: String,
@@ -1187,6 +2290,916 @@ private fun songVersionSpec(
 }
 
 @Composable
+private fun PlaylistFolderGridItem(
+    folder: PlaylistFolder,
+    onOpen: () -> Unit,
+    onRename: () -> Unit,
+    onMove: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    var menuOpen by remember {
+        mutableStateOf(false)
+    }
+
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(
+                    RoundedCornerShape(16.dp)
+                )
+                .clickable(
+                    onClick = onOpen
+                )
+                .padding(6.dp),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(
+                        RoundedCornerShape(14.dp)
+                    )
+                    .background(
+                        MaterialTheme
+                            .colorScheme
+                            .primaryContainer
+                    ),
+            contentAlignment =
+                Alignment.Center,
+        ) {
+            Icon(
+                Icons.Filled.Folder,
+                null,
+                tint =
+                    MaterialTheme.colorScheme
+                        .onPrimaryContainer,
+                modifier =
+                    Modifier.size(54.dp),
+            )
+        }
+
+        Spacer(
+            Modifier.height(8.dp)
+        )
+
+        Row(
+            verticalAlignment =
+                Alignment.CenterVertically,
+        ) {
+            Column(
+                Modifier.weight(1f)
+            ) {
+                Text(
+                    folder.name,
+                    style =
+                        MaterialTheme.typography
+                            .titleSmall,
+                    fontWeight =
+                        FontWeight.Bold,
+                    maxLines = 1,
+                    overflow =
+                        TextOverflow.Ellipsis,
+                )
+
+                Text(
+                    "Folder",
+                    style =
+                        MaterialTheme.typography
+                            .bodySmall,
+                    color =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant,
+                )
+            }
+
+            Box {
+                Icon(
+                    Icons.Filled.MoreVert,
+                    "More",
+                    modifier =
+                        Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .clickable {
+                                menuOpen = true
+                            }
+                            .padding(5.dp),
+                )
+
+                DropdownMenu(
+                    expanded = menuOpen,
+                    onDismissRequest = {
+                        menuOpen = false
+                    },
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Text("Rename")
+                        },
+                        onClick = {
+                            menuOpen = false
+                            onRename()
+                        },
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Text("Move folder")
+                        },
+                        onClick = {
+                            menuOpen = false
+                            onMove()
+                        },
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Text("Delete folder")
+                        },
+                        onClick = {
+                            menuOpen = false
+                            onDelete()
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaylistGridItem(
+    playlist: Playlist,
+    onOpen: () -> Unit,
+    onMove: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    var menuOpen by remember {
+        mutableStateOf(false)
+    }
+
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(
+                    RoundedCornerShape(16.dp)
+                )
+                .clickable(
+                    onClick = onOpen
+                )
+                .padding(6.dp),
+    ) {
+        Artwork(
+            playlist.coverUrl,
+            playlist.accent,
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f),
+            corner = 14.dp,
+        )
+
+        Spacer(
+            Modifier.height(8.dp)
+        )
+
+        Row(
+            verticalAlignment =
+                Alignment.CenterVertically,
+        ) {
+            Column(
+                Modifier.weight(1f)
+            ) {
+                Text(
+                    playlist.title,
+                    style =
+                        MaterialTheme.typography
+                            .titleSmall,
+                    fontWeight =
+                        FontWeight.Bold,
+                    maxLines = 1,
+                    overflow =
+                        TextOverflow.Ellipsis,
+                )
+
+                Text(
+                    "${playlist.songCount} songs",
+                    style =
+                        MaterialTheme.typography
+                            .bodySmall,
+                    color =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant,
+                )
+            }
+
+            Box {
+                Icon(
+                    Icons.Filled.MoreVert,
+                    "More",
+                    modifier =
+                        Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .clickable {
+                                menuOpen = true
+                            }
+                            .padding(5.dp),
+                )
+
+                DropdownMenu(
+                    expanded = menuOpen,
+                    onDismissRequest = {
+                        menuOpen = false
+                    },
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Text("Move to folder")
+                        },
+                        onClick = {
+                            menuOpen = false
+                            onMove()
+                        },
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Text("Delete playlist")
+                        },
+                        onClick = {
+                            menuOpen = false
+                            onDelete()
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaylistFolderRow(
+    folder: PlaylistFolder,
+    onOpen: () -> Unit,
+    onRename: () -> Unit,
+    onMove: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    var menuOpen by
+        remember {
+            mutableStateOf(false)
+        }
+
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = 8.dp,
+                    vertical = 4.dp,
+                )
+                .clip(
+                    RoundedCornerShape(16.dp)
+                )
+                .background(
+                    MaterialTheme.colorScheme
+                        .surfaceContainerHigh
+                        .copy(alpha = 0.45f)
+                )
+                .clickable(
+                    onClick = onOpen
+                )
+                .padding(8.dp),
+        verticalAlignment =
+            Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(56.dp)
+                    .clip(
+                        RoundedCornerShape(14.dp)
+                    )
+                    .background(
+                        MaterialTheme.colorScheme
+                            .primaryContainer
+                    ),
+            contentAlignment =
+                Alignment.Center,
+        ) {
+            Icon(
+                imageVector =
+                    Icons.Filled.Folder,
+                contentDescription = null,
+                tint =
+                    MaterialTheme.colorScheme
+                        .onPrimaryContainer,
+                modifier =
+                    Modifier.size(30.dp),
+            )
+        }
+
+        Spacer(
+            Modifier.width(14.dp)
+        )
+
+        Column(
+            Modifier.weight(1f)
+        ) {
+            Text(
+                text = folder.name,
+                style =
+                    MaterialTheme.typography
+                        .titleSmall,
+                fontWeight =
+                    FontWeight.Bold,
+                maxLines = 1,
+                overflow =
+                    TextOverflow.Ellipsis,
+            )
+
+            Text(
+                text = "Playlist folder",
+                style =
+                    MaterialTheme.typography
+                        .bodySmall,
+                color =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant,
+            )
+        }
+
+        Box {
+            Icon(
+                imageVector =
+                    Icons.Filled.MoreVert,
+                contentDescription = "More",
+                tint =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant,
+                modifier =
+                    Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .clickable {
+                            menuOpen = true
+                        }
+                        .padding(7.dp),
+            )
+
+            DropdownMenu(
+                expanded = menuOpen,
+                onDismissRequest = {
+                    menuOpen = false
+                },
+            ) {
+                DropdownMenuItem(
+                    text = {
+                        Text("Rename")
+                    },
+                    onClick = {
+                        menuOpen = false
+                        onRename()
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Filled.Edit,
+                            null,
+                        )
+                    },
+                )
+
+                DropdownMenuItem(
+                    text = {
+                        Text("Move folder")
+                    },
+                    onClick = {
+                        menuOpen = false
+                        onMove()
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Filled.DriveFileMove,
+                            null,
+                        )
+                    },
+                )
+
+                DropdownMenuItem(
+                    text = {
+                        Text("Delete folder")
+                    },
+                    onClick = {
+                        menuOpen = false
+                        onDelete()
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Filled.Delete,
+                            null,
+                        )
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaylistFolderPlaylistRow(
+    playlist: Playlist,
+    onOpen: () -> Unit,
+    onMove: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    var menuOpen by
+        remember {
+            mutableStateOf(false)
+        }
+
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = 8.dp,
+                    vertical = 4.dp,
+                )
+                .clip(
+                    RoundedCornerShape(16.dp)
+                )
+                .background(
+                    MaterialTheme.colorScheme
+                        .surfaceContainerHigh
+                        .copy(alpha = 0.45f)
+                )
+                .clickable(
+                    onClick = onOpen
+                )
+                .padding(8.dp),
+        verticalAlignment =
+            Alignment.CenterVertically,
+    ) {
+        Artwork(
+            playlist.coverUrl,
+            playlist.accent,
+            Modifier.size(56.dp),
+            corner = 14.dp,
+        )
+
+        Spacer(
+            Modifier.width(14.dp)
+        )
+
+        Column(
+            Modifier.weight(1f)
+        ) {
+            Text(
+                text = playlist.title,
+                style =
+                    MaterialTheme.typography
+                        .titleSmall,
+                fontWeight =
+                    FontWeight.Bold,
+                maxLines = 1,
+                overflow =
+                    TextOverflow.Ellipsis,
+            )
+
+            Text(
+                text =
+                    "${playlist.songCount} song" +
+                        if (
+                            playlist.songCount == 1
+                        ) {
+                            ""
+                        } else {
+                            "s"
+                        },
+                style =
+                    MaterialTheme.typography
+                        .bodySmall,
+                color =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant,
+            )
+        }
+
+        Box {
+            Icon(
+                imageVector =
+                    Icons.Filled.MoreVert,
+                contentDescription = "More",
+                tint =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant,
+                modifier =
+                    Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .clickable {
+                            menuOpen = true
+                        }
+                        .padding(7.dp),
+            )
+
+            DropdownMenu(
+                expanded = menuOpen,
+                onDismissRequest = {
+                    menuOpen = false
+                },
+            ) {
+                DropdownMenuItem(
+                    text = {
+                        Text("Move to folder")
+                    },
+                    onClick = {
+                        menuOpen = false
+                        onMove()
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Filled.DriveFileMove,
+                            null,
+                        )
+                    },
+                )
+
+                DropdownMenuItem(
+                    text = {
+                        Text("Delete playlist")
+                    },
+                    onClick = {
+                        menuOpen = false
+                        onDelete()
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Filled.Delete,
+                            null,
+                        )
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaylistFolderNameDialog(
+    title: String,
+    initialName: String,
+    confirmLabel: String,
+    existingNames: Set<String>,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by
+        remember(
+            initialName
+        ) {
+            mutableStateOf(
+                initialName
+            )
+        }
+
+    val duplicate =
+        remember(
+            name,
+            existingNames,
+        ) {
+            val candidate =
+                libraryCollectionNameKey(
+                    name
+                )
+
+            candidate.isNotBlank() &&
+                existingNames.any {
+                    libraryCollectionNameKey(
+                        it
+                    ) == candidate
+                }
+        }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(title)
+        },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = {
+                    name = it
+                },
+                label = {
+                    Text("Folder name")
+                },
+                singleLine = true,
+                isError = duplicate,
+                supportingText =
+                    if (duplicate) {
+                        {
+                            Text(
+                                "A playlist or folder with this name already exists here"
+                            )
+                        }
+                    } else {
+                        null
+                    },
+            )
+        },
+        confirmButton = {
+            TextButton(
+                enabled =
+                    name.trim()
+                        .isNotBlank() &&
+                        !duplicate,
+                onClick = {
+                    val safe =
+                        name.trim()
+
+                    if (safe.isNotBlank()) {
+                        onConfirm(safe)
+                    }
+                },
+            ) {
+                Text(confirmLabel)
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+            ) {
+                Text("Cancel")
+            }
+        },
+    )
+}
+
+@Composable
+private fun MovePlaylistFolderTreeDialog(
+    folder: PlaylistFolder,
+    folders: List<PlaylistFolder>,
+    onMove: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val blockedIds =
+        remember(
+            folder.id,
+            folders,
+        ) {
+            playlistFolderDescendantIds(
+                folder.id,
+                folders,
+            ) + folder.id
+        }
+
+    val destinations =
+        folders.filter {
+            it.id !in blockedIds
+        }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Move ${folder.name}"
+            )
+        },
+        text = {
+            LazyColumn {
+                item(
+                    key = "move-folder-root"
+                ) {
+                    Text(
+                        text = "Playlists",
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(
+                                    RoundedCornerShape(
+                                        12.dp
+                                    )
+                                )
+                                .clickable {
+                                    onMove("")
+                                }
+                                .padding(12.dp),
+                        fontWeight =
+                            FontWeight.Bold,
+                    )
+                }
+
+                items(
+                    count =
+                        destinations.size,
+                    key = { i ->
+                        "move-folder-destination:" +
+                            destinations[i].id
+                    },
+                ) { i ->
+                    val destination =
+                        destinations[i]
+
+                    Text(
+                        text =
+                            playlistFolderDisplayName(
+                                destination,
+                                folders,
+                            ),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(
+                                    RoundedCornerShape(
+                                        12.dp
+                                    )
+                                )
+                                .clickable {
+                                    onMove(
+                                        destination.id
+                                    )
+                                }
+                                .padding(12.dp),
+                    )
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+            ) {
+                Text("Cancel")
+            }
+        },
+    )
+}
+
+private fun playlistFolderDescendantIds(
+    folderId: String,
+    folders: List<PlaylistFolder>,
+): Set<String> {
+    val result =
+        mutableSetOf<String>()
+
+    var frontier =
+        setOf(folderId)
+
+    while (frontier.isNotEmpty()) {
+        val next =
+            folders
+                .filter {
+                    it.parentId in frontier &&
+                        it.id !in result
+                }
+                .mapTo(
+                    mutableSetOf()
+                ) {
+                    it.id
+                }
+
+        result += next
+        frontier = next
+    }
+
+    return result
+}
+
+@Composable
+private fun MovePlaylistFolderDialog(
+    playlist: Playlist,
+    folders: List<PlaylistFolder>,
+    onMove: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Move ${playlist.title}"
+            )
+        },
+        text = {
+            LazyColumn {
+                item(
+                    key = "playlist-folder-root"
+                ) {
+                    Text(
+                        text = "Playlists",
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(
+                                    RoundedCornerShape(
+                                        12.dp
+                                    )
+                                )
+                                .clickable {
+                                    onMove("")
+                                }
+                                .padding(12.dp),
+                        fontWeight =
+                            FontWeight.Bold,
+                    )
+                }
+
+                items(
+                    count = folders.size,
+                    key = { i ->
+                        "move-folder:" +
+                            folders[i].id
+                    },
+                ) { i ->
+                    val folder =
+                        folders[i]
+
+                    Text(
+                        text =
+                            playlistFolderDisplayName(
+                                folder,
+                                folders,
+                            ),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(
+                                    RoundedCornerShape(
+                                        12.dp
+                                    )
+                                )
+                                .clickable {
+                                    onMove(
+                                        folder.id
+                                    )
+                                }
+                                .padding(12.dp),
+                    )
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+            ) {
+                Text("Cancel")
+            }
+        },
+    )
+}
+
+private fun libraryCollectionNameKey(
+    value: String,
+): String =
+    value
+        .trim()
+        .replace(
+            Regex("""\s+"""),
+            " ",
+        )
+        .lowercase(
+            java.util.Locale.ROOT
+        )
+
+private fun playlistFolderDisplayName(
+    folder: PlaylistFolder,
+    folders: List<PlaylistFolder>,
+): String {
+    val names =
+        mutableListOf<String>()
+
+    var current:
+        PlaylistFolder? =
+        folder
+
+    val visited =
+        mutableSetOf<String>()
+
+    while (
+        current != null &&
+        current.id !in visited
+    ) {
+        visited += current.id
+        names += current.name
+
+        current =
+            folders.firstOrNull {
+                it.id ==
+                    current.parentId
+            }
+    }
+
+    return names
+        .asReversed()
+        .joinToString(" / ")
+}
+
+@Composable
 private fun HiddenLibraryRow(
     item: com.mentality.sonethyst.data.HiddenLibraryItem,
     onRestore: () -> Unit,
@@ -1263,29 +3276,89 @@ private fun HiddenLibraryRow(
 }
 
 @Composable
-private fun CreatePlaylistDialog(onCreate: (String) -> Unit, onCreateSmart: () -> Unit, onImportM3u: () -> Unit, onDismiss: () -> Unit) {
-    var name by remember { mutableStateOf("") }
+private fun CreatePlaylistDialog(
+    existingNames: Set<String>,
+    onCreate: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by remember {
+        mutableStateOf("")
+    }
+
+    val duplicate =
+        remember(
+            name,
+            existingNames,
+        ) {
+            val candidate =
+                libraryCollectionNameKey(
+                    name
+                )
+
+            candidate.isNotBlank() &&
+                existingNames.any {
+                    libraryCollectionNameKey(
+                        it
+                    ) == candidate
+                }
+        }
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New playlist", fontWeight = FontWeight.Bold) },
+        title = {
+            Text(
+                "New playlist",
+                fontWeight = FontWeight.Bold,
+            )
+        },
         text = {
-            Column {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Playlist name") },
-                    singleLine = true,
-                )
-                TextButton(onClick = onCreateSmart, modifier = Modifier.padding(top = 6.dp)) {
-                    Text("Create a smart playlist instead")
-                }
-                TextButton(onClick = onImportM3u) {
-                    Text("Import an M3U file")
-                }
+            OutlinedTextField(
+                value = name,
+                onValueChange = {
+                    name = it
+                },
+                label = {
+                    Text("Playlist name")
+                },
+                singleLine = true,
+                isError = duplicate,
+                supportingText =
+                    if (duplicate) {
+                        {
+                            Text(
+                                "A playlist or folder with this name already exists here"
+                            )
+                        }
+                    } else {
+                        null
+                    },
+            )
+        },
+        confirmButton = {
+            TextButton(
+                enabled =
+                    name.trim()
+                        .isNotBlank() &&
+                        !duplicate,
+                onClick = {
+                    val safe =
+                        name.trim()
+
+                    if (safe.isNotBlank()) {
+                        onCreate(safe)
+                    }
+                },
+            ) {
+                Text("Create")
             }
         },
-        confirmButton = { TextButton(onClick = { if (name.isNotBlank()) onCreate(name.trim()) }, enabled = name.isNotBlank()) { Text("Create") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+            ) {
+                Text("Cancel")
+            }
+        },
     )
 }
 
@@ -1319,7 +3392,10 @@ private fun LibListItem(row: LibRow, actions: LibActions, onClick: () -> Unit) {
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Artwork(row.art, row.accent, Modifier.size(56.dp), corner = if (row.circle) 56.dp else 14.dp)
+        LibraryCollectionArtwork(
+            row = row,
+            modifier = Modifier.size(56.dp),
+        )
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(row.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -1343,7 +3419,13 @@ private fun LibListItem(row: LibRow, actions: LibActions, onClick: () -> Unit) {
 @Composable
 private fun LibGridItem(row: LibRow, actions: LibActions, onClick: () -> Unit) {
     Column(Modifier.clip(RoundedCornerShape(14.dp)).clickable(onClick = onClick).padding(6.dp)) {
-        Artwork(row.art, row.accent, Modifier.fillMaxWidth().aspectRatio(1f), corner = if (row.circle) 200.dp else 12.dp)
+        LibraryCollectionArtwork(
+            row = row,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f),
+        )
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {

@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -97,9 +96,11 @@ fun HomeScreen(
                     Eyebrow(greeting(), MaterialTheme.colorScheme.primary)
                     Text(username.ifBlank { "Listener" }, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
                 }
-                IconPill(Icons.Outlined.Notifications, "Alerts") {}
-                Spacer(Modifier.width(8.dp))
-                IconPill(Icons.Outlined.Settings, "Settings", onClick = onOpenSettings)
+                IconPill(
+                    Icons.Outlined.Settings,
+                    "Settings",
+                    onClick = onOpenSettings,
+                )
             }
         }
 

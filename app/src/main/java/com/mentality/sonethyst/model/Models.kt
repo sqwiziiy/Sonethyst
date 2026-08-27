@@ -60,6 +60,7 @@ data class Playlist(
     val coverUrl: String,
     val songCount: Int,
     val accent: Color = Color(0xFF28D572),
+    val folderId: String = "",
 )
 
 data class LyricLine(val timeSec: Int, val text: String)
