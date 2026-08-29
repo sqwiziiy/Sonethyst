@@ -77,7 +77,16 @@ data class Playlist(
     val folderId: String = "",
 )
 
-data class LyricLine(val timeSec: Int, val text: String)
+data class LyricLine(
+    val timeSec: Int,
+    val text: String,
+    val timeMs: Long =
+        if (timeSec >= 0) {
+            timeSec.toLong() * 1000L
+        } else {
+            -1L
+        },
+)
 
 data class DetailInfo(
     val title: String,

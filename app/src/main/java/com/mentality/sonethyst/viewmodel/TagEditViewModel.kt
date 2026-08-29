@@ -109,4 +109,23 @@ class TagEditViewModel(app: Application) : AndroidViewModel(app) {
             matches = emptyList(),
         )
     }
+
+    /*
+     * Artwork-only replacement.
+     *
+     * Unlike applyMatch(), this deliberately leaves every
+     * metadata field untouched.
+     */
+    fun pickCover(m: MetadataMatch) {
+        if (m.coverUrl.isBlank()) {
+            return
+        }
+
+        _state.update {
+            it.copy(
+                pickedCoverUrl = m.coverUrl,
+                matches = emptyList(),
+            )
+        }
+    }
 }

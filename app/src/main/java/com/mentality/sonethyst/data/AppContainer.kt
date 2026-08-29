@@ -238,7 +238,24 @@ class AppContainer(context: Context) {
     @Volatile
     private var lrclibEnabled: Boolean = true
 
-    val lyricsRepository = LyricsRepository(backendProvider = { backend }, lrclibEnabledProvider = { lrclibEnabled })
+    val lyricsOverrideStore =
+        LyricsOverrideStore(
+            appContext
+        ) {
+            currentAccountKey()
+        }
+
+    val lyricsRepository =
+        LyricsRepository(
+            backendProvider = {
+                backend
+            },
+            lrclibEnabledProvider = {
+                lrclibEnabled
+            },
+            overrideStore =
+                lyricsOverrideStore,
+        )
 
     @Volatile
     private var offlineToggle: Boolean = false
@@ -429,6 +446,10 @@ class AppContainer(context: Context) {
         if (changedPath.isBlank()) {
             scheduleLocalTagMetadataWarmup()
         }
+    }
+
+    fun notifyLibraryMetadataChanged() {
+        _libraryReload.value++
     }
 
     private fun scheduleLocalTagMetadataWarmup() {

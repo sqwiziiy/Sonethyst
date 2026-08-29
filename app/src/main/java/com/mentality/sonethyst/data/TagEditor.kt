@@ -59,10 +59,28 @@ class TagEditor(private val context: Context) {
     }
 
     // android 11+ needs one-time user consent to write a media file the app doesnt own
-    fun writeConsentIntent(uri: Uri): IntentSender? =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-            MediaStore.createWriteRequest(resolver, listOf(uri)).intentSender
-        else null
+    fun writeConsentIntent(
+        uri: Uri,
+    ): IntentSender? =
+        writeConsentIntent(
+            listOf(uri)
+        )
+
+    fun writeConsentIntent(
+        uris: List<Uri>,
+    ): IntentSender? =
+        if (
+            Build.VERSION.SDK_INT >=
+                Build.VERSION_CODES.R &&
+            uris.isNotEmpty()
+        ) {
+            MediaStore.createWriteRequest(
+                resolver,
+                uris.distinct(),
+            ).intentSender
+        } else {
+            null
+        }
 
     // jaudiotagger needs a real file so edit a cache copy then stream back through the resolver
     suspend fun write(uri: Uri, path: String, tags: AudioTags, artwork: ByteArray? = null): Boolean =

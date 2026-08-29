@@ -1039,7 +1039,18 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                                         )
                                 }
                             },
-                            onEditTags = { song -> navController.navigate(Routes.tagEdit(song.id)) },
+                            onEditTags = { song ->
+                                navController.navigate(
+                                    Routes.tagEdit(song.id)
+                                )
+                            },
+                            onEditSelectedTags = { songs ->
+                                navController.navigate(
+                                    Routes.batchTagEdit(
+                                        songs.map { it.id }
+                                    )
+                                )
+                            },
                             serverTagEditing = serverTagEditing,
                             onSetRating =
                                 if (supportsRatings) {
@@ -1126,7 +1137,18 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             onDownload = onDownload,
                             onRemoveDownload = onRemoveDownload,
                             canDownload = !localMode,
-                            onEditTags = { song -> navController.navigate(Routes.tagEdit(song.id)) },
+                            onEditTags = { song ->
+                                navController.navigate(
+                                    Routes.tagEdit(song.id)
+                                )
+                            },
+                            onEditSelectedTags = { songs ->
+                                navController.navigate(
+                                    Routes.batchTagEdit(
+                                        songs.map { it.id }
+                                    )
+                                )
+                            },
                             serverTagEditing = serverTagEditing,
                         )
                     }
@@ -1456,7 +1478,18 @@ onAddToPlaylist = {
                                             .togglePin(pin)
                                     }
                                 }) else null,
-                            onEditTags = { song -> navController.navigate(Routes.tagEdit(song.id)) },
+                            onEditTags = { song ->
+                                navController.navigate(
+                                    Routes.tagEdit(song.id)
+                                )
+                            },
+                            onEditSelectedTags = { songs ->
+                                navController.navigate(
+                                    Routes.batchTagEdit(
+                                        songs.map { it.id }
+                                    )
+                                )
+                            },
                             serverTagEditing = serverTagEditing,
                             artistInfo = detailState.artistInfo,
                             onSetRating =
@@ -1508,6 +1541,185 @@ onAddToPlaylist = {
                         )
                     }
                     composable(
+                        Routes.TAG_EDIT_BATCH,
+                        arguments =
+                            listOf(
+                                androidx.navigation
+                                    .navArgument("ids") {
+                                        defaultValue = ""
+                                    }
+                            ),
+                    ) { entry ->
+                        val rawIds =
+                            entry.arguments
+                                ?.getString("ids")
+                                .orEmpty()
+
+                        val ids =
+                            Routes.decodeBatchTagIds(
+                                rawIds
+                            )
+
+                        val batchVM:
+                            com.mentality.sonethyst.viewmodel
+                                .BatchTagEditViewModel =
+                            viewModel()
+
+                        androidx.compose.runtime
+                            .LaunchedEffect(ids) {
+                                batchVM.load(ids)
+                            }
+
+                        val batchState by
+                            batchVM.state
+                                .collectAsStateWithLifecycle()
+
+                        com.mentality.sonethyst.ui
+                            .screens.detail
+                            .BatchTagEditScreen(
+                                contentPadding = inner,
+                                state = batchState,
+                                onToggleField =
+                                    batchVM::toggleField,
+                                onValue =
+                                    batchVM::setValue,
+                                requestWriteConsent =
+                                    batchVM::writeConsentIntent,
+                                onSave = {
+                                    batchVM.save {
+                                        succeeded,
+                                        failed ->
+
+                                        confirm(
+                                            when {
+                                                failed == 0 ->
+                                                    "$succeeded tracks updated"
+
+                                                succeeded == 0 ->
+                                                    "Update failed for all $failed tracks"
+
+                                                else ->
+                                                    "$succeeded updated, $failed failed"
+                                            }
+                                        )
+
+                                        if (
+                                            failed == 0 &&
+                                            succeeded > 0
+                                        ) {
+                                            navController
+                                                .popBackStack()
+                                        }
+                                    }
+                                },
+                                onBack = {
+                                    navController
+                                        .popBackStack()
+
+                                    /*
+                                     * Lyrics editor is opened from the
+                                     * full-screen Player. Restore that
+                                     * exact UI instead of leaving the
+                                     * user on the underlying Home /
+                                     * Library / Search route.
+                                     */
+                                    playerVM.setExpanded(
+                                        true
+                                    )
+                                },
+                                confirm = {
+                                    confirm(it)
+                                },
+                            )
+                    }
+
+                    composable(
+                        Routes.LYRICS_EDIT,
+                        arguments =
+                            listOf(
+                                androidx.navigation
+                                    .navArgument(
+                                        "songId"
+                                    ) {
+                                        defaultValue = ""
+                                    }
+                            ),
+                    ) { entry ->
+                        val songId =
+                            entry.arguments
+                                ?.getString(
+                                    "songId"
+                                )
+                                .orEmpty()
+
+                        val vm:
+                            com.mentality.sonethyst.viewmodel
+                                .LyricsEditViewModel =
+                            viewModel()
+
+                        androidx.compose.runtime
+                            .LaunchedEffect(songId) {
+                                vm.load(songId)
+                            }
+
+                        val state by
+                            vm.state
+                                .collectAsStateWithLifecycle()
+
+                        com.mentality.sonethyst.ui
+                            .screens.detail
+                            .LyricsEditScreen(
+                                contentPadding = inner,
+                                state = state,
+                                onText =
+                                    vm::setText,
+                                onSynced =
+                                    vm::setSynced,
+                                onAdjustOffset =
+                                    vm::adjustOffset,
+                                onResetOffset = {
+                                    vm.setOffset(0)
+                                },
+                                currentPositionMs =
+                                    (
+                                        playerState
+                                            .positionSec *
+                                            1000f
+                                    ).toLong(),
+                                onAdjustLine =
+                                    vm::adjustLineTime,
+                                onSetLineNow =
+                                    vm::setLineTime,
+                                onSave = {
+                                    vm.save { ok ->
+                                        confirm(
+                                            if (ok) {
+                                                "Lyrics saved"
+                                            } else {
+                                                "Couldn't save lyrics"
+                                            }
+                                        )
+                                    }
+                                },
+                                onClear = {
+                                    vm.clear { ok ->
+                                        confirm(
+                                            if (ok) {
+                                                "Custom lyrics removed"
+                                            } else {
+                                                "Couldn't remove custom lyrics"
+                                            }
+                                        )
+                                    }
+                                },
+                                onBack = {
+                                    navController
+                                        .popBackStack()
+                                },
+                            )
+                    }
+
+                    composable(
                         Routes.TAG_EDIT,
                         arguments = listOf(androidx.navigation.navArgument("songId") { defaultValue = "" }),
                     ) { entry ->
@@ -1521,6 +1733,7 @@ onAddToPlaylist = {
                             onEdit = tagVM::edit,
                             onMatch = tagVM::matchOnline,
                             onApplyMatch = tagVM::applyMatch,
+                            onPickCover = tagVM::pickCover,
                             // auto-identify fingerprints the decodable local file not for server items
                             onIdentify = if (container.acoustId.available && tagState.localFile) ({ tagVM.identify() }) else null,
                             identifying = tagState.identifying,
@@ -1867,7 +2080,27 @@ onAddToPlaylist = {
                     onOpenSleep = { showSleep = true },
                     onOpenVisualizer = { showVisualizer = true },
                     onSonicRadio = { playerVM.startSonicRadio(onResult = { confirm(it) }) },
-                    onAutoDj = { playerVM.startAutoDj(onResult = { confirm(it) }) },
+                    onAutoDj = {
+                        playerVM.startAutoDj(
+                            onResult = {
+                                confirm(it)
+                            }
+                        )
+                    },
+                    onEditLyrics = {
+                        val id =
+                            playerState.current.id
+
+                        if (id.isNotBlank()) {
+                            playerVM.setExpanded(
+                                false
+                            )
+
+                            navController.navigate(
+                                Routes.lyricsEdit(id)
+                            )
+                        }
+                    },
                     gestures = gesturePrefs,
                 )
             }

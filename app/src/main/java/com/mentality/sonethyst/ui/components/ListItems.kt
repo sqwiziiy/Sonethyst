@@ -116,7 +116,10 @@ fun SongRow(
                 if (onArtworkClick != null) {
                     Modifier
                         .clip(RoundedCornerShape(10.dp))
-                        .clickable(onClick = onArtworkClick)
+                        .combinedClickable(
+                            onClick = onArtworkClick,
+                            onLongClick = onLongClick,
+                        )
                 } else {
                     Modifier
                 }

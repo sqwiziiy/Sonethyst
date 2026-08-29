@@ -29,6 +29,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,10 +67,38 @@ fun FolderScreen(
     onRemoveDownload: (String) -> Unit,
     canDownload: Boolean = true,
     onEditTags: ((Song) -> Unit)? = null,
+    onEditSelectedTags: ((List<Song>) -> Unit)? = null,
     serverTagEditing: Boolean = false,
 ) {
-    val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val header = title.ifBlank { content?.title ?: "Folders" }
+    val topInset =
+        WindowInsets.statusBars
+            .asPaddingValues()
+            .calculateTopPadding()
+
+    val header =
+        title.ifBlank {
+            content?.title ?: "Folders"
+        }
+
+    var selectedSongIds by remember {
+        mutableStateOf<Set<String>>(emptySet())
+    }
+
+    val selectionMode =
+        selectedSongIds.isNotEmpty()
+
+    androidx.compose.runtime.LaunchedEffect(
+        content?.songs,
+    ) {
+        val valid =
+            content?.songs
+                .orEmpty()
+                .map { it.id }
+                .toSet()
+
+        selectedSongIds =
+            selectedSongIds.intersect(valid)
+    }
 
     Column(Modifier.fillMaxSize().padding(top = topInset)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -113,15 +145,126 @@ fun FolderScreen(
                     if (content.folders.isNotEmpty() && content.songs.isNotEmpty()) {
                         item { Spacer(Modifier.height(8.dp)) }
                     }
+
+                    if (selectionMode) {
+                        item(
+                            key = "folder-song-selection",
+                            contentType = "selection-toolbar",
+                        ) {
+                            val selected =
+                                content.songs.filter {
+                                    it.id in selectedSongIds
+                                }
+
+                            val canBatchEdit =
+                                selected.isNotEmpty() &&
+                                    selected.all { song ->
+                                        song.streamUrl
+                                            .startsWith(
+                                                "content://"
+                                            ) ||
+                                            serverTagEditing
+                                    }
+
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        horizontal = 8.dp,
+                                        vertical = 8.dp,
+                                    ),
+                                verticalAlignment =
+                                    Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    "${selectedSongIds.size} selected",
+                                    style =
+                                        MaterialTheme
+                                            .typography
+                                            .titleMedium,
+                                    fontWeight =
+                                        FontWeight.Bold,
+                                    modifier =
+                                        Modifier.weight(1f),
+                                )
+
+                                Text(
+                                    "Clear",
+                                    modifier =
+                                        Modifier
+                                            .clickable {
+                                                selectedSongIds =
+                                                    emptySet()
+                                            }
+                                            .padding(10.dp),
+                                )
+
+                                if (
+                                    onEditSelectedTags != null &&
+                                    canBatchEdit
+                                ) {
+                                    Text(
+                                        "Edit tags",
+                                        color =
+                                            MaterialTheme
+                                                .colorScheme
+                                                .primary,
+                                        fontWeight =
+                                            FontWeight.Bold,
+                                        modifier =
+                                            Modifier
+                                                .clickable {
+                                                    onEditSelectedTags(
+                                                        selected
+                                                    )
+                                                    selectedSongIds =
+                                                        emptySet()
+                                                }
+                                                .padding(10.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     items(
                         count = content.songs.size,
                         key = { i -> "song:${content.songs[i].id}" },
                         contentType = { "song" },
                     ) { i ->
-                        val s = content.songs[i]
+                        val s =
+                            content.songs[i]
+
+                        val selected =
+                            s.id in selectedSongIds
+
+                        val toggleSelection = {
+                            selectedSongIds =
+                                if (selected) {
+                                    selectedSongIds - s.id
+                                } else {
+                                    selectedSongIds + s.id
+                                }
+                        }
+
                         SongRow(
-                            s, isPlaying = s.id == currentSongId && isPlaying, isLiked = likedIds.contains(s.id),
-                            onClick = { onPlayAll(content.songs, i) }, onToggleLike = { onToggleLike(s.id) },
+                            s,
+                            isPlaying = s.id == currentSongId && isPlaying,
+                            isLiked = likedIds.contains(s.id),
+                            selected = selected,
+                            onClick = {
+                                if (selectionMode) {
+                                    toggleSelection()
+                                } else {
+                                    onPlayAll(
+                                        content.songs,
+                                        i,
+                                    )
+                                }
+                            },
+                            onLongClick = toggleSelection,
+                            onArtworkClick = toggleSelection,
+                            onToggleLike = { onToggleLike(s.id) },
                             onAddToQueue = { onAddToQueue(s) }, onPlayNext = { onPlayNext(s) },
                             onGoToAlbum = if (s.albumId.isNotBlank()) ({ onOpenDetail("album", s.albumId) }) else null,
                             onGoToArtist = if (s.artistId.isNotBlank()) ({ onOpenDetail("artist", s.artistId) }) else null,

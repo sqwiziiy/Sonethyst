@@ -60,6 +60,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -110,6 +111,7 @@ fun PlayerScreen(
     onOpenVisualizer: () -> Unit,
     onSonicRadio: () -> Unit,
     onAutoDj: () -> Unit,
+    onEditLyrics: () -> Unit,
     gestures: com.mentality.sonethyst.data.GesturePrefs = com.mentality.sonethyst.data.GesturePrefs(),
 ) {
     val song = state.current
@@ -229,6 +231,26 @@ fun PlayerScreen(
                                 onClick = { showMenu = false; onGoToArtist() },
                                 leadingIcon = { Icon(Icons.Filled.Person, null) },
                             )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        "Edit lyrics"
+                                    )
+                                },
+                                enabled =
+                                    song.id.isNotBlank(),
+                                onClick = {
+                                    showMenu = false
+                                    onEditLyrics()
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Filled.Lyrics,
+                                        null,
+                                    )
+                                },
+                            )
+
                             DropdownMenuItem(
                                 text = { Text("View queue") },
                                 onClick = { showMenu = false; onOpenQueue() },
@@ -539,9 +561,22 @@ private fun SeekBar(progress: Float, positionSec: Int, durationSec: Int, accent:
 @Composable
 private fun LyricsPanel(song: com.mentality.sonethyst.model.Song, positionSec: Float, durationSec: Int, accent: Color, onSeek: (Float) -> Unit) {
     val container = (androidx.compose.ui.platform.LocalContext.current.applicationContext as com.mentality.sonethyst.SonethystApplication).container
-    var lyrics by remember(song.id) { mutableStateOf<com.mentality.sonethyst.data.Lyrics?>(null) }
+
+    val lyricsRevision by
+        container.lyricsRepository
+            .revision
+            .collectAsState()
+
+    var lyrics by remember(song.id) {
+        mutableStateOf<
+            com.mentality.sonethyst.data.Lyrics?
+        >(null)
+    }
     var loading by remember(song.id) { mutableStateOf(true) }
-    LaunchedEffect(song.id) {
+    LaunchedEffect(
+        song.id,
+        lyricsRevision,
+    ) {
         loading = true
         lyrics = if (song.id.isEmpty()) null else container.lyricsRepository.lyricsFor(song)
         loading = false
@@ -582,9 +617,31 @@ private fun LyricsPanel(song: com.mentality.sonethyst.model.Song, positionSec: F
 
 @Composable
 private fun SyncedLyrics(lines: List<LyricLine>, positionSec: Float, durationSec: Int, accent: Color, onSeek: (Float) -> Unit) {
-    val currentIndex = remember(positionSec, lines) {
-        lines.indexOfLast { it.timeSec in 0..positionSec.toInt() }.coerceAtLeast(0)
-    }
+    val currentIndex =
+        remember(
+            positionSec,
+            lines,
+        ) {
+            val positionMs =
+                (
+                    positionSec *
+                        1000f
+                ).toLong()
+
+            lines.indexOfLast { line ->
+                val lineMs =
+                    if (line.timeMs >= 0L) {
+                        line.timeMs
+                    } else {
+                        line.timeSec
+                            .toLong() *
+                            1000L
+                    }
+
+                lineMs in
+                    0L..positionMs
+            }.coerceAtLeast(0)
+        }
     val listState = rememberLazyListState()
     LaunchedEffect(currentIndex) {
         listState.animateScrollToItem(currentIndex.coerceAtLeast(0), scrollOffset = -300)
@@ -611,7 +668,31 @@ private fun SyncedLyrics(lines: List<LyricLine>, positionSec: Float, durationSec
                 modifier = Modifier.fillMaxWidth()
                     .graphicsLayer { scaleX = scale; scaleY = scale; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f) }
                     .clip(RoundedCornerShape(10.dp))
-                    .clickable { if (durationSec > 0 && lines[i].timeSec >= 0) onSeek(lines[i].timeSec.toFloat() / durationSec) }
+                    .clickable {
+                        val lineMs =
+                            if (
+                                lines[i].timeMs >= 0L
+                            ) {
+                                lines[i].timeMs
+                            } else {
+                                lines[i].timeSec
+                                    .toLong() *
+                                    1000L
+                            }
+
+                        if (
+                            durationSec > 0 &&
+                            lineMs >= 0L
+                        ) {
+                            onSeek(
+                                lineMs.toFloat() /
+                                    (
+                                        durationSec *
+                                            1000f
+                                    )
+                            )
+                        }
+                    }
                     .padding(vertical = 2.dp),
             )
         }

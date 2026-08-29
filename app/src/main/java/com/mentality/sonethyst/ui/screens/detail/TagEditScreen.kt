@@ -59,6 +59,7 @@ fun TagEditScreen(
     onEdit: ((AudioTags) -> AudioTags) -> Unit,
     onMatch: () -> Unit,
     onApplyMatch: (MetadataMatch) -> Unit,
+    onPickCover: (MetadataMatch) -> Unit,
     onIdentify: (() -> Unit)?,        // null when acoustid identify unavailable
     identifying: Boolean = false,
     onBack: () -> Unit,
@@ -97,7 +98,15 @@ fun TagEditScreen(
             scope.launch {
                 val ok = container.repository.updateMetadata(state.songId, state.tags)
                 saving = false
-                if (ok) { confirm("Metadata updated"); onBack() } else confirm("Update failed — needs edit permission")
+                if (ok) {
+                    container.notifyLibraryMetadataChanged()
+                    confirm("Metadata updated")
+                    onBack()
+                } else {
+                    confirm(
+                        "Update failed — needs edit permission"
+                    )
+                }
             }
         } else {
             val uri = container.tagEditor.contentUriFor(state.songId)
@@ -130,11 +139,34 @@ fun TagEditScreen(
             Spacer(Modifier.height(12.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onMatch, enabled = !state.matching) {
-                    if (state.matching) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-                    else Icon(Icons.Filled.AutoFixHigh, null, Modifier.size(18.dp))
+                OutlinedButton(
+                    onClick = onMatch,
+                    enabled = !state.matching,
+                ) {
+                    if (state.matching) {
+                        CircularProgressIndicator(
+                            Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        Icon(
+                            Icons.Filled.AutoFixHigh,
+                            null,
+                            Modifier.size(18.dp),
+                        )
+                    }
+
                     Spacer(Modifier.width(6.dp))
                     Text("Match metadata")
+                }
+
+                if (state.localFile) {
+                    OutlinedButton(
+                        onClick = onMatch,
+                        enabled = !state.matching,
+                    ) {
+                        Text("Find artwork")
+                    }
                 }
                 if (onIdentify != null) {
                     OutlinedButton(onClick = onIdentify, enabled = !identifying) {
@@ -144,7 +176,23 @@ fun TagEditScreen(
                 }
             }
             state.matchError?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 4.dp)) }
-            state.matches.forEach { m -> MatchRow(m) { onApplyMatch(m) } }
+            state.matches.forEach { m ->
+                MatchRow(
+                    m = m,
+                    onApply = {
+                        onApplyMatch(m)
+                    },
+                    onPickCover =
+                        if (
+                            state.localFile &&
+                            m.coverUrl.isNotBlank()
+                        ) {
+                            { onPickCover(m) }
+                        } else {
+                            null
+                        },
+                )
+            }
 
             Spacer(Modifier.height(8.dp))
             TagField("Title", state.tags.title) { v -> onEdit { it.copy(title = v) } }
@@ -183,12 +231,19 @@ private fun TagField(label: String, value: String, onChange: (String) -> Unit) {
 }
 
 @Composable
-private fun MatchRow(m: MetadataMatch, onApply: () -> Unit) {
+private fun MatchRow(
+    m: MetadataMatch,
+    onApply: () -> Unit,
+    onPickCover: (() -> Unit)? = null,
+) {
     Row(
         Modifier.fillMaxWidth().padding(vertical = 4.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f))
-            .clickable(onClick = onApply)
+            .background(
+                MaterialTheme.colorScheme.surfaceContainerHigh.copy(
+                    alpha = 0.5f
+                )
+            )
             .padding(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -203,6 +258,36 @@ private fun MatchRow(m: MetadataMatch, onApply: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
-        Text("Apply", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        if (onPickCover != null) {
+            Text(
+                "Cover",
+                style =
+                    MaterialTheme.typography.labelLarge,
+                color =
+                    MaterialTheme.colorScheme.primary,
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(onClick = onPickCover)
+                        .padding(
+                            horizontal = 8.dp,
+                            vertical = 6.dp,
+                        ),
+            )
+        }
+
+        Text(
+            "Apply",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier =
+                Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = onApply)
+                    .padding(
+                        horizontal = 8.dp,
+                        vertical = 6.dp,
+                    ),
+        )
     }
 }

@@ -102,6 +102,7 @@ fun DetailScreen(
     onAddSelectedToPlaylist: ((List<Song>) -> Unit)? = null,
     onDownloadSelected: ((List<Song>) -> Unit)? = null,
     onSetSelectedLiked: ((List<Song>, Boolean) -> Unit)? = null,
+    onEditSelectedTags: ((List<Song>) -> Unit)? = null,
     onReorderPlaylist: ((List<Song>) -> Unit)? = null,
     onReorderGrab: (() -> Unit)? = null,
     onToggleLike: (String) -> Unit,
@@ -654,7 +655,8 @@ fun DetailScreen(
 
                     if (
                         onDownloadSelected != null ||
-                        onSetSelectedLiked != null
+                        onSetSelectedLiked != null ||
+                        onEditSelectedTags != null
                     ) {
                         Box {
                             Icon(
@@ -679,6 +681,44 @@ fun DetailScreen(
                                     ) playlistOrder else tracks).filter {
                                         it.id in selectedTrackIds
                                     }
+
+                                val canEditSelected =
+                                    selected.isNotEmpty() &&
+                                        selected.all { song ->
+                                            song.streamUrl
+                                                .startsWith(
+                                                    "content://"
+                                                ) ||
+                                                serverTagEditing
+                                        }
+
+                                if (
+                                    onEditSelectedTags != null &&
+                                    canEditSelected
+                                ) {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                "Edit selected tags"
+                                            )
+                                        },
+                                        onClick = {
+                                            selectionMenuOpen =
+                                                false
+                                            onEditSelectedTags(
+                                                selected
+                                            )
+                                            selectedTrackIds =
+                                                emptySet()
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Filled.Edit,
+                                                null,
+                                            )
+                                        },
+                                    )
+                                }
 
                                 if (onDownloadSelected != null) {
                                     DropdownMenuItem(

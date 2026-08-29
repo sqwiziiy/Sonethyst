@@ -55,7 +55,45 @@ object Routes {
     fun smartEdit(id: String = "") = "smart_edit?id=${android.net.Uri.encode(id)}"
 
     const val TAG_EDIT = "tag_edit/{songId}"
-    fun tagEdit(songId: String) = "tag_edit/${android.net.Uri.encode(songId)}"
+    fun tagEdit(songId: String) =
+        "tag_edit/${android.net.Uri.encode(songId)}"
+
+    private const val BATCH_TAG_SEPARATOR = "\u001F"
+
+    const val TAG_EDIT_BATCH =
+        "tag_edit_batch?ids={ids}"
+
+    fun batchTagEdit(
+        songIds: List<String>,
+    ): String {
+        val encoded =
+            android.net.Uri.encode(
+                songIds
+                    .distinct()
+                    .joinToString(
+                        BATCH_TAG_SEPARATOR
+                    )
+            )
+
+        return "tag_edit_batch?ids=$encoded"
+    }
+
+    fun decodeBatchTagIds(
+        raw: String,
+    ): List<String> =
+        raw
+            .split(BATCH_TAG_SEPARATOR)
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+    const val LYRICS_EDIT =
+        "lyrics_edit/{songId}"
+
+    fun lyricsEdit(
+        songId: String,
+    ) =
+        "lyrics_edit/${android.net.Uri.encode(songId)}"
+
 }
 
 data class TopLevelDestination(
