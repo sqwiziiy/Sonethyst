@@ -16,8 +16,17 @@ android {
         versionCode = 1
         versionName = "0.1.0-dev"
         vectorDrawables { useSupportLibrary = true }
-        // Native AcoustID/Chromaprint fingerprinter (4.4c). arm64 for the phone, x86_64 for emulators.
-        ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
+        // Native AcoustID/Chromaprint fingerprinter.
+        // ARMv7 is required for 32-bit ARM devices such as
+        // some Wear OS watches; arm64 is the main phone ABI,
+        // x86_64 remains available for emulators.
+        ndk {
+            abiFilters += listOf(
+                "armeabi-v7a",
+                "arm64-v8a",
+                "x86_64",
+            )
+        }
     }
 
     externalNativeBuild {
