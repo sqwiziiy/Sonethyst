@@ -494,7 +494,23 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
                 .setTitle(song.title)
                 .setArtist(song.artist)
                 .setAlbumTitle(song.album)
-                .apply { if (song.artworkUrl.isNotBlank()) setArtworkUri(Uri.parse(song.artworkUrl)) }
+                .setMediaType(
+                    MediaMetadata.MEDIA_TYPE_MUSIC
+                )
+                .setIsPlayable(true)
+                .setIsBrowsable(false)
+                .apply {
+                    if (
+                        song.artworkUrl
+                            .isNotBlank()
+                    ) {
+                        setArtworkUri(
+                            Uri.parse(
+                                song.artworkUrl
+                            )
+                        )
+                    }
+                }
                 .setExtras(android.os.Bundle().apply {
                     putFloat("rgTrack", song.replayGainTrack)
                     putFloat("rgAlbum", song.replayGainAlbum)

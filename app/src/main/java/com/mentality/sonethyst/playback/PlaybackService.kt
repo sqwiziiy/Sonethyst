@@ -2,6 +2,8 @@ package com.mentality.sonethyst.playback
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Intent
 import android.content.Context
 import android.os.Bundle
 import androidx.media3.common.AudioAttributes
@@ -26,6 +28,7 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.SettableFuture
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
+import com.mentality.sonethyst.MainActivity
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.AudioEffectsController
 import com.mentality.sonethyst.data.AudioPrefs
@@ -262,9 +265,51 @@ class PlaybackService : MediaLibraryService() {
 
         attachPlaybackListener(player)
 
-        mediaSession = MediaLibrarySession.Builder(this, player, MediaCallback())
-            .setCustomLayout(buildCustomLayout())
-            .build()
+        /*
+         * System media controls, lock screen, Bluetooth,
+         * Wear OS and Samsung System UI all connect to
+         * this session.
+         *
+         * Give Android a stable activity to open when the
+         * user taps the system media surface.
+         */
+        val sessionActivity =
+            PendingIntent.getActivity(
+                this,
+                0,
+                Intent(
+                    this,
+                    MainActivity::class.java,
+                ).apply {
+                    addFlags(
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    )
+                },
+                PendingIntent.FLAG_UPDATE_CURRENT or
+                    PendingIntent.FLAG_IMMUTABLE,
+            )
+
+        val mediaButtons =
+            buildCustomLayout()
+
+        mediaSession =
+            MediaLibrarySession
+                .Builder(
+                    this,
+                    player,
+                    MediaCallback(),
+                )
+                .setSessionActivity(
+                    sessionActivity
+                )
+                .setCustomLayout(
+                    mediaButtons
+                )
+                .setMediaButtonPreferences(
+                    mediaButtons
+                )
+                .build()
 
         setupCast()
 
@@ -1774,7 +1819,20 @@ class PlaybackService : MediaLibraryService() {
     }
 
     private fun updateCustomLayout() {
-        runCatching { mediaSession?.setCustomLayout(buildCustomLayout()) }
+        val buttons =
+            buildCustomLayout()
+
+        runCatching {
+            mediaSession
+                ?.setCustomLayout(
+                    buttons
+                )
+
+            mediaSession
+                ?.setMediaButtonPreferences(
+                    buttons
+                )
+        }
     }
 
     private fun cycleRepeat() {
