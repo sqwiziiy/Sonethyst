@@ -285,3 +285,32 @@ Only after the application foundation and UX are stable:
 - [ ] Add editing for custom radio stations (name and stream URL)
 - [ ] Add deletion for custom radio stations
 - [ ] Validate custom stream URLs before saving and expose useful playback/connection errors
+
+## Wear OS / compact-device support
+
+- [x] Add `armeabi-v7a` application support
+- [x] Build native Chromaprint/AcoustID for `armeabi-v7a`
+- [x] Include FFmpeg decoder for `armeabi-v7a`
+- [x] Build Decent USB native library for `armeabi-v7a`
+- [x] Produce an APK containing complete ARMv7 native libraries
+- [x] Install and launch Sonethyst on an ARMv7 Wear OS device
+
+### Wear UI
+
+- [ ] Add dedicated phone / Wear build variants
+- [ ] Detect and route Wear OS devices to the compact UI
+- [ ] Create Wear-specific navigation
+- [ ] Create compact Home screen
+- [ ] Create compact Library screens
+- [ ] Create compact Search screen
+- [ ] Create Wear Now Playing screen
+- [ ] Create compact queue screen
+- [ ] Adapt lyrics for the round display
+- [ ] Keep Media3/system playback controls working on Wear OS
+- [ ] Keep Bluetooth playback controls working on Wear OS
+- [ ] Hide phone-only and impractical features on Wear OS
+- [ ] Audit dialogs, sheets and menus for the round screen
+- [ ] Audit scrolling and rotary input
+- [ ] Test on 438x438 round display
+- [ ] Test background playback and process recreation on Wear OS
+- [ ] Produce dedicated Wear release APK
