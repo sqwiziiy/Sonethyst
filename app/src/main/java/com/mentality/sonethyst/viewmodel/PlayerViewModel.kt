@@ -243,8 +243,18 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         if (songs.isEmpty()) return
         container.queueStore.save(key, SavedQueue(
             tracks = songs.map { it.toSavedTrack() },
-            currentIndex = c.currentMediaItemIndex.coerceAtLeast(0),
-            positionSec = (c.currentPosition / 1000).toInt().coerceAtLeast(0),
+            currentIndex =
+                c.currentMediaItemIndex
+                    .coerceAtLeast(0),
+            positionSec =
+                (
+                    c.currentPosition /
+                        1000L
+                ).toInt()
+                    .coerceAtLeast(0),
+            positionMs =
+                c.currentPosition
+                    .coerceAtLeast(0L),
             shuffle = c.shuffleModeEnabled,
             repeat = when (c.repeatMode) { Player.REPEAT_MODE_ALL -> 1; Player.REPEAT_MODE_ONE -> 2; else -> 0 },
         ))
@@ -272,13 +282,21 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         val keepRepeat =
             c.repeatMode
 
+        val resumePositionMs =
+            sq.positionMs
+                ?.coerceAtLeast(0L)
+                ?: (
+                    sq.positionSec
+                        .toLong() *
+                        1000L
+                )
+
         c.setMediaItems(
             songs.map {
                 toMediaItem(it)
             },
             idx,
-            sq.positionSec
-                .toLong() * 1000,
+            resumePositionMs,
         )
 
         c.playbackParameters =
@@ -291,7 +309,8 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
                 queue = songs,
                 current = songs[idx],
                 positionSec =
-                    sq.positionSec.toFloat(),
+                    resumePositionMs /
+                        1000f,
                 isPlaying = false,
                 currentIndex = idx,
                 shuffle = keepShuffle,
@@ -349,8 +368,21 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
                 artist = md.artist?.toString() ?: "",
                 album = md.albumTitle?.toString() ?: "",
                 artworkUrl = md.artworkUri?.toString() ?: "",
-                durationSec = 0,
-                accent = com.mentality.sonethyst.util.accentFor(mi.mediaId),
+                durationSec =
+                    (
+                        md.durationMs
+                            ?.div(1000L)
+                            ?.toInt()
+                            ?: md.extras
+                                ?.getInt(
+                                    "durationSec",
+                                    0,
+                                )
+                            ?: 0
+                    ).coerceAtLeast(0),
+                accent =
+                    com.mentality.sonethyst.util
+                        .accentFor(mi.mediaId),
                 streamUrl = mi.localConfiguration?.uri?.toString() ?: "",
                 replayGainTrack = md.extras?.getFloat("rgTrack", 0f) ?: 0f,
                 replayGainAlbum = md.extras?.getFloat("rgAlbum", 0f) ?: 0f,
@@ -494,6 +526,14 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
                 .setTitle(song.title)
                 .setArtist(song.artist)
                 .setAlbumTitle(song.album)
+                .apply {
+                    if (song.durationSec > 0) {
+                        setDurationMs(
+                            song.durationSec.toLong() *
+                                1000L
+                        )
+                    }
+                }
                 .setMediaType(
                     MediaMetadata.MEDIA_TYPE_MUSIC
                 )
@@ -512,8 +552,18 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
                     }
                 }
                 .setExtras(android.os.Bundle().apply {
-                    putFloat("rgTrack", song.replayGainTrack)
-                    putFloat("rgAlbum", song.replayGainAlbum)
+                    putFloat(
+                        "rgTrack",
+                        song.replayGainTrack,
+                    )
+                    putFloat(
+                        "rgAlbum",
+                        song.replayGainAlbum,
+                    )
+                    putInt(
+                        "durationSec",
+                        song.durationSec,
+                    )
                 })
                 .build()
         )

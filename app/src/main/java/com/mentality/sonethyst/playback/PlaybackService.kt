@@ -411,6 +411,7 @@ class PlaybackService : MediaLibraryService() {
                     ) {
                         publishNowPlaying()
                     }
+
                 }
             }
         )
@@ -1619,6 +1620,113 @@ class PlaybackService : MediaLibraryService() {
             return SessionResult.RESULT_SUCCESS
         }
 
+        /*
+         * Media3 1.5.1 playback resumption.
+         *
+         * This callback is reached when Android/System UI or a
+         * hardware media button requests Play while the service
+         * has no current MediaItem.
+         *
+         * AppContainer finishes restoring the persisted Session
+         * before sessionReady becomes true, so waiting for it also
+         * guarantees currentAccountKey() is usable.
+         */
+        override fun onPlaybackResumption(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo,
+        ): ListenableFuture<
+            MediaSession.MediaItemsWithStartPosition
+        > = serviceFuture {
+            val ready =
+                container.sessionReady
+                    .first {
+                        it != null
+                    }
+
+            if (ready != true) {
+                throw IllegalStateException(
+                    "No active Sonethyst session"
+                )
+            }
+
+            val accountKey =
+                container.currentAccountKey()
+
+            if (accountKey.isBlank()) {
+                throw IllegalStateException(
+                    "No active account for playback resumption"
+                )
+            }
+
+            val saved =
+                container.queueStore
+                    .get(accountKey)
+                    ?: throw IllegalStateException(
+                        "No saved queue"
+                    )
+
+            val songs =
+                saved.tracks
+                    .orEmpty()
+                    .map {
+                        it.toSong()
+                    }
+                    .filter {
+                        it.id.isNotBlank() &&
+                            it.streamUrl.isNotBlank()
+                    }
+
+            if (songs.isEmpty()) {
+                throw IllegalStateException(
+                    "Saved queue is empty"
+                )
+            }
+
+            val startIndex =
+                saved.currentIndex
+                    .coerceIn(
+                        0,
+                        songs.lastIndex,
+                    )
+
+            val startPositionMs =
+                saved.positionMs
+                    ?.coerceAtLeast(0L)
+                    ?: (
+                        saved.positionSec
+                            .toLong() *
+                            1000L
+                    )
+
+            /*
+             * SavedQueue contains the physical queue order.
+             * Keep shuffle state without letting ExoPlayer
+             * reshuffle that already-restored order.
+             */
+            originalOrder =
+                if (saved.shuffle) {
+                    songs.map {
+                        it.id
+                    }
+                } else {
+                    null
+                }
+
+            pendingNeutralize =
+                saved.shuffle
+
+            player.shuffleModeEnabled =
+                saved.shuffle
+
+            MediaSession.MediaItemsWithStartPosition(
+                songs.map {
+                    resumptionItem(it)
+                },
+                startIndex,
+                startPositionMs,
+            )
+        }
+
         override fun onConnect(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
@@ -1787,6 +1895,70 @@ class PlaybackService : MediaLibraryService() {
                 .setExtras(styleExtras(styleList, styleList))
                 .apply { if (art.isNotBlank()) setArtworkUri(android.net.Uri.parse(art)) }.build()
         ).build().also { browseCache[id] = it }
+
+    /*
+     * Playback-resumption items deliberately keep the original
+     * Sonethyst song ID.
+     *
+     * Library browsing uses the "song_" prefix, but the actual
+     * playback queue and PlayerViewModel use the raw Song.id.
+     */
+    private fun resumptionItem(
+        song: com.mentality.sonethyst.model.Song,
+    ): MediaItem =
+        MediaItem.Builder()
+            .setMediaId(song.id)
+            .setUri(song.streamUrl)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(song.title)
+                    .setArtist(song.artist)
+                    .setAlbumTitle(song.album)
+                    .apply {
+                        if (song.durationSec > 0) {
+                            setDurationMs(
+                                song.durationSec
+                                    .toLong() *
+                                    1000L
+                            )
+                        }
+                    }
+                    .setMediaType(
+                        MediaMetadata.MEDIA_TYPE_MUSIC
+                    )
+                    .setIsPlayable(true)
+                    .setIsBrowsable(false)
+                    .apply {
+                        if (
+                            song.artworkUrl
+                                .isNotBlank()
+                        ) {
+                            setArtworkUri(
+                                android.net.Uri.parse(
+                                    song.artworkUrl
+                                )
+                            )
+                        }
+                    }
+                    .setExtras(
+                        Bundle().apply {
+                            putFloat(
+                                "rgTrack",
+                                song.replayGainTrack,
+                            )
+                            putFloat(
+                                "rgAlbum",
+                                song.replayGainAlbum,
+                            )
+                            putInt(
+                                "durationSec",
+                                song.durationSec,
+                            )
+                        }
+                    )
+                    .build()
+            )
+            .build()
 
     private fun songItem(song: com.mentality.sonethyst.model.Song): MediaItem {
         val id = "song_${song.id}"

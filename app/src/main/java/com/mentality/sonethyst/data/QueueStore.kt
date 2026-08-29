@@ -57,6 +57,13 @@ data class SavedQueue(
     val tracks: List<SavedTrack>? = emptyList(),
     val currentIndex: Int = 0,
     val positionSec: Int = 0,
+
+    /*
+     * Nullable for backward compatibility with queue_state.json
+     * written before millisecond resume positions existed.
+     */
+    val positionMs: Long? = null,
+
     val shuffle: Boolean = false,
     val repeat: Int = 0,           // 0 off 1 all 2 one
 )

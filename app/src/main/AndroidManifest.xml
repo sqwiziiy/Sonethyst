@@ -70,6 +70,18 @@
             </intent-filter>
         </service>
 
+        <!--
+            Restarts PlaybackService for playback resumption
+            requested by Bluetooth/headset/System UI.
+        -->
+        <receiver
+            android:name="androidx.media3.session.MediaButtonReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name=".playback.AlarmActivity"
             android:exported="false"
