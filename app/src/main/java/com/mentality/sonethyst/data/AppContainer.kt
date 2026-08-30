@@ -63,8 +63,8 @@ class AppContainer(context: Context) {
 
     val musicBrainz = com.mentality.sonethyst.data.remote.MusicBrainzClient()
 
-    @Volatile private var acoustIdKeyValue: String = ""
-    val acoustId = com.mentality.sonethyst.data.remote.AcoustIdClient(apiKeyProvider = { acoustIdKeyValue })
+    val acoustId =
+        com.mentality.sonethyst.data.remote.AcoustIdClient()
 
     val autoEq = AutoEqRepository(appContext)
     val autoEqController = AutoEqController(appContext, settingsStore, scope)
@@ -547,9 +547,6 @@ class AppContainer(context: Context) {
         }
         scope.launch {
             settingsStore.smartPlaylists.collect { smartPlaylistsValue = it }
-        }
-        scope.launch {
-            settingsStore.acoustIdKey.collect { acoustIdKeyValue = it }
         }
         scope.launch {
             var first = true

@@ -1732,8 +1732,12 @@ onAddToPlaylist = {
                             state = tagState,
                             onEdit = tagVM::edit,
                             onMatch = tagVM::matchOnline,
+                            onFindArtwork =
+                                tagVM::findArtwork,
                             onApplyMatch = tagVM::applyMatch,
                             onPickCover = tagVM::pickCover,
+                            onPickLocalCover =
+                                tagVM::pickLocalCover,
                             // auto-identify fingerprints the decodable local file not for server items
                             onIdentify = if (container.acoustId.available && tagState.localFile) ({ tagVM.identify() }) else null,
                             identifying = tagState.identifying,

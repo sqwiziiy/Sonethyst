@@ -342,7 +342,6 @@ class SettingsStore(private val context: Context) {
         val SQUIG_TARGET = stringPreferencesKey("squig_target")
         val SAVED_SESSIONS = stringPreferencesKey("saved_sessions")
         val SPOTIFY_CLIENT_ID = stringPreferencesKey("spotify_client_id")  // survives logout
-        val ACOUSTID_KEY = stringPreferencesKey("acoustid_key")           // survives logout
         val EQ_BINDINGS = stringPreferencesKey("eq_bindings")
         val AUTOEQ_SWITCH = booleanPreferencesKey("autoeq_autoswitch")
         val AUTOEQ_PROFILE = stringPreferencesKey("autoeq_active_profile")
@@ -528,8 +527,6 @@ class SettingsStore(private val context: Context) {
     }
 
     val spotifyClientId: Flow<String> = context.dataStore.data.map { it[Keys.SPOTIFY_CLIENT_ID] ?: "" }
-
-    val acoustIdKey: Flow<String> = context.dataStore.data.map { it[Keys.ACOUSTID_KEY] ?: "" }
 
     // distinctUntilChanged so a settings write doesnt re-fire and wipe a just-applied correction
     val eqBindings: Flow<List<EqBinding>> = context.dataStore.data.map { parseBindings(it[Keys.EQ_BINDINGS]) }.distinctUntilChanged()
@@ -998,7 +995,6 @@ class SettingsStore(private val context: Context) {
     }
     suspend fun setSpotifyClientId(v: String) = context.dataStore.edit { it[Keys.SPOTIFY_CLIENT_ID] = v.trim() }
 
-    suspend fun setAcoustIdKey(v: String) = context.dataStore.edit { it[Keys.ACOUSTID_KEY] = v.trim() }
     suspend fun setAutoEqAutoSwitch(v: Boolean) = context.dataStore.edit { it[Keys.AUTOEQ_SWITCH] = v }
     suspend fun setActiveEqProfile(name: String) = context.dataStore.edit { it[Keys.AUTOEQ_PROFILE] = name }
 

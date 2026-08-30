@@ -1,6 +1,7 @@
 package com.mentality.sonethyst.ui.screens.detail
 
 import android.app.Activity
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,6 +24,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoFixHigh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -58,23 +62,97 @@ fun TagEditScreen(
     state: TagEditState,
     onEdit: ((AudioTags) -> AudioTags) -> Unit,
     onMatch: () -> Unit,
+    onFindArtwork: () -> Unit,
     onApplyMatch: (MetadataMatch) -> Unit,
     onPickCover: (MetadataMatch) -> Unit,
+    onPickLocalCover: (String) -> Unit,
     onIdentify: (() -> Unit)?,        // null when acoustid identify unavailable
     identifying: Boolean = false,
     onBack: () -> Unit,
     confirm: (String) -> Unit,
 ) {
-    val container = (LocalContext.current.applicationContext as SonethystApplication).container
+    val context = LocalContext.current
+    val container =
+        (context.applicationContext as SonethystApplication)
+            .container
     val scope = rememberCoroutineScope()
     var saving by remember { mutableStateOf(false) }
+
+    val coverPicker =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.OpenDocument()
+        ) { uri ->
+            uri?.let {
+                /*
+                 * Keep access to the selected image stable across
+                 * recomposition and while Save tags is running.
+                 */
+                runCatching {
+                    context.contentResolver
+                        .takePersistableUriPermission(
+                            it,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                        )
+                }
+
+                onPickLocalCover(
+                    it.toString()
+                )
+            }
+        }
 
     val doWrite: () -> Unit = {
         scope.launch {
             val uri = container.tagEditor.contentUriFor(state.songId)
             if (uri == null) { confirm("Can't write this file"); saving = false } else {
-                val art = if (state.pickedCoverUrl.isNotBlank()) container.musicBrainz.fetchImage(state.pickedCoverUrl) else null
-                val ok = container.tagEditor.write(uri, state.path, state.tags, art)
+                val pickedArtwork =
+                    state.pickedCoverUrl
+
+                val art =
+                    when {
+                        pickedArtwork.isBlank() ->
+                            null
+
+                        pickedArtwork.startsWith(
+                            "content://"
+                        ) ->
+                            runCatching {
+                                context.contentResolver
+                                    .openInputStream(
+                                        android.net.Uri.parse(
+                                            pickedArtwork
+                                        )
+                                    )
+                                    ?.use {
+                                        it.readBytes()
+                                    }
+                            }.getOrNull()
+
+                        else ->
+                            container.musicBrainz
+                                .fetchImage(
+                                    pickedArtwork
+                                )
+                    }
+
+                if (
+                    pickedArtwork.isNotBlank() &&
+                    art == null
+                ) {
+                    saving = false
+                    confirm(
+                        "Couldn't read selected artwork"
+                    )
+                    return@launch
+                }
+
+                val ok =
+                    container.tagEditor.write(
+                        uri,
+                        state.path,
+                        state.tags,
+                        art,
+                    )
                 saving = false
                 if (ok) {
                     confirm("Tags saved")
@@ -138,43 +216,126 @@ fun TagEditScreen(
             }
             Spacer(Modifier.height(12.dp))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(
-                    onClick = onMatch,
-                    enabled = !state.matching,
+            Column(
+                verticalArrangement =
+                    Arrangement.spacedBy(8.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(8.dp),
                 ) {
-                    if (state.matching) {
-                        CircularProgressIndicator(
-                            Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                        )
-                    } else {
-                        Icon(
-                            Icons.Filled.AutoFixHigh,
-                            null,
-                            Modifier.size(18.dp),
-                        )
-                    }
-
-                    Spacer(Modifier.width(6.dp))
-                    Text("Match metadata")
-                }
-
-                if (state.localFile) {
                     OutlinedButton(
                         onClick = onMatch,
                         enabled = !state.matching,
+                        modifier = Modifier.weight(1f),
                     ) {
-                        Text("Find artwork")
+                        if (state.matching) {
+                            CircularProgressIndicator(
+                                Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                            )
+                        } else {
+                            Icon(
+                                Icons.Filled.AutoFixHigh,
+                                null,
+                                Modifier.size(18.dp),
+                            )
+                        }
+
+                        Spacer(Modifier.width(6.dp))
+                        Text("Match metadata")
+                    }
+
+                    if (state.localFile) {
+                        OutlinedButton(
+                            onClick = onFindArtwork,
+                            enabled = !state.matching,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(
+                                Icons.Filled.Search,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(
+                                Modifier.width(6.dp)
+                            )
+                            Text("Find artwork")
+                        }
                     }
                 }
-                if (onIdentify != null) {
-                    OutlinedButton(onClick = onIdentify, enabled = !identifying) {
-                        if (identifying) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-                        Text(if (identifying) "Identifying…" else "Auto-identify")
+
+                if (
+                    state.localFile ||
+                    onIdentify != null
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement =
+                            Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (state.localFile) {
+                            OutlinedButton(
+                                onClick = {
+                                    coverPicker.launch(
+                                        arrayOf(
+                                            "image/*"
+                                        )
+                                    )
+                                },
+                                modifier =
+                                    Modifier.weight(1f),
+                            ) {
+                                Icon(
+                                    Icons.Filled.AddPhotoAlternate,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(
+                                    Modifier.width(6.dp)
+                                )
+                                Text("Choose image")
+                            }
+                        }
+
+                        if (onIdentify != null) {
+                            OutlinedButton(
+                                onClick = onIdentify,
+                                enabled = !identifying,
+                                modifier =
+                                    Modifier.weight(1f),
+                            ) {
+                                if (identifying) {
+                                    CircularProgressIndicator(
+                                        Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                    )
+                                } else {
+                                    Icon(
+                                        Icons.Filled.Fingerprint,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+
+                                Spacer(
+                                    Modifier.width(6.dp)
+                                )
+
+                                Text(
+                                    if (identifying) {
+                                        "Identifying…"
+                                    } else {
+                                        "Auto-identify"
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             }
+
             state.matchError?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 4.dp)) }
             state.matches.forEach { m ->
                 MatchRow(
@@ -260,7 +421,7 @@ private fun MatchRow(
         }
         if (onPickCover != null) {
             Text(
-                "Cover",
+                "Use cover",
                 style =
                     MaterialTheme.typography.labelLarge,
                 color =

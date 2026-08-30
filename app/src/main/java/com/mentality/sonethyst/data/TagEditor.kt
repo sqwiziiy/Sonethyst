@@ -99,15 +99,30 @@ class TagEditor(private val context: Context) {
                 tag.put(FieldKey.GENRE, tags.genre)
                 tag.put(FieldKey.YEAR, tags.year)
                 tag.put(FieldKey.TRACK, tags.trackNumber)
-                if (artwork != null && artwork.isNotEmpty()) {
-                    runCatching {
-                        tag.deleteArtworkField()
-                        tag.setField(AndroidArtwork().apply {
-                            binaryData = artwork
-                            mimeType = "image/jpeg"
-                            pictureType = PictureTypes.DEFAULT_ID
-                        })
-                    }
+                if (
+                    artwork != null &&
+                    artwork.isNotEmpty()
+                ) {
+                    /*
+                     * Do not swallow an artwork-writing exception.
+                     *
+                     * Previously metadata could report "Tags saved"
+                     * even when the embedded picture replacement itself
+                     * had failed.
+                     */
+                    tag.deleteArtworkField()
+                    tag.setField(
+                        AndroidArtwork().apply {
+                            binaryData =
+                                artwork
+                            mimeType =
+                                artworkMimeType(
+                                    artwork
+                                )
+                            pictureType =
+                                PictureTypes.DEFAULT_ID
+                        }
+                    )
                 }
                 af.commit()
                 resolver.openOutputStream(uri, "wt")?.use { out -> tmp.inputStream().use { it.copyTo(out) } }
@@ -139,6 +154,45 @@ class TagEditor(private val context: Context) {
             }
         }
     }
+
+    private fun artworkMimeType(
+        data: ByteArray,
+    ): String =
+        when {
+            data.size >= 4 &&
+                (data[0].toInt() and 0xff) == 0x89 &&
+                data[1].toInt() == 0x50 &&
+                data[2].toInt() == 0x4e &&
+                data[3].toInt() == 0x47 ->
+                "image/png"
+
+            data.size >= 3 &&
+                (data[0].toInt() and 0xff) == 0xff &&
+                (data[1].toInt() and 0xff) == 0xd8 &&
+                (data[2].toInt() and 0xff) == 0xff ->
+                "image/jpeg"
+
+            data.size >= 12 &&
+                data.copyOfRange(
+                    8,
+                    12,
+                ).toString(
+                    Charsets.US_ASCII
+                ) == "WEBP" ->
+                "image/webp"
+
+            data.size >= 3 &&
+                data.copyOfRange(
+                    0,
+                    3,
+                ).toString(
+                    Charsets.US_ASCII
+                ) == "GIF" ->
+                "image/gif"
+
+            else ->
+                "image/jpeg"
+        }
 
     private fun Tag.firstOrEmpty(key: FieldKey): String = runCatching { getFirst(key) ?: "" }.getOrDefault("")
 

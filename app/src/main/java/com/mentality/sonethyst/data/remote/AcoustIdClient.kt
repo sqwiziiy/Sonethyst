@@ -11,6 +11,12 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 import java.util.concurrent.TimeUnit
 
+/*
+ * Public AcoustID application client key for Sonethyst.
+ * This identifies the application; it is not a per-user secret.
+ */
+const val SONETHYST_ACOUSTID_CLIENT_KEY = "CiEL1MKUhG"
+
 // nullable per gson rule
 data class AcoustIdResult(val status: String? = "", val results: List<AcoustIdMatch>? = emptyList())
 data class AcoustIdMatch(val id: String? = "", val score: Double? = 0.0, val recordings: List<AcoustIdRecording>? = emptyList())
@@ -34,13 +40,12 @@ interface AcoustIdApi {
     ): AcoustIdResult
 }
 
-class AcoustIdClient(private val apiKeyProvider: () -> String) {
-
-    private val apiKey: String get() = apiKeyProvider()
+class AcoustIdClient {
 
     val available: Boolean get() = Chromaprint.available
 
-    val configured: Boolean get() = apiKey.isNotBlank()
+    val configured: Boolean
+        get() = SONETHYST_ACOUSTID_CLIENT_KEY.isNotBlank()
 
     private val http = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -58,9 +63,14 @@ class AcoustIdClient(private val apiKeyProvider: () -> String) {
         withContext(Dispatchers.Default) { Chromaprint.fingerprint(path) }
 
     suspend fun lookup(fingerprint: String, durationSec: Int): List<MetadataMatch> {
-        val key = apiKey
-        if (key.isBlank()) return emptyList()
-        val resp = runCatching { api.lookup(key, fingerprint, durationSec.coerceAtLeast(1)) }.getOrNull() ?: return emptyList()
+        val resp =
+            runCatching {
+                api.lookup(
+                    SONETHYST_ACOUSTID_CLIENT_KEY,
+                    fingerprint,
+                    durationSec.coerceAtLeast(1),
+                )
+            }.getOrNull() ?: return emptyList()
         return resp.results.orEmpty()
             .sortedByDescending { it.score ?: 0.0 }
             .flatMap { match -> match.recordings.orEmpty().map { it.toMatch(match.score ?: 0.0) } }

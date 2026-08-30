@@ -2,6 +2,7 @@ package com.mentality.sonethyst.data.remote
 
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -82,16 +83,260 @@ class MusicBrainzClient {
 
     private fun esc(s: String) = s.replace("\\", "\\\\").replace("\"", "\\\"")
 
-    suspend fun search(title: String, artist: String, album: String = ""): List<MetadataMatch> {
-        if (title.isBlank() && artist.isBlank()) return emptyList()
-        val terms = buildList {
-            if (title.isNotBlank()) add("recording:\"${esc(title)}\"")
-            if (artist.isNotBlank()) add("artist:\"${esc(artist)}\"")
-            if (album.isNotBlank()) add("release:\"${esc(album)}\"")
+    suspend fun search(
+        title: String,
+        artist: String,
+        album: String = "",
+    ): List<MetadataMatch> {
+        val cleanTitle =
+            title.trim()
+
+        val cleanArtist =
+            artist.trim()
+
+        if (
+            cleanTitle.isBlank() &&
+            cleanArtist.isBlank()
+        ) {
+            return emptyList()
         }
-        val query = terms.joinToString(" AND ")
-        val result = runCatching { api.searchRecording(query) }.getOrNull() ?: return emptyList()
-        return result.recordings.orEmpty().mapNotNull { it.toMatch() }
+
+        /*
+         * Album is deliberately NOT a mandatory MusicBrainz term.
+         *
+         * Local files commonly contain folder names, custom albums,
+         * "Unknown album", etc. Requiring release:"..." made a valid
+         * title + artist return zero results.
+         */
+        val first =
+            queryRecordings(
+                title = cleanTitle,
+                artist = cleanArtist,
+            )
+
+        val candidates =
+            if (first.isNotEmpty()) {
+                first
+            } else {
+                val simplified =
+                    simplifiedTitle(
+                        cleanTitle
+                    )
+
+                if (
+                    simplified.isNotBlank() &&
+                    !simplified.equals(
+                        cleanTitle,
+                        ignoreCase = true,
+                    )
+                ) {
+                    /*
+                     * Respect MusicBrainz's public rate limit before
+                     * issuing a fallback query.
+                     */
+                    delay(1100L)
+
+                    queryRecordings(
+                        title = simplified,
+                        artist = cleanArtist,
+                    )
+                } else {
+                    emptyList()
+                }
+            }
+
+        return candidates
+            .distinctBy {
+                listOf(
+                    it.title,
+                    it.artist,
+                    it.album,
+                    it.year,
+                    it.trackNumber,
+                )
+                    .joinToString("|")
+                    .lowercase()
+            }
+            .sortedByDescending {
+                rankMatch(
+                    match = it,
+                    title = cleanTitle,
+                    artist = cleanArtist,
+                    album = album,
+                )
+            }
+            .take(8)
+    }
+
+    suspend fun searchArtwork(
+        title: String,
+        artist: String,
+        album: String = "",
+    ): List<MetadataMatch> =
+        search(
+            title = title,
+            artist = artist,
+            album = album,
+        )
+            .filter {
+                it.coverUrl.isNotBlank()
+            }
+
+    private suspend fun queryRecordings(
+        title: String,
+        artist: String,
+    ): List<MetadataMatch> {
+        val terms =
+            buildList {
+                if (title.isNotBlank()) {
+                    add(
+                        "recording:\"${esc(title)}\""
+                    )
+                }
+
+                if (artist.isNotBlank()) {
+                    add(
+                        "artist:\"${esc(artist)}\""
+                    )
+                }
+            }
+
+        if (terms.isEmpty()) {
+            return emptyList()
+        }
+
+        val query =
+            terms.joinToString(
+                " AND "
+            )
+
+        val result =
+            runCatching {
+                api.searchRecording(
+                    query
+                )
+            }.getOrNull()
+                ?: return emptyList()
+
+        return result
+            .recordings
+            .orEmpty()
+            .mapNotNull {
+                it.toMatch()
+            }
+    }
+
+    private fun simplifiedTitle(
+        input: String,
+    ): String {
+        var value =
+            input
+                .trim()
+
+        val suffix =
+            Regex(
+                """\s*[\[(][^\])]*(?:slowed|reverb|remix|sped\s*up|nightcore|edit|version)[^\])]*[\])]\s*$""",
+                RegexOption.IGNORE_CASE,
+            )
+
+        while (true) {
+            val next =
+                value.replace(
+                    suffix,
+                    "",
+                ).trim()
+
+            if (next == value) {
+                break
+            }
+
+            value = next
+        }
+
+        return value
+            .replace(
+                Regex("""\s+"""),
+                " ",
+            )
+            .trim()
+    }
+
+    private fun rankMatch(
+        match: MetadataMatch,
+        title: String,
+        artist: String,
+        album: String,
+    ): Int {
+        fun key(value: String) =
+            value
+                .lowercase()
+                .replace(
+                    Regex("""[^\p{L}\p{N}]+"""),
+                    " ",
+                )
+                .trim()
+
+        val wantedTitle =
+            key(
+                simplifiedTitle(
+                    title
+                )
+            )
+
+        val resultTitle =
+            key(
+                simplifiedTitle(
+                    match.title
+                )
+            )
+
+        val wantedArtist =
+            key(artist)
+
+        val resultArtist =
+            key(match.artist)
+
+        val wantedAlbum =
+            key(album)
+
+        val resultAlbum =
+            key(match.album)
+
+        var rank =
+            match.score
+
+        if (
+            wantedTitle.isNotBlank() &&
+            wantedTitle ==
+                resultTitle
+        ) {
+            rank += 250
+        }
+
+        if (
+            wantedArtist.isNotBlank() &&
+            wantedArtist ==
+                resultArtist
+        ) {
+            rank += 150
+        }
+
+        if (
+            wantedAlbum.isNotBlank() &&
+            wantedAlbum ==
+                resultAlbum
+        ) {
+            rank += 100
+        } else if (
+            wantedAlbum.isNotBlank() &&
+            resultAlbum.contains(
+                wantedAlbum
+            )
+        ) {
+            rank += 35
+        }
+
+        return rank
     }
 
     suspend fun fetchImage(url: String): ByteArray? = withContext(Dispatchers.IO) {

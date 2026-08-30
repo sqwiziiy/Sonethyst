@@ -1,5 +1,6 @@
 package com.mentality.sonethyst.ui.components
 
+import android.net.Uri
 import android.util.Base64
 
 import androidx.compose.foundation.background
@@ -79,8 +80,18 @@ fun Artwork(
     }
 
     val request = remember(url, context) {
+        val model =
+            when {
+                url.startsWith("content://") ||
+                    url.startsWith("file://") ->
+                    Uri.parse(url)
+
+                else ->
+                    url
+            }
+
         ImageRequest.Builder(context)
-            .data(url)
+            .data(model)
             .crossfade(true)
             .build()
     }
@@ -157,8 +168,18 @@ private fun CollageArtworkCell(
     val context = LocalContext.current
 
     val request = remember(url, context) {
+        val model =
+            when {
+                url.startsWith("content://") ||
+                    url.startsWith("file://") ->
+                    Uri.parse(url)
+
+                else ->
+                    url
+            }
+
         ImageRequest.Builder(context)
-            .data(url)
+            .data(model)
             .crossfade(true)
             .build()
     }

@@ -1,6 +1,7 @@
 package com.mentality.sonethyst.data
 
 import android.content.Context
+import android.net.Uri
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
@@ -10,10 +11,12 @@ import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.Tag
 import org.jaudiotagger.tag.TagTextField
 import java.io.File
+import java.security.MessageDigest
 
 data class LocalTagIdentity(
     val albumArtist: String = "",
     val artists: List<String> = emptyList(),
+    val artworkUrl: String = "",
 )
 
 private data class CachedTagIdentity(
@@ -23,12 +26,28 @@ private data class CachedTagIdentity(
     // Nullable so old/corrupt Gson entries cannot crash callers.
     val albumArtist: String? = "",
     val artists: List<String>? = emptyList(),
+    val artworkUrl: String? = "",
 )
 
 class LocalTagMetadataCache(
-    context: Context,
+    private val context: Context,
 ) {
     private val gson = Gson()
+
+    /*
+     * Sonethyst-owned embedded artwork cache.
+     *
+     * MediaStore album art is album-scoped and can stay stale after
+     * editing one file. Embedded artwork is therefore extracted from
+     * the actual audio file and exposed through a versioned file:// URI.
+     */
+    private val artworkDir =
+        File(
+            context.filesDir,
+            "local_tag_artwork",
+        ).apply {
+            mkdirs()
+        }
 
     private val file =
         File(
@@ -103,6 +122,9 @@ class LocalTagMetadataCache(
                 normalizeArtists(
                     entry.artists.orEmpty()
                 ),
+            artworkUrl =
+                entry.artworkUrl
+                    .orEmpty(),
         )
     }
 
@@ -232,6 +254,20 @@ class LocalTagMetadataCache(
                 ?.artistValues()
                 .orEmpty()
 
+        val embeddedArtwork =
+            runCatching {
+                tag
+                    ?.firstArtwork
+                    ?.binaryData
+            }.getOrNull()
+
+        val artworkUrl =
+            cacheArtwork(
+                path = path,
+                source = source,
+                bytes = embeddedArtwork,
+            )
+
         /*
          * Cache even an unreadable/empty tag.
          *
@@ -248,8 +284,116 @@ class LocalTagMetadataCache(
                 albumArtist,
             artists =
                 artists,
+            artworkUrl =
+                artworkUrl,
         )
     }
+
+    private fun cacheArtwork(
+        path: String,
+        source: File,
+        bytes: ByteArray?,
+    ): String {
+        /*
+         * Prefix identifies the logical source file.
+         * Version changes whenever the edited audio file changes,
+         * intentionally giving Coil a new URI after artwork replacement.
+         */
+        val prefix =
+            sha256(path)
+                .take(24)
+
+        val version =
+            "${source.lastModified()}_${source.length()}"
+
+        val target =
+            File(
+                artworkDir,
+                "${prefix}_${version}.img",
+            )
+
+        artworkDir
+            .listFiles()
+            ?.asSequence()
+            ?.filter {
+                it.name.startsWith(
+                    "${prefix}_"
+                ) &&
+                    it != target
+            }
+            ?.forEach {
+                runCatching {
+                    it.delete()
+                }
+            }
+
+        if (
+            bytes == null ||
+            bytes.isEmpty()
+        ) {
+            runCatching {
+                target.delete()
+            }
+
+            return ""
+        }
+
+        if (
+            !target.exists() ||
+            target.length() !=
+                bytes.size.toLong()
+        ) {
+            val temporary =
+                File(
+                    artworkDir,
+                    "${target.name}.tmp",
+                )
+
+            runCatching {
+                temporary.writeBytes(
+                    bytes
+                )
+
+                if (
+                    !temporary.renameTo(
+                        target
+                    )
+                ) {
+                    target.writeBytes(
+                        bytes
+                    )
+
+                    temporary.delete()
+                }
+            }.getOrElse {
+                runCatching {
+                    temporary.delete()
+                }
+
+                return ""
+            }
+        }
+
+        return Uri
+            .fromFile(target)
+            .toString()
+    }
+
+    private fun sha256(
+        value: String,
+    ): String =
+        MessageDigest
+            .getInstance("SHA-256")
+            .digest(
+                value.toByteArray(
+                    Charsets.UTF_8
+                )
+            )
+            .joinToString("") {
+                "%02x".format(
+                    it.toInt() and 0xff
+                )
+            }
 
     private fun Tag.artistValues():
         List<String> {

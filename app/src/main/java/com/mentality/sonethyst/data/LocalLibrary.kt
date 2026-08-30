@@ -514,7 +514,13 @@ class LocalLibrary(
                         title = title,
                         artist = displayArtist,
                         album = albumName,
-                        artworkUrl = art,
+                        artworkUrl =
+                            tagIdentity
+                                ?.artworkUrl
+                                ?.takeIf {
+                                    it.isNotBlank()
+                                }
+                                ?: art,
                         durationSec = durSec,
                         accent = accentFor(id.toString()),
                         streamUrl = uri,

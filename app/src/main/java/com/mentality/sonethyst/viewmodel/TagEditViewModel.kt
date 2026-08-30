@@ -73,6 +73,48 @@ class TagEditViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun findArtwork() {
+        val t =
+            _state.value.tags
+
+        _state.update {
+            it.copy(
+                matching = true,
+                matchError = null,
+                matches = emptyList(),
+            )
+        }
+
+        viewModelScope.launch {
+            val results =
+                runCatching {
+                    container.musicBrainz
+                        .searchArtwork(
+                            t.title,
+                            t.artist,
+                            t.album,
+                        )
+                }.getOrDefault(
+                    emptyList()
+                )
+
+            _state.update {
+                it.copy(
+                    matching = false,
+                    matches = results,
+                    matchError =
+                        if (
+                            results.isEmpty()
+                        ) {
+                            "No artwork matches found"
+                        } else {
+                            null
+                        },
+                )
+            }
+        }
+    }
+
     fun identify() {
         val path = _state.value.path
         if (path.isBlank()) return
@@ -84,7 +126,10 @@ class TagEditViewModel(app: Application) : AndroidViewModel(app) {
             when {
                 fingerprint == null -> _state.update { it.copy(identifying = false, matchError = "Couldn't fingerprint this file") }
                 !container.acoustId.configured -> _state.update {
-                    it.copy(identifying = false, matchError = "Fingerprint ready (${fingerprint.length} chars). Add an AcoustID API key to fetch matches.")
+                    it.copy(
+                        identifying = false,
+                        matchError = "Auto-identify unavailable: AcoustID client is not configured.",
+                    )
                 }
                 else -> {
                     val results = runCatching { container.acoustId.lookup(fingerprint, durationSec) }.getOrDefault(emptyList())
@@ -105,7 +150,13 @@ class TagEditViewModel(app: Application) : AndroidViewModel(app) {
                 year = m.year.ifBlank { it.tags.year },
                 trackNumber = m.trackNumber.ifBlank { it.tags.trackNumber },
             ),
-            pickedCoverUrl = m.coverUrl,
+            /*
+             * Metadata application and artwork replacement are
+             * intentionally separate operations.
+             *
+             * A Cover Art Archive URL may legitimately be unavailable;
+             * that must never prevent title/artist/album edits.
+             */
             matches = emptyList(),
         )
     }
@@ -124,6 +175,24 @@ class TagEditViewModel(app: Application) : AndroidViewModel(app) {
         _state.update {
             it.copy(
                 pickedCoverUrl = m.coverUrl,
+                matches = emptyList(),
+            )
+        }
+    }
+
+
+    /**
+     * Stage artwork selected directly from Android's image picker.
+     * Tags remain untouched until Save tags is pressed.
+     */
+    fun pickLocalCover(uri: String) {
+        if (uri.isBlank()) {
+            return
+        }
+
+        _state.update {
+            it.copy(
+                pickedCoverUrl = uri,
                 matches = emptyList(),
             )
         }

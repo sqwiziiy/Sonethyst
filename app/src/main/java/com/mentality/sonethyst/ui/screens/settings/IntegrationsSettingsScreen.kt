@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
-import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Headset
 import androidx.compose.material.icons.filled.LinkOff
@@ -61,36 +60,8 @@ fun IntegrationsSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit
                     }
                 }
             }
-            item { SettingsGroup { AcoustIdRow(scope) } }
         }
     }
-}
-
-@Composable
-private fun AcoustIdRow(scope: CoroutineScope) {
-    val ctx = LocalContext.current
-    val container = (ctx.applicationContext as SonethystApplication).container
-    val saved by container.settingsStore.acoustIdKey.collectAsStateWithLifecycle(initialValue = "")
-    var key by remember(saved) { mutableStateOf(saved) }
-    SettingsNavRow(
-        Icons.Filled.Fingerprint, "AcoustID",
-        subtitle = if (saved.isNotBlank()) "Key set — Auto-identify enabled in tag editor" else "Add your free key from acoustid.org/new-application",
-        value = "",
-    ) {
-        runCatching {
-            ctx.startActivity(
-                android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://acoustid.org/new-application"))
-                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
-        }
-    }
-    OutlinedTextField(
-        value = key,
-        onValueChange = { key = it; scope.launch { container.settingsStore.setAcoustIdKey(it.trim()) } },
-        label = { Text("AcoustID API key") },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-    )
 }
 
 @Composable
