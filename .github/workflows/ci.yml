@@ -53,6 +53,17 @@ jobs:
         run: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
+      - name: Fetch pinned libFLAC source
+        run: |
+          FLAC_DIR="decent/decent-media3-decoder-flac/src/main/jni/libflac"
+
+          git init "$FLAC_DIR"
+          git -C "$FLAC_DIR" remote add origin https://github.com/xiph/flac.git
+          git -C "$FLAC_DIR" fetch --depth=1 origin e94ff9f68b8e7dbd3e9f8b1ac18a8eca1914f181
+          git -C "$FLAC_DIR" checkout --detach FETCH_HEAD
+
+          test "$(git -C "$FLAC_DIR" rev-parse HEAD)" =             "e94ff9f68b8e7dbd3e9f8b1ac18a8eca1914f181"
+
       - name: Run tests
         run: |
           ./gradlew --no-daemon :app:testDebugUnitTest
