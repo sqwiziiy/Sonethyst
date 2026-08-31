@@ -35,6 +35,8 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.mentality.sonethyst.R
+import com.mentality.sonethyst.ui.components.displayArtist
+import com.mentality.sonethyst.ui.components.displayTitle
 import com.mentality.sonethyst.playback.NowPlaying
 import com.mentality.sonethyst.playback.NowPlayingStore
 import com.mentality.sonethyst.playback.PlaybackService
@@ -95,13 +97,23 @@ private fun WidgetContent(np: NowPlaying, art: Bitmap?) {
         Spacer(GlanceModifier.width(12.dp))
         Column(modifier = GlanceModifier.defaultWeight()) {
             Text(
-                if (np.hasTrack) np.title.ifBlank { "Unknown title" } else "Nothing playing",
+                if (np.hasTrack) {
+                    displayTitle(np.title).ifBlank {
+                        context.getString(
+                            R.string.widget_unknown_title
+                        )
+                    }
+                } else {
+                    context.getString(
+                        R.string.widget_nothing_playing
+                    )
+                },
                 style = TextStyle(color = white, fontSize = 15.sp, fontWeight = FontWeight.Bold),
                 maxLines = 1,
             )
             if (np.artist.isNotBlank()) {
                 Spacer(GlanceModifier.height(2.dp))
-                Text(np.artist, style = TextStyle(color = faint, fontSize = 12.sp), maxLines = 1)
+                Text(displayArtist(np.artist), style = TextStyle(color = faint, fontSize = 12.sp), maxLines = 1)
             }
         }
         Spacer(GlanceModifier.width(8.dp))

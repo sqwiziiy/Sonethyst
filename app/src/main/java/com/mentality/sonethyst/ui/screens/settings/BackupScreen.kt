@@ -29,8 +29,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.SonethystApplication
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -48,7 +50,15 @@ fun BackupScreen(contentPadding: PaddingValues, onBack: () -> Unit, confirm: (St
         val text = pending; pending = null
         if (uri != null && text != null) scope.launch(Dispatchers.IO) {
             val ok = runCatching { ctx.contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray()) } != null }.getOrDefault(false)
-            confirm(if (ok) "Backup exported" else "Export failed")
+            confirm(
+                ctx.getString(
+                    if (ok) {
+                        R.string.backup_exported
+                    } else {
+                        R.string.backup_export_failed
+                    }
+                )
+            )
         }
     }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -57,27 +67,46 @@ fun BackupScreen(contentPadding: PaddingValues, onBack: () -> Unit, confirm: (St
                 runCatching { ctx.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } }.getOrNull()
             }
             val ok = json != null && container.backupManager.import(json)
-            confirm(if (ok) "Backup restored" else "Couldn't read that backup")
+            confirm(
+                ctx.getString(
+                    if (ok) {
+                        R.string.backup_restored
+                    } else {
+                        R.string.backup_read_failed
+                    }
+                )
+            )
         }
     }
 
     Column(Modifier.fillMaxWidth()) {
-        SettingsTopBar("Backup & restore", onBack)
+        SettingsTopBar(
+            stringResource(R.string.settings_backup_restore),
+            onBack,
+        )
         Column(Modifier.fillMaxWidth().padding(bottom = contentPadding.calculateBottomPadding() + 24.dp)) {
             SettingsGroup {
-                ActionRow(Icons.Filled.Backup, "Export backup", "Settings, playlists, likes & listening history") {
+                ActionRow(
+                    Icons.Filled.Backup,
+                    stringResource(R.string.backup_export),
+                    stringResource(R.string.backup_export_summary),
+                ) {
                     scope.launch {
                         pending = container.backupManager.export(System.currentTimeMillis())
                         exportLauncher.launch("sonethyst-backup.json")
                     }
                 }
                 SettingsRowDivider()
-                ActionRow(Icons.Filled.Restore, "Restore backup", "Overwrites current settings & playlists") {
+                ActionRow(
+                    Icons.Filled.Restore,
+                    stringResource(R.string.backup_restore),
+                    stringResource(R.string.backup_restore_summary),
+                ) {
                     importLauncher.launch(arrayOf("application/json", "*/*"))
                 }
             }
             Text(
-                "Downloaded audio files aren't included (they can be re-downloaded). Restoring replaces your current settings, on-device playlists, likes and history.",
+                stringResource(R.string.backup_description),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
             )

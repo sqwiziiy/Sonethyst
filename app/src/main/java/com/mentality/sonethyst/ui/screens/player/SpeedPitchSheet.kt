@@ -29,8 +29,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+
+import com.mentality.sonethyst.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,12 +54,12 @@ fun SpeedPitchSheet(
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 32.dp)) {
-            Text("Playback controls", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.speed_pitch_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(20.dp))
 
             ControlBlock(
                 icon = { Icon(Icons.Filled.Speed, null, tint = MaterialTheme.colorScheme.primary) },
-                title = "Speed",
+                title = stringResource(R.string.speed_pitch_speed),
                 value = "${"%.2f".format(speed)}x",
             ) {
                 Slider(
@@ -73,8 +76,8 @@ fun SpeedPitchSheet(
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Match pitch to speed", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("Pitch follows speed, like a turntable", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.speed_pitch_match), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.speed_pitch_match_description), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(
                     checked = matchPitch,
@@ -87,7 +90,7 @@ fun SpeedPitchSheet(
                 Spacer(Modifier.height(16.dp))
                 ControlBlock(
                     icon = { Icon(Icons.Filled.GraphicEq, null, tint = MaterialTheme.colorScheme.tertiary) },
-                    title = "Pitch",
+                    title = stringResource(R.string.speed_pitch_pitch),
                     value = "${if (pitch >= 0) "+" else ""}${"%.1f".format(pitch)} st",
                 ) {
                     Slider(
@@ -110,7 +113,7 @@ fun SpeedPitchSheet(
                     .padding(vertical = 14.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Reset to default", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.speed_pitch_reset), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
             }
         }
     }

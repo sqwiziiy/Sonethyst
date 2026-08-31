@@ -55,6 +55,9 @@ data class LibraryUiState(
     val smartPlaylistCovers: Map<String, String> = emptyMap(),
 )
 
+internal fun likedCoverFor(songs: List<Song>): String =
+    songs.firstOrNull()?.artworkUrl.orEmpty()
+
 class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     private val container = (app as SonethystApplication).container
     private val _state = MutableStateFlow(LibraryUiState())
@@ -96,6 +99,11 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                 if (refreshVersions) {
                     refreshVersions(force = true)
                 }
+            }
+        }
+        viewModelScope.launch {
+            container.likesReload.drop(1).collect {
+                refreshLikedSummary()
             }
         }
         viewModelScope.launch {
@@ -177,7 +185,8 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             val albums = container.repository.allAlbums()
             val artists = container.repository.allArtists()
             val songs = container.repository.librarySongs(songLimit)
-            val likedCount = container.repository.starredCount()
+            val likedSongs = container.repository.starredSongs()
+            val likedCount = likedSongs.size
 
             val smartCovers =
                 runCatching {
@@ -204,7 +213,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                     canLoadMoreSongs = songs.size >= songLimit,
                     downloadedRows = container.repository.downloadedLibrary(),
                     likedSongCount = likedCount,
-                    likedCover = songs.firstOrNull()?.artworkUrl ?: "",
+                    likedCover = likedCoverFor(likedSongs),
                     supportsFolders = container.repository.supportsFolders,
                     supportsGenres = container.repository.supportsGenres,
                     smartPlaylistCovers =
@@ -213,6 +222,16 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                     hiddenItems = container.repository.hiddenLibraryItems(),
                 )
             }
+        }
+    }
+
+    private suspend fun refreshLikedSummary() {
+        val likedSongs = container.repository.starredSongs()
+        _state.update {
+            it.copy(
+                likedSongCount = likedSongs.size,
+                likedCover = likedCoverFor(likedSongs),
+            )
         }
     }
 

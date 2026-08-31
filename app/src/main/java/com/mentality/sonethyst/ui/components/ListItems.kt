@@ -52,9 +52,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
 import com.mentality.sonethyst.model.Playlist
@@ -101,7 +103,7 @@ fun SongRow(
                 if (selected) {
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
                 } else {
-                    androidx.compose.ui.graphics.Color.Transparent
+                    MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.45f)
                 }
             )
             .combinedClickable(
@@ -146,7 +148,7 @@ fun SongRow(
                 ) {
                     Icon(
                         Icons.Filled.CheckCircle,
-                        "Selected",
+                        stringResource(R.string.song_selected),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(26.dp),
                     )
@@ -156,7 +158,7 @@ fun SongRow(
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                song.title,
+                displayTitle(song.title),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Medium,
                 color = if (isPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
@@ -174,7 +176,7 @@ fun SongRow(
                     Spacer(Modifier.width(4.dp))
                 }
                 Text(
-                    song.artist,
+                    displayArtist(song.artist),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -184,12 +186,19 @@ fun SongRow(
         }
         Spacer(Modifier.width(8.dp))
         if (isDownloaded) {
-            Icon(Icons.Filled.DownloadDone, "Downloaded", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+            Icon(Icons.Filled.DownloadDone, stringResource(R.string.song_downloaded), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(6.dp))
         }
         Icon(
             imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-            contentDescription = "Like",
+            contentDescription =
+                stringResource(
+                    if (isLiked) {
+                        R.string.song_remove_from_liked
+                    } else {
+                        R.string.song_add_to_liked
+                    }
+                ),
             tint = if (isLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .size(36.dp)
@@ -205,33 +214,33 @@ fun SongRow(
         )
         Box {
             Icon(
-                Icons.Outlined.MoreVert, "More",
+                Icons.Outlined.MoreVert, stringResource(R.string.action_more),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(32.dp).clip(CircleShape).clickable { menuOpen = true }.padding(4.dp),
             )
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
-                    text = { Text("Play") },
+                    text = { Text(stringResource(R.string.action_play)) },
                     onClick = { menuOpen = false; onClick() },
                     leadingIcon = { Icon(Icons.Filled.PlayArrow, null) },
                 )
                 if (onPlayNext != null) DropdownMenuItem(
-                    text = { Text("Play next") },
+                    text = { Text(stringResource(R.string.song_play_next)) },
                     onClick = { menuOpen = false; onPlayNext() },
                     leadingIcon = { Icon(Icons.Filled.QueuePlayNext, null) },
                 )
                 if (onAddToQueue != null) DropdownMenuItem(
-                    text = { Text("Add to queue") },
+                    text = { Text(stringResource(R.string.action_add_to_queue)) },
                     onClick = { menuOpen = false; onAddToQueue() },
                     leadingIcon = { Icon(Icons.AutoMirrored.Filled.QueueMusic, null) },
                 )
                 if (onAddToPlaylist != null) DropdownMenuItem(
-                    text = { Text("Add to playlist") },
+                    text = { Text(stringResource(R.string.song_add_to_playlist)) },
                     onClick = { menuOpen = false; onAddToPlaylist() },
                     leadingIcon = { Icon(Icons.AutoMirrored.Filled.PlaylistAdd, null) },
                 )
                 if (onRemoveFromPlaylist != null) DropdownMenuItem(
-                    text = { Text("Remove from playlist") },
+                    text = { Text(stringResource(R.string.song_remove_from_playlist)) },
                     onClick = { menuOpen = false; onRemoveFromPlaylist() },
                     leadingIcon = {
                         Icon(
@@ -242,13 +251,23 @@ fun SongRow(
                     },
                 )
                 DropdownMenuItem(
-                    text = { Text(if (isLiked) "Remove from liked" else "Add to liked") },
+                    text = {
+                        Text(
+                            stringResource(
+                                if (isLiked) {
+                                    R.string.song_remove_from_liked
+                                } else {
+                                    R.string.song_add_to_liked
+                                }
+                            )
+                        )
+                    },
                     onClick = { menuOpen = false; onToggleLike() },
                     leadingIcon = { Icon(if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, null) },
                 )
                 if (onEditCustomTags != null) {
                     DropdownMenuItem(
-                        text = { Text("Tags") },
+                        text = { Text(stringResource(R.string.song_tags)) },
                         onClick = {
                             menuOpen = false
                             onEditCustomTags()
@@ -265,7 +284,7 @@ fun SongRow(
                 if (onHide != null) {
                     DropdownMenuItem(
                         text = {
-                            Text("Hide from library")
+                            Text(stringResource(R.string.song_hide_from_library))
                         },
                         onClick = {
                             menuOpen = false
@@ -285,9 +304,14 @@ fun SongRow(
                         text = {
                             Text(
                                 if (song.rating > 0) {
-                                    "Rating: ${song.rating}/5"
+                                    stringResource(
+                                        R.string.song_rating,
+                                        song.rating,
+                                    )
                                 } else {
-                                    "Rate"
+                                    stringResource(
+                                        R.string.song_rate
+                                    )
                                 }
                             )
                         },
@@ -308,27 +332,27 @@ fun SongRow(
                     )
                 }
                 if (isDownloaded && onRemoveDownload != null) DropdownMenuItem(
-                    text = { Text("Remove download") },
+                    text = { Text(stringResource(R.string.song_remove_download)) },
                     onClick = { menuOpen = false; onRemoveDownload() },
                     leadingIcon = { Icon(Icons.Filled.DownloadDone, null, tint = MaterialTheme.colorScheme.primary) },
                 ) else if (onDownload != null) DropdownMenuItem(
-                    text = { Text("Download") },
+                    text = { Text(stringResource(R.string.song_download)) },
                     onClick = { menuOpen = false; onDownload() },
                     leadingIcon = { Icon(Icons.Filled.Download, null) },
                 )
                 if (onGoToAlbum != null) DropdownMenuItem(
-                    text = { Text("Go to album") },
+                    text = { Text(stringResource(R.string.song_go_to_album)) },
                     onClick = { menuOpen = false; onGoToAlbum() },
                     leadingIcon = { Icon(Icons.Filled.Album, null) },
                 )
                 if (onGoToArtist != null) DropdownMenuItem(
-                    text = { Text("Go to artist") },
+                    text = { Text(stringResource(R.string.song_go_to_artist)) },
                     onClick = { menuOpen = false; onGoToArtist() },
                     leadingIcon = { Icon(Icons.Filled.Person, null) },
                 )
                 // tag edit only on content:// files or backends with metadata write
                 if (onEditTags != null && (song.streamUrl.startsWith("content://") || serverTagEditing)) DropdownMenuItem(
-                    text = { Text("Edit tags") },
+                    text = { Text(stringResource(R.string.action_edit_tags)) },
                     onClick = { menuOpen = false; onEditTags() },
                     leadingIcon = { Icon(Icons.Filled.Edit, null) },
                 )
@@ -362,15 +386,25 @@ private fun SongRatingDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Rate ${song.title}")
+            Text(
+                stringResource(
+                    R.string.rating_title,
+                    displayTitle(song.title),
+                )
+            )
         },
         text = {
             Column {
                 Text(
                     if (song.rating > 0) {
-                        "Current rating: ${song.rating}/5"
+                        stringResource(
+                            R.string.rating_current,
+                            song.rating,
+                        )
                     } else {
-                        "Choose a rating"
+                        stringResource(
+                            R.string.rating_choose
+                        )
                     },
                     color =
                         MaterialTheme.colorScheme
@@ -395,7 +429,11 @@ private fun SongRatingDialog(
                                     Icons.Outlined.StarBorder
                                 },
                             contentDescription =
-                                "$value stars",
+                                androidx.compose.ui.res.pluralStringResource(
+                                    R.plurals.rating_stars,
+                                    value,
+                                    value,
+                                ),
                             tint =
                                 if (value <= song.rating) {
                                     MaterialTheme
@@ -423,7 +461,7 @@ private fun SongRatingDialog(
             TextButton(
                 onClick = onDismiss,
             ) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         },
         dismissButton = {
@@ -433,7 +471,7 @@ private fun SongRatingDialog(
                         onSelect(0)
                     },
                 ) {
-                    Text("Clear rating")
+                    Text(stringResource(R.string.rating_clear))
                 }
             }
         },
@@ -487,7 +525,7 @@ fun AlbumCard(album: Album, onClick: () -> Unit, modifier: Modifier = Modifier) 
         Spacer(Modifier.height(10.dp))
         Text(album.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(
-            "${album.artist} • ${album.year}",
+            "${displayArtist(album.artist)} • ${album.year}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
@@ -509,7 +547,11 @@ fun ArtistCircle(artist: Artist, onClick: () -> Unit, modifier: Modifier = Modif
         Artwork(artist.imageUrl, MaterialTheme.colorScheme.tertiary, Modifier.size(108.dp), corner = 108.dp)
         Spacer(Modifier.height(8.dp))
         Text(artist.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text("Artist", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            stringResource(R.string.library_artist),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

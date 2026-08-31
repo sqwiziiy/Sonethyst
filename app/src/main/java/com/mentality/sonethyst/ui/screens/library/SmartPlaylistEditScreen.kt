@@ -44,11 +44,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.data.SmartPlaylist
 import com.mentality.sonethyst.data.SmartRule
 import com.mentality.sonethyst.data.resolveSmartPlaylistCover
@@ -65,29 +67,66 @@ private const val TYPE_TEXT = 0
 private const val TYPE_NUMBER = 1
 private const val TYPE_BOOL = 2
 
-private data class FieldSpec(val key: String, val label: String, val type: Int)
-
-private val FIELDS = listOf(
-    FieldSpec("title", "Title", TYPE_TEXT),
-    FieldSpec("artist", "Artist", TYPE_TEXT),
-    FieldSpec("album", "Album", TYPE_TEXT),
-    FieldSpec("format", "Format (flac, mp3…)", TYPE_TEXT),
-    FieldSpec("duration", "Duration (seconds)", TYPE_NUMBER),
-    FieldSpec("bitrate", "Bitrate (kbps)", TYPE_NUMBER),
-    FieldSpec("playCount", "Play count", TYPE_NUMBER),
-    FieldSpec("lastPlayedDays", "Last played (days ago)", TYPE_NUMBER),
-    FieldSpec("liked", "Liked", TYPE_BOOL),
-    FieldSpec("downloaded", "Downloaded", TYPE_BOOL),
+private data class FieldSpec(
+    val key: String,
+    val labelRes: Int,
+    val type: Int,
 )
 
-private val TEXT_OPS = listOf("contains" to "contains", "notContains" to "doesn't contain", "is" to "is", "isNot" to "is not", "startsWith" to "starts with")
-private val NUM_OPS = listOf("gt" to "more than", "lt" to "less than", "eq" to "exactly")
-private val BOOL_OPS = listOf("isTrue" to "yes", "isFalse" to "no")
+private val FIELDS =
+    listOf(
+        FieldSpec("title", R.string.smart_field_title, TYPE_TEXT),
+        FieldSpec("artist", R.string.smart_field_artist, TYPE_TEXT),
+        FieldSpec("album", R.string.smart_field_album, TYPE_TEXT),
+        FieldSpec("format", R.string.smart_field_format, TYPE_TEXT),
+        FieldSpec("duration", R.string.smart_field_duration, TYPE_NUMBER),
+        FieldSpec("bitrate", R.string.smart_field_bitrate, TYPE_NUMBER),
+        FieldSpec("playCount", R.string.smart_field_play_count, TYPE_NUMBER),
+        FieldSpec(
+            "lastPlayedDays",
+            R.string.smart_field_last_played_days,
+            TYPE_NUMBER,
+        ),
+        FieldSpec("liked", R.string.smart_field_liked, TYPE_BOOL),
+        FieldSpec(
+            "downloaded",
+            R.string.smart_field_downloaded,
+            TYPE_BOOL,
+        ),
+    )
 
-private val SORTS = listOf(
-    "title" to "Title", "artist" to "Artist", "album" to "Album", "duration" to "Duration",
-    "playCount" to "Play count", "lastPlayed" to "Last played", "random" to "Random",
-)
+private val TEXT_OPS =
+    listOf(
+        "contains" to R.string.smart_op_contains,
+        "notContains" to R.string.smart_op_not_contains,
+        "is" to R.string.smart_op_is,
+        "isNot" to R.string.smart_op_is_not,
+        "startsWith" to R.string.smart_op_starts_with,
+    )
+
+private val NUM_OPS =
+    listOf(
+        "gt" to R.string.smart_op_more_than,
+        "lt" to R.string.smart_op_less_than,
+        "eq" to R.string.smart_op_exactly,
+    )
+
+private val BOOL_OPS =
+    listOf(
+        "isTrue" to R.string.smart_op_yes,
+        "isFalse" to R.string.smart_op_no,
+    )
+
+private val SORTS =
+    listOf(
+        "title" to R.string.smart_sort_title,
+        "artist" to R.string.smart_sort_artist,
+        "album" to R.string.smart_sort_album,
+        "duration" to R.string.smart_sort_duration,
+        "playCount" to R.string.smart_sort_play_count,
+        "lastPlayed" to R.string.smart_sort_last_played,
+        "random" to R.string.smart_sort_random,
+    )
 
 private fun fieldSpec(key: String?): FieldSpec = FIELDS.firstOrNull { it.key == key } ?: FIELDS.first()
 private fun opsFor(type: Int) = when (type) { TYPE_NUMBER -> NUM_OPS; TYPE_BOOL -> BOOL_OPS; else -> TEXT_OPS }
@@ -150,25 +189,37 @@ fun SmartPlaylistEditScreen(
         )
 
     val coverLabel =
-        when (coverMode) {
-            "first" ->
-                "First track"
+        stringResource(
+            when (coverMode) {
+                "first" ->
+                    R.string.cover_first_track
 
-            "collage" ->
-                "2×2 collage"
+                "collage" ->
+                    R.string.cover_collage
 
-            "track" ->
-                "Track artwork"
+                "track" ->
+                    R.string.cover_track_artwork
 
-            "custom" ->
-                "Image from device"
+                "custom" ->
+                    R.string.cover_device_image
 
-            else ->
-                "Automatic"
-        }
+                else ->
+                    R.string.cover_automatic
+            }
+        )
 
     Column(Modifier.fillMaxSize()) {
-        SettingsTopBar(title = if (isNew) "New smart playlist" else "Edit smart playlist", onBack = onBack)
+        SettingsTopBar(
+            title =
+                stringResource(
+                    if (isNew) {
+                        R.string.smart_new
+                    } else {
+                        R.string.smart_edit
+                    }
+                ),
+            onBack = onBack,
+        )
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
                 .padding(bottom = contentPadding.calculateBottomPadding() + 24.dp),
@@ -176,7 +227,7 @@ fun SmartPlaylistEditScreen(
             OutlinedTextField(
                 value = playlist.name.orEmpty(),
                 onValueChange = { v -> onUpdate { it.copy(name = v) } },
-                label = { Text("Name") },
+                label = { Text(stringResource(R.string.detail_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             )
@@ -216,7 +267,7 @@ fun SmartPlaylistEditScreen(
                         Modifier.weight(1f)
                     ) {
                         Text(
-                            "Playlist cover",
+                            stringResource(R.string.smart_playlist_cover),
                             style =
                                 MaterialTheme
                                     .typography
@@ -240,7 +291,7 @@ fun SmartPlaylistEditScreen(
 
                     Icon(
                         Icons.Filled.Image,
-                        "Change cover",
+                        stringResource(R.string.smart_change_cover),
                         tint =
                             MaterialTheme
                                 .colorScheme
@@ -253,15 +304,19 @@ fun SmartPlaylistEditScreen(
 
             SettingsGroup {
                 SegmentedRow(
-                    title = "Match",
-                    options = listOf("All rules", "Any rule"),
+                    title = stringResource(R.string.smart_match),
+                    options =
+                        listOf(
+                            stringResource(R.string.smart_all_rules),
+                            stringResource(R.string.smart_any_rule),
+                        ),
                     selected = if (playlist.matchAll != false) 0 else 1,
                     onSelect = { i -> onUpdate { it.copy(matchAll = i == 0) } },
                 )
             }
             Spacer(Modifier.height(14.dp))
 
-            Text("Rules", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 20.dp))
+            Text(stringResource(R.string.smart_rules), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 20.dp))
             Spacer(Modifier.height(6.dp))
             val rules = playlist.rules.orEmpty()
             rules.forEachIndexed { i, rule ->
@@ -274,15 +329,18 @@ fun SmartPlaylistEditScreen(
             TextButton(onClick = { onUpdate { it.copy(rules = rules + SmartRule()) } }, modifier = Modifier.padding(horizontal = 12.dp)) {
                 Icon(Icons.Filled.Add, null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Add rule")
+                Text(stringResource(R.string.smart_add_rule))
             }
             Spacer(Modifier.height(14.dp))
 
             SettingsGroup {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Sort by", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.smart_sort_by), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                     Dropdown(
-                        options = SORTS.map { it.second },
+                        options =
+                            SORTS.map {
+                                stringResource(it.second)
+                            },
                         selected = SORTS.indexOfFirst { it.first == (playlist.sortBy ?: "title") }.coerceAtLeast(0),
                         onSelect = { i -> onUpdate { it.copy(sortBy = SORTS[i].first) } },
                     )
@@ -290,14 +348,18 @@ fun SmartPlaylistEditScreen(
                     val desc = playlist.descending == true
                     Icon(
                         if (desc) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
-                        if (desc) "Descending" else "Ascending",
+                        if (desc) {
+                            stringResource(R.string.smart_descending)
+                        } else {
+                            stringResource(R.string.smart_ascending)
+                        },
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(36.dp).clip(CircleShape)
                             .clickable { onUpdate { it.copy(descending = !desc) } }.padding(7.dp),
                     )
                 }
                 Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Limit (0 = all)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.smart_limit), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                     OutlinedTextField(
                         value = (playlist.limit ?: 0).takeIf { it > 0 }?.toString() ?: "",
                         onValueChange = { v -> onUpdate { it.copy(limit = v.filter { c -> c.isDigit() }.toIntOrNull() ?: 0) } },
@@ -313,7 +375,14 @@ fun SmartPlaylistEditScreen(
                 onClick = onSave,
                 enabled = !playlist.name.isNullOrBlank(),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            ) { Text(if (isNew) "Create smart playlist" else "Save changes", fontWeight = FontWeight.Bold) }
+            ) { Text(
+                stringResource(
+                    if (isNew) {
+                        R.string.smart_create
+                    } else {
+                        R.string.smart_save_changes
+                    }
+                ), fontWeight = FontWeight.Bold) }
         }
     }
 
@@ -387,7 +456,10 @@ private fun RuleRow(rule: SmartRule, onChange: (SmartRule) -> Unit, onRemove: ()
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Dropdown(
-                options = FIELDS.map { it.label },
+                options =
+                    FIELDS.map {
+                        stringResource(it.labelRes)
+                    },
                 selected = FIELDS.indexOfFirst { it.key == spec.key }.coerceAtLeast(0),
                 onSelect = { i ->
                     val f = FIELDS[i]
@@ -398,12 +470,15 @@ private fun RuleRow(rule: SmartRule, onChange: (SmartRule) -> Unit, onRemove: ()
                 modifier = Modifier.weight(1f),
             )
             Dropdown(
-                options = ops.map { it.second },
+                options =
+                    ops.map {
+                        stringResource(it.second)
+                    },
                 selected = ops.indexOfFirst { it.first == rule.op }.coerceAtLeast(0),
                 onSelect = { i -> onChange(rule.copy(op = ops[i].first)) },
             )
             Icon(
-                Icons.Filled.Close, "Remove rule",
+                Icons.Filled.Close, stringResource(R.string.smart_remove_rule),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(32.dp).clip(CircleShape).clickable(onClick = onRemove).padding(6.dp),
             )
@@ -413,7 +488,17 @@ private fun RuleRow(rule: SmartRule, onChange: (SmartRule) -> Unit, onRemove: ()
             OutlinedTextField(
                 value = rule.value.orEmpty(),
                 onValueChange = { v -> onChange(rule.copy(value = if (spec.type == TYPE_NUMBER) v.filter { it.isDigit() } else v)) },
-                placeholder = { Text(if (spec.type == TYPE_NUMBER) "Number…" else "Text…") },
+                placeholder = {
+                    Text(
+                        stringResource(
+                            if (spec.type == TYPE_NUMBER) {
+                                R.string.smart_number_placeholder
+                            } else {
+                                R.string.smart_text_placeholder
+                            }
+                        )
+                    )
+                },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )

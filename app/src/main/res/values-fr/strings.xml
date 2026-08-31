@@ -1,0 +1,1633 @@
+<resources>
+    <string name="app_name">Sonethyst</string>
+    <string name="widget_description">Commandes de lecture</string>
+    <string name="common_unknown_artist">Artiste inconnu</string>
+    <string name="common_unknown_album">Album inconnu</string>
+    <string name="common_unknown_title">Inconnu</string>
+    <string name="common_various_artists">Artistes divers</string>
+    <string name="autoeq_applied_profile">AutoEQ: %1$s → %2$s</string>
+
+    <!-- Accueil -->
+    <string name="home_greeting_morning">BONJOUR</string>
+    <string name="home_greeting_afternoon">BON APRÈS-MIDI</string>
+    <string name="home_greeting_evening">BONSOIR</string>
+    <string name="home_listener">Auditeur</string>
+    <string name="home_avatar_fallback">MOI</string>
+    <string name="home_settings">Paramètres</string>
+    <string name="home_jump_back_in">Reprendre l’écoute</string>
+    <string name="home_your_playlists">Vos playlists</string>
+    <string name="home_from_favourites">Depuis vos favoris</string>
+    <string name="home_starred">FAVORIS</string>
+    <string name="home_most_played">Les plus écoutés</string>
+    <string name="home_artists">Artistees</string>
+    <string name="home_new_releases">Nouveautés</string>
+    <string name="home_new_release">NOUVEAUTÉ</string>
+    <string name="action_play">Lire</string>
+
+
+    <!-- Common actions -->
+    <string name="action_back">Retour</string>
+    <string name="action_search">Rechercher</string>
+    <string name="action_create">Créer</string>
+    <string name="action_clear">Effacer</string>
+    <string name="action_more">Plus</string>
+    <string name="action_rename">Renommer</string>
+    <string name="action_edit">Modifier</string>
+    <string name="action_cancel">Annuler</string>
+    <string name="action_restore">Restaurer</string>
+    <string name="action_shuffle">Aléatoire</string>
+    <string name="action_add_to_queue">Ajouter à la fichier</string>
+    <string name="action_edit_tags">Modifier tags</string>
+    <string name="action_delete">Supprimer</string>
+    <string name="action_like">J’aime</string>
+    <string name="action_unlike">Je n’aime pas</string>
+
+    <!-- Bibliothèque -->
+    <string name="library_title">Votre bibliothèque</string>
+    <string name="library_create">Créer</string>
+    <string name="library_new_playlist">Nouvelle playlist</string>
+    <string name="library_new_folder">Nouveau dossier</string>
+    <string name="library_smart_playlist">playlist intelligente</string>
+    <string name="library_import_playlist">Importer une playlist</string>
+    <string name="library_rename_folder">Renommer dossier</string>
+    <string name="library_move_folder">Déplacer dossier</string>
+    <string name="library_delete_folder">Supprimer dossier</string>
+    <string name="library_move_to_folder">Déplacer vers le dossier</string>
+    <string name="library_delete_playlist">Supprimer la playlist</string>
+    <string name="library_no_genres_found">Aucun genre trouvé</string>
+    <string name="library_parent_folder">parent dossier</string>
+    <string name="library_playlists">Playlists</string>
+    <string name="library_no_playlists_or_folders">Aucune playlist ni aucun dossier</string>
+    <string name="library_folder_empty">Ce dossier est vide</string>
+    <string name="library_toggle_layout">Changer affichage</string>
+    <string name="library_no_alternate_versions">Aucune autre version trouvée</string>
+    <string name="library_selected_count">%1$d sélectionné</string>
+    <string name="library_no_hidden_items">Aucun titre ou album masqué</string>
+    <string name="library_no_downloads">Aucun téléchargement</string>
+    <string name="library_no_custom_tags">Aucun tag personnalisé</string>
+    <string name="library_folder">Dossier</string>
+    <string name="library_playlist_folder">Dossier de playlist</string>
+    <string name="library_folder_name">Dossier nom</string>
+    <string name="library_playlist_name">Nom de la playlist</string>
+    <string name="library_duplicate_name">A playlist ou dossier avec ce nom existe déjà ici</string>
+    <string name="library_move_named">Déplacer %1$s</string>
+    <string name="library_playing">Lecture</string>
+    <string name="library_version_info_unavailable">Informations de version indisponibles</string>
+    <string name="library_pin">Épingler vers Bibliothèque</string>
+    <string name="library_unpin">Désépingler de Bibliothèque</string>
+    <string name="library_move_pin_up">Déplacer pin vers le haut</string>
+    <string name="library_move_pin_down">Déplacer pin vers le bas</string>
+    <string name="library_export_m3u">Exporter au format M3U</string>
+    <string name="library_edit_rules">Modifier règles</string>
+    <string name="library_hide_album">Masquer l’album</string>
+    <string name="library_hidden_album">album • %1$s</string>
+    <string name="library_hidden_track">Titre • %1$s</string>
+    <string name="user_avatar_fallback">MOI</string>
+
+
+    <!-- Bibliothèque filters -->
+    <string name="library_filter_all">Tous</string>
+    <string name="library_filter_playlists">Playlists</string>
+    <string name="library_filter_albums">Albums</string>
+    <string name="library_filter_artists">Artistees</string>
+    <string name="library_filter_genres">Genres</string>
+    <string name="library_filter_tags">tags</string>
+    <string name="library_filter_versions">Versions</string>
+    <string name="library_filter_hidden">Masqué</string>
+    <string name="library_filter_songs">Titres</string>
+    <string name="library_filter_downloaded">Téléchargé</string>
+
+    <!-- Bibliothèque sort -->
+    <string name="library_sort_recent">Ajoutés récemment</string>
+    <string name="library_sort_alphabetical">Alphabétique</string>
+    <string name="library_sort_creator">Créateur</string>
+    <string name="library_sort_most_played">Les plus écoutés</string>
+
+    <!-- Bibliothèque collection labels -->
+    <string name="library_smart_playlist_default">playlist intelligente</string>
+    <string name="library_artist">Artiste</string>
+    <string name="library_genre">Genre</string>
+    <string name="library_liked_songs">Titres aimés</string>
+    <string name="library_folders">Dossiers</string>
+    <string name="library_browse_by_folder">Browse par dossier</string>
+    <string name="library_radio">Radio</string>
+    <string name="library_live_internet_stations">en direct Internet stations</string>
+    <string name="library_podcasts">Podcasts</string>
+    <string name="library_shows_episodes">Émissions &amp; épisodes</string>
+
+    <!-- Bibliothèque composed labels -->
+    <string name="library_playlist_with_count">Playlist • %1$s</string>
+    <string name="library_pinned_playlist_with_count">Épinglée • Playlist • %1$s</string>
+    <string name="library_smart_playlist_with_rules">playlist intelligente • %1$s</string>
+    <string name="library_pinned_smart_playlist_with_rules">Épinglé • playlist intelligente • %1$s</string>
+    <string name="library_album_with_artist">album • %1$s</string>
+    <string name="library_pinned_album_with_artist">Épinglé • album • %1$s</string>
+    <string name="library_pinned_artist">Épinglé • Artiste</string>
+    <string name="library_genre_with_count">Genre • %1$s</string>
+    <string name="library_tag_with_count">Étiquette • %1$s</string>
+    <string name="library_pinned_with_count">Épinglé • %1$s</string>
+    <string name="library_folder_summary">%1$s • %2$s</string>
+    <string name="library_versions_summary">%1$s • %2$s</string>
+    <string name="library_version_artist_summary">%1$s • %2$s</string>
+
+    <plurals name="library_song_count">
+        <item quantity="one">%d titre</item>
+        <item quantity="other">%d titres</item>
+    </plurals>
+
+    <plurals name="library_playlist_count">
+        <item quantity="one">%d playlist</item>
+        <item quantity="other">%d playlists</item>
+    </plurals>
+
+    <plurals name="library_folder_count">
+        <item quantity="one">%d dossier</item>
+        <item quantity="other">%d dossiers</item>
+    </plurals>
+
+    <plurals name="library_rule_count">
+        <item quantity="one">%d règle</item>
+        <item quantity="other">%d règles</item>
+    </plurals>
+
+    <plurals name="library_version_count">
+        <item quantity="one">%d version</item>
+        <item quantity="other">%d versions</item>
+    </plurals>
+
+    <plurals name="library_song_group_count">
+        <item quantity="one">%d titre group</item>
+        <item quantity="other">%d titre groups</item>
+    </plurals>
+
+
+    <!-- Song rows / song actions -->
+    <string name="song_selected">Sélectionné</string>
+    <string name="song_downloaded">Téléchargé</string>
+    <string name="song_play_next">Lire ensuite</string>
+    <string name="song_add_to_playlist">Ajouter à la playlist</string>
+    <string name="song_remove_from_playlist">Retirer de la playlist</string>
+    <string name="song_add_to_liked">Ajouter vers aimée</string>
+    <string name="song_remove_from_liked">Supprimer de aimée</string>
+    <string name="song_tags">tags</string>
+    <string name="song_hide_from_library">Masquer de bibliothèque</string>
+    <string name="song_rate">Noter</string>
+    <string name="song_rating">Note: %1$d/5</string>
+    <string name="song_remove_download">Supprimer téléchargement</string>
+    <string name="song_download">Télécharger</string>
+    <string name="song_go_to_album">Accéder à l’album</string>
+    <string name="song_go_to_artist">Accéder à l’artiste</string>
+
+    <!-- Note -->
+    <string name="rating_title">Noter %1$s</string>
+    <string name="rating_current">Note actuelle: %1$d/5</string>
+    <string name="rating_choose">Choisir une note</string>
+    <string name="rating_clear">Effacer note</string>
+
+    <plurals name="rating_stars">
+        <item quantity="one">%d étoile</item>
+        <item quantity="other">%d étoiles</item>
+    </plurals>
+
+
+    <!-- Detail écran -->
+    <string name="detail_couldnt_load">Impossible de charger</string>
+    <string name="detail_add_all_to_queue">Ajouter tous vers fichier</string>
+    <string name="detail_change_cover">Modifier pochette</string>
+    <string name="detail_edit_smart_playlist">Modifier la playlist intelligente</string>
+    <string name="detail_edit_playlist">Modifier la playlist</string>
+    <string name="detail_delete_smart_playlist">Supprimer la playlist intelligente</string>
+    <string name="detail_remove_downloads">Supprimer téléchargements</string>
+
+    <string name="detail_clear_selection">Effacer sélection</string>
+    <string name="detail_select_all">Tout sélectionner</string>
+    <string name="detail_add_selected_to_playlist">Ajouter la sélection à la playlist</string>
+    <string name="detail_add_selected_to_queue">Ajouter sélectionné vers fichier</string>
+    <string name="detail_remove_selected_from_playlist">Supprimer la sélection de la playlist</string>
+    <string name="detail_more_selected_actions">Plus sélectionné actions</string>
+    <string name="detail_edit_selected_tags">Modifier sélectionné tags</string>
+    <string name="detail_download_selected">Télécharger sélectionné</string>
+    <string name="detail_remove_selected_from_liked">Supprimer sélectionné de aimée</string>
+    <string name="detail_add_selected_to_liked">Ajouter sélectionné vers aimée</string>
+
+    <string name="detail_popular">Populaires</string>
+    <string name="detail_tracks">Titres</string>
+    <string name="detail_close_search">Fermer recherche</string>
+    <string name="detail_search_tracks">Rechercher titres</string>
+    <string name="detail_search_in">Rechercher dans %1$s</string>
+
+    <string name="detail_about">À propos</string>
+    <string name="detail_show_less">Afficher moins</string>
+    <string name="detail_show_more">Afficher plus</string>
+
+    <string name="detail_name">Nom</string>
+    <string name="detail_description">Description</string>
+    <string name="action_save">Enregistrer</string>
+
+
+    <!-- Lireer -->
+    <string name="player_collapse">Réduire</string>
+    <string name="player_playing_from">LECTURE DEPUIS</string>
+    <string name="player_unknown_album">album inconnu</string>
+    <string name="player_output_device">Appareil de sortie</string>
+
+    <string name="player_sonic_radio">Radio Sonic</string>
+    <string name="player_auto_dj">Auto-DJ</string>
+    <string name="player_visualizer">Visualiseur</string>
+    <string name="player_sleep_timer">Minuteur de veille</string>
+    <string name="player_edit_lyrics">Modifier paroles</string>
+    <string name="player_view_queue">Afficher fichier</string>
+
+    <string name="player_source_local">local</string>
+    <string name="player_source_downloaded">Téléchargé</string>
+    <string name="player_source_streaming">Diffusion</string>
+    <string name="player_lossless">Lossless</string>
+
+    <string name="player_previous">Précédent</string>
+    <string name="player_next">Suivant</string>
+    <string name="player_play_pause">Lire/pause</string>
+    <string name="player_repeat">Répéter</string>
+
+    <string name="player_speed_value">Vitesse %1$.1fx</string>
+    <string name="player_lyrics">Paroles</string>
+    <string name="player_queue">Fichier d’attente</string>
+    <string name="player_live">EN DIRECT</string>
+
+    <string name="player_no_lyrics">Aucune parole trouvée</string>
+    <string name="player_lyrics_sources">Serveur et LRCLIB consultés</string>
+    <string name="player_plain_lyrics_source">%1$s · texte</string>
+
+
+    <!-- Authentication -->
+    <string name="auth_choose_server">Choisir votre musique serveur</string>
+    <string name="auth_enter_server">Saisir l’adresse du serveur</string>
+    <string name="auth_sign_in_to">Se connecter vers %1$s</string>
+    <string name="auth_connect_spotify_app">Connecter votre propre application Spotify</string>
+    <string name="auth_connecting_spotify">Connexion à Spotify…</string>
+
+    <string name="auth_saved_logins">Enregistrerd connexions</string>
+    <string name="auth_continue_as">Continuer en tant que %1$s</string>
+    <string name="auth_or_add_server">Ou ajouter un serveur</string>
+
+    <string name="auth_local">local</string>
+    <string name="auth_local_description">Fichiers musicaux sur cet appareil · sans connexion</string>
+    <string name="auth_navidrome">Navidrome</string>
+    <string name="auth_subsonic_description">Subsonic / OpenSubsonic</string>
+    <string name="auth_jellyfin">Jellyfin</string>
+    <string name="auth_jellyfin_description">Jellyfin multimédia serveur</string>
+    <string name="auth_spotify">Spotify</string>
+    <string name="auth_spotify_description">Votre bibliothèque · diffusée via YouTube</string>
+
+    <string name="auth_local_permission_required">L’autorisation de lire votre musique est nécessaire pour le mode local. Activez-la dans Paramètres → Applications → Sonethyst → Autorisations.</string>
+
+    <string name="auth_spotify_intro">Sonethyst diffuse votre bibliothèque Spotify via YouTube. Vous devez donc utiliser votre propre application Spotify gratuite :</string>
+    <string name="auth_spotify_step_dashboard">Ouvrez le tableau de bord développeur Spotify et créez une application.</string>
+    <string name="auth_spotify_step_redirect">définir le Redirect URI vers exactement: sonethyst://spotify</string>
+    <string name="auth_spotify_step_api">Dans APIs, cochez Web API (et Android).</string>
+    <string name="auth_spotify_step_user">Dans utilisateurs gestion, ajouter votre propre Spotify compte adresse e-mail.</string>
+    <string name="auth_spotify_step_client_id">Copiez l’identifiant client de l’application et collez-le ci-dessous.</string>
+    <string name="auth_open_spotify_dashboard">Ouvrir Spotify tableau de bord</string>
+    <string name="auth_client_id">client identifiant</string>
+
+    <string name="auth_server_ip_port">Serveur IP et port</string>
+    <string name="auth_continue">Continuer</string>
+    <string name="auth_username">Nom d’utilisateur</string>
+    <string name="auth_password">Mot de passe</string>
+    <string name="auth_connect">Connecter</string>
+
+    <!-- Paroles editor -->
+    <string name="lyrics_edit_source">source : %1$s</string>
+    <string name="lyrics_edit_plain_text">Texte brut texte</string>
+    <string name="lyrics_edit_synced_lrc">Synchronisé LRC</string>
+    <string name="lyrics_edit_lrc_hint">Utiliser LRC horodatages, pour exemple: [01:23.456]Ligne</string>
+    <string name="lyrics_edit_timing_offset">Synchronisation décalage: %1$s ms</string>
+    <string name="lyrics_edit_reset_offset">Réinitialiser timing décalage</string>
+    <string name="lyrics_edit_lrc_lyrics">LRC paroles</string>
+    <string name="lyrics_edit_line_timing">Ligne timing</string>
+    <string name="lyrics_edit_now_help">NOW utilise la position actuelle de lecture.</string>
+    <string name="lyrics_edit_now">MAINTENANT</string>
+    <string name="lyrics_edit_saving">Enregistrement…</string>
+    <string name="action_reset">Réinitialiser</string>
+
+
+    <!-- Égaliseur -->
+    <string name="eq_title">Égaliseur et effets</string>
+    <string name="eq_tone_engine">Traitement audio</string>
+    <string name="eq_correction">Correction</string>
+    <string name="eq_headphone_correction">Correction du casque</string>
+    <string name="eq_autoeq_off">AutoEQ — désactivé</string>
+    <string name="eq_convolution_ir">Convolution (IR)</string>
+    <string name="eq_system_equalizer">Égaliseur système</string>
+    <string name="eq_custom_dsp">Personnalisé DSP</string>
+    <string name="eq_tone_bypassed">Son façonnage est contourné. Choisir Système ou Personnalisé ci-dessus vers activer le EQ.</string>
+    <string name="eq_output">Sortie</string>
+    <string name="eq_volume_leveling">Égalisation du volume</string>
+    <string name="eq_replaygain_summary">ReplayGain — %1$s</string>
+    <string name="eq_mode">Mode</string>
+
+    <string name="eq_off">désactivé</string>
+    <string name="eq_on">Sur</string>
+    <string name="eq_track">Titre</string>
+    <string name="eq_album">album</string>
+
+    <!-- Tone engine -->
+    <string name="eq_engine">Moteur</string>
+    <string name="eq_engine_system">Effets système</string>
+    <string name="eq_engine_custom">Personnalisé DSP</string>
+    <string name="eq_engine_off">désactivé</string>
+    <string name="eq_choose_engine">Choisir le moteur</string>
+    <string name="eq_engine_system_description">Android système effets — appareil-dependent.</string>
+    <string name="eq_engine_custom_description">Sonethyst logiciel DSP — fonctionne sur tout appareil. Remplace bit-perfect sortie. Redémarrez lecture après le changement de moteurs.</string>
+    <string name="eq_engine_off_description">Tous tone façonnage contourné.</string>
+
+    <!-- Marge -->
+    <string name="eq_headroom">Marge</string>
+    <string name="eq_auto">Auto</string>
+    <string name="eq_headroom_no_preamp">EQ courbe reste sous 0 dB — aucun préampli nécessaire</string>
+    <string name="eq_headroom_clipping">EQ crête +%1$.1f dB · écrêtage par %2$.1f dB</string>
+    <string name="eq_headroom_available">EQ crête +%1$.1f dB · %2$.1f dB headroom</string>
+
+    <!-- Convolution -->
+    <string name="eq_loaded_ir">Chargé IR: %1$s</string>
+    <string name="eq_couldnt_load_file">Impossible de charger ce fichier</string>
+    <string name="eq_enable_convolution">Activer convolution</string>
+    <string name="eq_ir_name">IR: %1$s</string>
+    <string name="eq_convolution_description">Correction à phase linéaire de l’EQ, de la pièce ou du casque à partir d’un fichier WAV</string>
+    <string name="eq_load_ir">Charger IR (.wav)</string>
+    <string name="eq_replace_ir">Remplacer IR</string>
+    <string name="eq_remove">Supprimer</string>
+    <string name="eq_makeup_gain">Compensation gain</string>
+
+    <!-- AutoEQ -->
+    <string name="eq_squig_description">Corrections sont générées sur-appareil de en direct squig.lien mesures vers le %1$s cible.</string>
+    <string name="eq_applied_profile">Appliqué: %1$s</string>
+    <string name="eq_find_headphones">Rechercher votre headphones / IEM</string>
+    <string name="eq_search_squig">Rechercher squig.lien pour une IEM</string>
+    <string name="eq_apply">Appliquer</string>
+    <string name="eq_applied_correction">Appliqué %1$s · %2$s, %3$.1f dB préampli</string>
+    <string name="eq_fetch_failed">Impossible de récupérer la correction — vérifiez votre connexion</string>
+    <string name="eq_no_filters">Aucun filtre trouvé pour %1$s</string>
+    <string name="eq_auto_switch_output">Changement automatique par sortie</string>
+    <string name="eq_auto_switch_description">Appliquer le profil associé à chaque appareil lorsqu’il est connecté</string>
+    <string name="eq_bind_profile">Associer \"%1$s\" vers %2$s</string>
+    <string name="eq_unbind">Dissocier</string>
+
+    <plurals name="eq_band_count">
+        <item quantity="one">%d bande</item>
+        <item quantity="other">%d bandes</item>
+    </plurals>
+
+
+    <!-- System equalizer -->
+    <string name="eq_equalizer">Égaliseur</string>
+    <string name="eq_graphic_band_count">%1$d-bande graphic EQ</string>
+    <string name="eq_not_supported">Non pris en charge sur cet appareil</string>
+    <string name="eq_custom">Personnalisé</string>
+    <string name="eq_presets">Préréglages</string>
+    <string name="eq_bands">Bandes</string>
+    <string name="eq_band_summary">%1$d-bande</string>
+    <string name="eq_enhancers">Améliorateurs</string>
+    <string name="eq_bass_boost">Basses renforcement</string>
+    <string name="eq_virtualizer">Virtualiseur (casque widening)</string>
+    <string name="eq_loudness">Sonie</string>
+
+    <!-- Custom DSP -->
+    <string name="eq_graphic_eq">Graphique EQ</string>
+    <string name="eq_layout_active">%1$s · actif</string>
+    <string name="eq_reset_graphic">Réinitialiser graphic EQ</string>
+    <string name="eq_parametric_eq">Paramétrique EQ</string>
+    <string name="eq_add_band">+ Ajouter bande</string>
+    <string name="eq_gain_headroom">gain &amp; headroom</string>
+    <string name="eq_preamp">Préampli</string>
+    <string name="eq_preamp_summary">Préampli %1$+.0f dB</string>
+    <string name="eq_balance">Balance</string>
+
+    <string name="eq_spatial">Spatial</string>
+    <string name="eq_width_summary">Largeur %1$.2f×</string>
+    <string name="eq_crossfeed_summary">Diaphonie %1$d%%</string>
+    <string name="eq_stereo_width">Stéréo width</string>
+    <string name="eq_crossfeed">Diaphonie</string>
+
+    <string name="eq_harmonics">Harmoniques</string>
+    <string name="eq_tube_summary">Lampe %1$d%%</string>
+    <string name="eq_tube_saturation">Lampe saturation</string>
+
+    <string name="eq_channel_alignment">Canal alignement</string>
+    <string name="eq_adjusted">Ajusté</string>
+    <string name="eq_left_delay">Gauche délai</string>
+    <string name="eq_right_delay">Droit délai</string>
+    <string name="eq_left_trim">Gauche rognage</string>
+    <string name="eq_right_trim">Droit rognage</string>
+
+    <string name="eq_dynamics">Dynamique</string>
+    <string name="eq_limiter">Limiteur</string>
+    <string name="eq_limiter_description">Mur infranchissable écrêtage protection (recommandé)</string>
+    <string name="eq_ceiling">Plafond</string>
+    <string name="eq_compressor">Compresseur</string>
+    <string name="eq_compressor_description">Équilibrer les forts/faibles passages</string>
+    <string name="eq_threshold">Seuil</string>
+    <string name="eq_ratio">Ratio</string>
+
+    <!-- Paramétrique EQ -->
+    <string name="eq_remove_band">Supprimer bande</string>
+    <string name="eq_frequency">Fréq.</string>
+    <string name="eq_gain">gain</string>
+    <string name="eq_q">Q</string>
+
+    <!-- Balance -->
+    <string name="eq_balance_left">L %1$d%%</string>
+    <string name="eq_balance_right">R %1$d%%</string>
+    <string name="eq_balance_center">Centre</string>
+
+
+    <!-- Lirelist covers -->
+    <string name="cover_choose_track_artwork">Choisir la pochette du titre</string>
+    <string name="cover_no_track_artwork">Aucune pochette disponible</string>
+    <string name="cover_playlist_cover">Pochette de la playlist</string>
+    <string name="cover_automatic">Automatique</string>
+    <string name="cover_automatic_description">Utiliser la pochette par défaut de la playlist</string>
+    <string name="cover_first_track">Premier titre</string>
+    <string name="cover_first_track_description">Utiliser la pochette du premier titre</string>
+    <string name="cover_collage">Collage 2×2</string>
+    <string name="cover_collage_description">Combiner les pochettes des quatre premiers titres</string>
+    <string name="cover_collage_requirement">Au moins 4 pochettes différentes sont nécessaires</string>
+    <string name="cover_track_artwork">Pochette du titre</string>
+    <string name="cover_track_artwork_description">Choisir un titre déjà présent dans cette playlist</string>
+    <string name="cover_device_image">Image de l’appareil</string>
+    <string name="cover_device_image_description">Utiliser votre propre pochette personnalisée pour la playlist</string>
+
+    <!-- Cast / output -->
+    <string name="cast">Diffusion</string>
+    <string name="cast_to_device">Diffuser vers un appareil</string>
+    <string name="cast_description">Chromecast · effets &amp; DSP désactivé</string>
+    <string name="cast_effects_off">effets &amp; DSP sont désactivé pendant la diffusion</string>
+    <string name="cast_searching">Recherchering pour devices…</string>
+    <string name="cast_stop">Arrêter la diffusion</string>
+
+    <string name="output_automatic">Automatique</string>
+    <string name="output_play_on">Lire sur</string>
+    <string name="output_phone_speaker">Haut-parleur du téléphone</string>
+    <string name="output_wired_headphones">Casque filaire</string>
+    <string name="output_usb_named">USB · %1$s</string>
+    <string name="output_usb_dac">USB DAC</string>
+    <string name="output_bluetooth">Bluetooth</string>
+    <string name="output_hearing_aid">Prothèse auditive</string>
+    <string name="output_dock">Station d’accueil</string>
+    <string name="output_generic">Sortie</string>
+
+    <!-- Minuteur de veille -->
+    <string name="sleep_timer">Minuteur de veille</string>
+    <string name="sleep_end_of_track_status">Mise en pause à le fin de ce titre</string>
+    <string name="sleep_pause_in">Mise en pause dans %1$d min · s’estompe les</string>
+    <string name="sleep_description">Mettre la lecture en pause après le délai défini</string>
+    <string name="sleep_end_of_track">Fin du titre</string>
+    <string name="sleep_one_hour">1 heure</string>
+
+    <plurals name="sleep_minutes">
+        <item quantity="one">%d min</item>
+        <item quantity="other">%d min</item>
+    </plurals>
+
+    <!-- Radio -->
+    <string name="radio_title">Radio</string>
+    <string name="radio_add_custom_stream">Ajouter personnalisé flux</string>
+    <string name="radio_close_search">Fermer recherche</string>
+    <string name="radio_search_stations">Rechercher stations</string>
+    <string name="radio_search_placeholder">Rechercher radio stations</string>
+    <string name="radio_your_stations">Vos stations</string>
+    <string name="radio_results">Résultats</string>
+    <string name="radio_popular_worldwide">Populaires dans le monde</string>
+    <string name="radio_directory_unavailable">Impossible d’accéder au répertoire radio</string>
+    <string name="radio_no_stations">Aucune station trouvée</string>
+
+    <string name="radio_add_stream">Ajouter radio flux</string>
+    <string name="radio_edit_stream">Modifier radio flux</string>
+    <string name="radio_delete_station_title">Supprimer personnalisé station?</string>
+    <string name="radio_delete_station_message">“%1$s” sera  supprimé de Vos stations.</string>
+    <string name="radio_custom_station_settings">Personnalisé station paramètres</string>
+    <string name="radio_favorite">Favori</string>
+    <string name="radio_unfavorite">Retirer des favoris</string>
+    <string name="radio_name_optional">Nom (facultatif)</string>
+    <string name="radio_stream_url">URL du flux</string>
+
+    <!-- Radio genres: IDs stay English internally -->
+    <string name="radio_genre_pop">Pop</string>
+    <string name="radio_genre_rock">Rock</string>
+    <string name="radio_genre_jazz">Jazz</string>
+    <string name="radio_genre_classical">Classique</string>
+    <string name="radio_genre_news">Actualités</string>
+    <string name="radio_genre_electronic">Électronique</string>
+    <string name="radio_genre_hip_hop">Hip-hop</string>
+    <string name="radio_genre_country">Country</string>
+    <string name="radio_genre_metal">Metal</string>
+    <string name="radio_genre_ambient">Ambient</string>
+    <string name="radio_genre_lounge">Lounge</string>
+    <string name="radio_genre_dance">Dance</string>
+    <string name="radio_genre_reggae">Reggae</string>
+    <string name="radio_genre_blues">Blues</string>
+    <string name="radio_genre_talk">Débat</string>
+
+
+    <!-- Smart playlists -->
+    <string name="smart_new">Nouvelle playlist intelligente</string>
+    <string name="smart_edit">Modifier intelligente playlist</string>
+    <string name="smart_playlist_cover">Pochette de la playlist</string>
+    <string name="smart_change_cover">Modifier pochette</string>
+    <string name="smart_match">Correspondance</string>
+    <string name="smart_all_rules">Tous règles</string>
+    <string name="smart_any_rule">Toute règle</string>
+    <string name="smart_rules">Règles</string>
+    <string name="smart_add_rule">Ajouter règle</string>
+    <string name="smart_sort_by">Trier par</string>
+    <string name="smart_descending">Décroissant</string>
+    <string name="smart_ascending">Croissant</string>
+    <string name="smart_limit">Limite (0 = tous)</string>
+    <string name="smart_create">Créer intelligente playlist</string>
+    <string name="smart_save_changes">Enregistrer modifications</string>
+    <string name="smart_remove_rule">Supprimer règle</string>
+    <string name="smart_number_placeholder">Nombre…</string>
+    <string name="smart_text_placeholder">Texte…</string>
+
+    <!-- Smart playlist fields -->
+    <string name="smart_field_title">Titre</string>
+    <string name="smart_field_artist">Artiste</string>
+    <string name="smart_field_album">album</string>
+    <string name="smart_field_format">Format (flac, mp3…)</string>
+    <string name="smart_field_duration">Durée (secondes)</string>
+    <string name="smart_field_bitrate">Débit (kbps)</string>
+    <string name="smart_field_play_count">Lire nombre</string>
+    <string name="smart_field_last_played_days">Jours depuis la dernière écoute</string>
+    <string name="smart_field_liked">Aimé</string>
+    <string name="smart_field_downloaded">Téléchargé</string>
+
+    <!-- Smart playlist operators -->
+    <string name="smart_op_contains">contient</string>
+    <string name="smart_op_not_contains">ne contient pas</string>
+    <string name="smart_op_is">est</string>
+    <string name="smart_op_is_not">est pas</string>
+    <string name="smart_op_starts_with">démarre avec</string>
+    <string name="smart_op_more_than">plus que</string>
+    <string name="smart_op_less_than">moins que</string>
+    <string name="smart_op_exactly">exactement</string>
+    <string name="smart_op_yes">oui</string>
+    <string name="smart_op_no">aucun</string>
+
+    <!-- Smart playlist sorting -->
+    <string name="smart_sort_title">Titre</string>
+    <string name="smart_sort_artist">Artiste</string>
+    <string name="smart_sort_album">album</string>
+    <string name="smart_sort_duration">Durée</string>
+    <string name="smart_sort_play_count">Lire nombre</string>
+    <string name="smart_sort_last_played">Dernière écoute</string>
+    <string name="smart_sort_random">Aléatoire</string>
+
+    <!-- File d’attente -->
+    <string name="action_close">Fermer</string>
+    <string name="queue_title">Fichier d’attente</string>
+    <string name="queue_save_as_playlist">Enregistrer la file comme playlist</string>
+    <string name="queue_clear">Effacer fichier</string>
+    <string name="queue_now_playing">EN LECTURE</string>
+    <string name="queue_nothing_up_next">RIEN ENSUITE</string>
+    <string name="queue_remove">Supprimer</string>
+    <string name="queue_reorder">Réorganisez</string>
+
+    <plurals name="queue_previously_played">
+        <item quantity="one">DÉJÀ LUS • %d</item>
+        <item quantity="other">DÉJÀ LUS • %d</item>
+    </plurals>
+
+    <plurals name="queue_up_next">
+        <item quantity="one">vers le haut suivant • %d titre</item>
+        <item quantity="other">vers le haut suivant • %d titres</item>
+    </plurals>
+
+    <!-- Écoute statistics -->
+    <string name="stats_title">Statistiques d’écoute</string>
+    <string name="stats_this_week">Cette semaine</string>
+    <string name="stats_this_month">Ce mois-ci</string>
+    <string name="stats_all_time">Tous temps</string>
+    <string name="stats_plays">Lires</string>
+    <string name="stats_minutes">Minutes</string>
+    <string name="stats_artists">Artistees</string>
+    <string name="stats_no_plays">Aucune écoute pendant cette période</string>
+    <string name="stats_top_artists">Artistes populaires</string>
+    <string name="stats_top_songs">Titres populaires</string>
+    <string name="stats_top_albums">Albums populaires</string>
+    <string name="stats_no_active_streak">Aucune série actif</string>
+    <string name="stats_listening_clock">Heure d’écoute</string>
+    <string name="stats_unknown">Inconnu</string>
+
+    <plurals name="stats_current_streak">
+        <item quantity="one">%d-jour streak</item>
+        <item quantity="other">%d-jour streak</item>
+    </plurals>
+
+    <plurals name="stats_longest_streak">
+        <item quantity="one">Longest: %d jour</item>
+        <item quantity="other">Longest: %d jours</item>
+    </plurals>
+
+    <string name="stats_clock_12am">12a</string>
+    <string name="stats_clock_6am">6a</string>
+    <string name="stats_clock_12pm">12p</string>
+    <string name="stats_clock_6pm">6p</string>
+    <string name="stats_clock_11pm">11p</string>
+
+
+    <!-- Generic actions -->
+    <string name="action_add">Ajouter</string>
+    <string name="action_remove">Supprimer</string>
+    <string name="action_apply">Appliquer</string>
+
+    <!-- Song tags -->
+    <string name="tags_title">tags</string>
+    <string name="tags_new_tag">Nouveau tag</string>
+
+    <!-- Lirelist picker -->
+    <string name="playlist_create">Créer une playlist</string>
+    <string name="playlist_add_to">Ajouter à la playlist</string>
+    <string name="playlist_none_yet">Aucune playlist pour le moment</string>
+
+    <!-- Tag editor -->
+    <string name="tag_edit_title">Modifier les tags</string>
+    <string name="tag_untitled">Sans titre</string>
+    <string name="tag_new_cover_staged">Nouvelle pochette préparée</string>
+    <string name="tag_match_metadata">Associer les métadonnées</string>
+    <string name="tag_find_artwork">Trouver une pochette</string>
+    <string name="tag_choose_image">Choisir une image</string>
+    <string name="tag_identifying">Identification…</string>
+    <string name="tag_auto_identify">Identifier automatiquement</string>
+    <string name="tag_album_artist">Artiste de l’album</string>
+    <string name="tag_genre">Genre</string>
+    <string name="tag_year">Année</string>
+    <string name="tag_track_number">N° de piste</string>
+    <string name="tag_save">Enregistrer les tags</string>
+    <string name="tag_use_cover">Utiliser la pochette</string>
+    <string name="tag_local_write_description">La modification des tags écrit directement dans le fichier sur votre appareil. Android peut vous demander d’autoriser cette modification.</string>
+    <string name="tag_server_write_description">Met à jour les métadonnées de ce titre sur le serveur (un compte disposant de l’autorisation de modification est requis). La pochette n’est pas modifiée.</string>
+
+    <!-- Tag editor messages -->
+    <string name="tag_cant_write_file">Impossible d’écrire ce fichier</string>
+    <string name="tag_couldnt_read_artwork">Impossible de lire la pochette sélectionnée</string>
+    <string name="tag_saved">Tags enregistrés</string>
+    <string name="tag_save_failed">Échec de l’enregistrement</string>
+    <string name="tag_write_permission_denied">Autorisation d’écriture refusée</string>
+    <string name="tag_metadata_updated">Métadonnées mises à jour</string>
+    <string name="tag_update_permission_failed">Échec de la mise à jour — autorisation de modification requise</string>
+
+    <!-- Vitesse and pitch -->
+    <string name="speed_pitch_title">Lecture commandes</string>
+    <string name="speed_pitch_speed">Vitesse</string>
+    <string name="speed_pitch_match">Synchroniser la hauteur et la vitesse</string>
+    <string name="speed_pitch_match_description">La hauteur suit la vitesse, comme sur une platine</string>
+    <string name="speed_pitch_pitch">Hauteur</string>
+    <string name="speed_pitch_reset">Réinitialiser vers par défaut</string>
+
+    <!-- Rechercher -->
+    <string name="search_discover">DÉCOUVRIR</string>
+    <string name="search_title">Rechercher</string>
+    <string name="search_placeholder">Artistees, albums, ou titres</string>
+    <string name="search_voice">Recherche vocale</string>
+    <string name="search_voice_prompt">Parlez pour rechercher</string>
+    <string name="search_library">Rechercher votre bibliothèque</string>
+    <string name="search_library_description">Rechercher tout artiste, album, titre, ou playlist</string>
+    <string name="search_no_results">Aucun résultat</string>
+    <string name="search_nothing_matched">Rien correspondant \"%1$s\"</string>
+    <string name="search_recent">Récent</string>
+
+    <string name="search_filter_all">Tous</string>
+    <string name="search_filter_songs">Titres</string>
+    <string name="search_filter_albums">Albums</string>
+    <string name="search_filter_artists">Artistees</string>
+    <string name="search_filter_playlists">Playlists</string>
+
+
+    <!-- Main settings -->
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_view_profile">Voir le profil</string>
+
+    <string name="settings_section_account">Compte</string>
+    <string name="settings_servers_accounts">Serveurs &amp; comptes</string>
+    <string name="settings_servers_accounts_summary">Basculer entre les connexions enregistrées</string>
+
+    <string name="settings_section_audio">Audio</string>
+    <string name="settings_playback_quality">Lecture &amp; qualité</string>
+    <string name="settings_playback_quality_summary">Diffusion qualité, haute résolution, fondu enchaîné, sans interruption</string>
+    <string name="settings_equalizer">Égaliseur et effets</string>
+    <string name="settings_equalizer_summary">EQ, AutoEQ, convolution, DSP</string>
+    <string name="settings_visualizer">Visualiseur</string>
+    <string name="settings_visualizer_summary">Spectre, forme d’onde, radiale, particules</string>
+
+    <string name="settings_section_discovery">Découverte</string>
+    <string name="settings_sonic_discovery">Découverte Sonic</string>
+    <string name="settings_sonic_summary">Radio de similarité et analyse sur l’appareil</string>
+
+    <string name="settings_section_library">Bibliothèque</string>
+    <string name="settings_library_sources">Bibliothèque &amp; sources</string>
+    <string name="settings_library_sources_summary">Lecture depuis la meilleure source ordre, unifiée multi-serveur bibliothèque</string>
+    <string name="settings_music_folders">Dossiers musicaux</string>
+    <string name="settings_music_folders_summary">Inclure ou exclure les dossiers musicaux locaux</string>
+    <string name="settings_downloads_storage">Téléchargements &amp; stockage</string>
+
+    <plurals name="settings_downloads_summary">
+        <item quantity="one">%d downloaded titre · qualité, hors connexion</item>
+        <item quantity="other">%d downloaded titres · qualité, hors connexion</item>
+    </plurals>
+
+    <string name="settings_section_interface">Interface</string>
+    <string name="settings_appearance">Apparence</string>
+    <string name="settings_appearance_summary">Thème, prédéfini, disposition</string>
+    <string name="settings_gestures">Gestes &amp; comportement</string>
+    <string name="settings_gestures_summary">Glissement, vibrations, session privée</string>
+
+    <string name="settings_section_connections">Connexions</string>
+    <string name="settings_integrations">Intégrations</string>
+    <string name="settings_integrations_summary">Last.fm, ListenBrainz, Discord, paroles</string>
+    <string name="settings_permissions">Autorisations</string>
+    <string name="settings_permissions_summary">Notifications, arrière-plan, alarmes, DAC</string>
+    <string name="settings_about">À propos Sonethyst</string>
+
+    <string name="settings_section_data">Données</string>
+    <string name="settings_backup_restore">Sauvegarde &amp; restauration</string>
+    <string name="settings_backup_summary">Exporter ou importer vos paramètres et playlists</string>
+    <string name="settings_logout">Se déconnecter</string>
+
+    <string name="settings_badge_spotify">SPOTIFY</string>
+    <string name="settings_badge_jellyfin">JELLYFIN</string>
+    <string name="settings_badge_local">local</string>
+    <string name="settings_badge_navidrome">NAVIDROME</string>
+
+    <!-- Lecture settings -->
+    <string name="playback_streaming_quality">Diffusion qualité</string>
+    <string name="playback_wifi">Sur Wi-Fi</string>
+    <string name="playback_cellular">Sur réseau mobile</string>
+    <string name="playback_lossless">Lossless</string>
+    <string name="playback_data_saver">Données économie</string>
+    <string name="playback_data_saver_summary">Cap diffusion vers ~96 kbps sur mobile data</string>
+
+    <string name="playback_hires">Hi-res / bit-perfect sortie</string>
+    <string name="playback_hires_summary">Float 32 bits pour les DAC · désactive la variation de vitesse/hauteur en haute résolution · redémarrez pour appliquer</string>
+    <string name="playback_usb_bitperfect">USB DAC bit-perfect (expérimental)</string>
+    <string name="playback_usb_bitperfect_summary">Pilotez un DAC USB directement, en contournant l’audio et le DSP Android · branchez le DAC puis redémarrez pour appliquer</string>
+
+    <string name="playback_section">Lecture</string>
+    <string name="playback_crossfade">fondu enchaîné</string>
+    <string name="playback_seconds">%1$ds</string>
+    <string name="playback_gapless">Sans interruption lecture</string>
+    <string name="playback_gapless_summary">Lire titres arrière-vers-arrière avec aucun gap</string>
+    <string name="playback_skip_silence">Ignorer les silences</string>
+    <string name="playback_skip_silence_summary">Couper silencieux sections dans titres</string>
+    <string name="playback_mono">Audio mono</string>
+    <string name="playback_mono_summary">Combine les canaux gauche et droit en un seul canal</string>
+
+    <string name="playback_default_speed">Vitesse par défaut</string>
+    <string name="playback_speed">Vitesse de lecture</string>
+
+    <string name="playback_wakeup_alarm">Réveil alarme</string>
+    <string name="playback_wake_music">Wake-vers-musique alarme</string>
+    <string name="playback_wake_music_summary">Fondu dans votre aimée musique quotidiennement à %1$s</string>
+    <string name="playback_alarm_time">alarme temps</string>
+
+    <string name="playback_bitperfect">Bit-perfect</string>
+    <string name="playback_signal_path">Signal chemin</string>
+    <string name="playback_stereo">stereo</string>
+    <string name="playback_mono_channel">mono</string>
+
+
+    <!-- Apparence -->
+    <string name="appearance_title">Apparence</string>
+    <string name="appearance_theme">Thème</string>
+    <string name="appearance_mode">Mode</string>
+    <string name="appearance_system">Système</string>
+    <string name="appearance_light">Clair</string>
+    <string name="appearance_dark">Sombre</string>
+    <string name="appearance_amoled">AMOLED</string>
+    <string name="appearance_amoled_description">True-black surfaces — saves power sur OLED screens.</string>
+    <string name="appearance_system_description">Suit le réglage clair/sombre de votre appareil.</string>
+
+    <string name="appearance_accent">Accent</string>
+    <string name="appearance_source">source</string>
+    <string name="appearance_presets">Préréglages</string>
+    <string name="appearance_custom">Personnalisé</string>
+    <string name="appearance_material_you">Material Vous</string>
+    <string name="appearance_material_you_active">Utilise votre fond d’écran couleurs (Material Vous).</string>
+    <string name="appearance_material_you_unavailable">Material Vous nécessite Android 12+. Retour à vers le l’prédéfini prédéfini.</string>
+
+    <string name="appearance_display">Affichage</string>
+    <string name="appearance_font_size">Police taille</string>
+    <string name="appearance_corners">Coins</string>
+    <string name="appearance_corner_sharp">Anguleux</string>
+    <string name="appearance_corner_default">Par défaut</string>
+    <string name="appearance_corner_rounded">Arrondis</string>
+    <string name="appearance_corner_pill">Pastille</string>
+
+    <string name="appearance_player">Lireer</string>
+    <string name="appearance_seek_bar">Recherche bar</string>
+    <string name="appearance_waveform">forme d’onde</string>
+    <string name="appearance_bar">Barre</string>
+    <string name="appearance_waveform_bars">forme d’onde bars</string>
+    <string name="appearance_artwork_size">Taille de la pochette</string>
+    <string name="appearance_gradient_intensity">Dégradé intensity</string>
+    <string name="appearance_bottom_utilities">Inférieurs outils</string>
+    <string name="appearance_bottom_utilities_summary">Vitesse · Paroles · Fichier d’attente row</string>
+
+    <string name="appearance_miniplayer">Mini-lecteur</string>
+    <string name="appearance_style">Style</string>
+    <string name="appearance_standard">Standard</string>
+    <string name="appearance_compact">Compact</string>
+    <string name="appearance_prominent">Mis en avant</string>
+    <string name="appearance_progress">Progression</string>
+    <string name="appearance_line">Ligne</string>
+    <string name="appearance_none">Aucun</string>
+
+    <string name="appearance_library">Bibliothèque</string>
+    <string name="appearance_grid_columns">Grille colonnes</string>
+    <string name="appearance_home_sections">Accueil sections</string>
+    <string name="appearance_home_hero">Nouveau sortie bannière</string>
+    <string name="appearance_live_preview">en direct aperçu</string>
+    <string name="appearance_hue">Teinte</string>
+    <string name="appearance_saturation">Saturation</string>
+    <string name="appearance_brightness">Luminosité</string>
+
+    <!-- Gestes & behaviour -->
+    <string name="gestures_title">Gestes &amp; comportement</string>
+    <string name="gestures_player">Lireer gestures</string>
+    <string name="gestures_swipe_artwork">Faire glisser la pochette pour changer de titre</string>
+    <string name="gestures_swipe_artwork_summary">Glisser le player pochette gauche / droit</string>
+    <string name="gestures_swipe_down">Glisser vers le bas vers fermer</string>
+    <string name="gestures_swipe_down_summary">Tirer vers le bas sur le player &amp; sheets vers fermer them</string>
+    <string name="gestures_double_tap">Appuyer deux fois vers écoute / pause</string>
+    <string name="gestures_double_tap_summary">Appuyer deux fois le player pochette</string>
+
+    <string name="gestures_feedback">Retour</string>
+    <string name="gestures_haptics">Haptique feedback</string>
+    <string name="gestures_haptics_summary">Légères vibrations sur écoute, l’ignorance &amp; navigation</string>
+
+    <string name="gestures_behaviour">Comportement</string>
+    <string name="gestures_notifications">Notifications push</string>
+    <string name="gestures_notifications_summary">Nouveautés &amp; recommandations</string>
+    <string name="gestures_autoplay_radio">Lecture automatique radio</string>
+    <string name="gestures_autoplay_radio_summary">Maintenir lecture similaires titres lorsque le fichier se termine</string>
+    <string name="gestures_scrobble">scrobbling</string>
+    <string name="gestures_scrobble_summary">Signaler écoutes vers votre serveur</string>
+    <string name="gestures_private_session">Privée session</string>
+    <string name="gestures_private_session_summary">Ne signale pas vos écoutes à votre serveur ni à Last.fm</string>
+
+    <!-- Visualiseur -->
+    <string name="visualizer_title">Visualiseur</string>
+    <string name="visualizer_style">Style</string>
+    <string name="visualizer_colour">Couleur</string>
+    <string name="visualizer_colour_source">Couleur source</string>
+    <string name="visualizer_colour_accent">Accent</string>
+    <string name="visualizer_colour_custom">Personnalisé</string>
+    <string name="visualizer_colour_gradient">Dégradé</string>
+    <string name="visualizer_colour_album">album</string>
+    <string name="visualizer_primary">Principal</string>
+    <string name="visualizer_secondary">Secondaire</string>
+
+    <string name="visualizer_background">Retourground</string>
+    <string name="visualizer_backdrop">Retourdrop</string>
+    <string name="visualizer_black">Noir</string>
+    <string name="visualizer_album_blur">Flou de l’album</string>
+
+    <string name="visualizer_spectrum">Spectre</string>
+    <string name="visualizer_bar_count">Barre nombre</string>
+    <string name="visualizer_smoothing">Lissage</string>
+    <string name="visualizer_sensitivity">Sensibilité</string>
+    <string name="visualizer_peak_hold">crête hold</string>
+    <string name="visualizer_peak_hold_summary">Retour repères sur le bars</string>
+    <string name="visualizer_mirror">Miroir</string>
+    <string name="visualizer_mirror_summary">Refléter le spectre</string>
+
+    <string name="visualizer_frequency_range">Fréquence plage</string>
+    <string name="visualizer_low_cut">Basse cut</string>
+    <string name="visualizer_high_cut">Haute cut</string>
+
+    <string name="visualizer_motion_quality">Mouvement &amp; qualité</string>
+    <string name="visualizer_fft_resolution">FFT résolution</string>
+    <string name="visualizer_frame_rate">Images rate</string>
+    <string name="visualizer_rotate">Faire pivoter radiale styles</string>
+    <string name="visualizer_rotate_summary">Lente rotation pour radiale / combo</string>
+    <string name="visualizer_particles">Particules</string>
+
+    <string name="visualizer_overlay">Superposition</string>
+    <string name="visualizer_album_art_centre">Centre de la pochette</string>
+    <string name="visualizer_album_art_centre_summary">Afficher pochette dans radiale styles</string>
+    <string name="visualizer_track_info">Titre informations</string>
+    <string name="visualizer_track_info_summary">Titre &amp; artiste sur le visualisation</string>
+    <string name="visualizer_preview_empty">Lire quelque chose vers see c’est réagir</string>
+
+    <!-- Visualiseur style names -->
+    <string name="visualizer_style_spectrum_bars">Spectre bars</string>
+    <string name="visualizer_style_mirror_bars">Miroir bars</string>
+    <string name="visualizer_style_waveform">Forme d’onde</string>
+    <string name="visualizer_style_filled_wave">Remplie onde</string>
+    <string name="visualizer_style_radial_spectrum">Radiale spectre</string>
+    <string name="visualizer_style_radial_wave">Radiale onde</string>
+    <string name="visualizer_style_particles">Particules</string>
+    <string name="visualizer_style_fluid_blob">Fluide forme</string>
+    <string name="visualizer_style_combo">Combiné</string>
+    <string name="visualizer_style_spectrum_curve">Spectre courbe</string>
+    <string name="visualizer_style_dot_matrix">Points matrice</string>
+    <string name="visualizer_style_pulse_rings">Impulsions anneaux</string>
+    <string name="visualizer_style_orb">Orbe</string>
+    <string name="visualizer_style_led_ladder">LED échelle</string>
+    <string name="visualizer_style_horizon">Horizon</string>
+    <string name="visualizer_style_constellation">Constellation</string>
+    <string name="visualizer_style_peak_dots">crête dots</string>
+    <string name="visualizer_style_neon_line">Ligne nésur</string>
+    <string name="visualizer_style_northern_lights">Aurores boréales</string>
+    <string name="visualizer_style_spectral_river">Spectrale rivière</string>
+    <string name="visualizer_style_terrain">Paysage survol</string>
+    <string name="visualizer_style_curl_flow">Tourbillon flux</string>
+    <string name="visualizer_style_strange_attractor">Étrange attracteur</string>
+    <string name="visualizer_style_cymatics">Cymatique</string>
+    <string name="visualizer_style_bloom">Floraison</string>
+    <string name="visualizer_style_wormhole">Trou de ver</string>
+
+
+    <!-- Intégrations -->
+    <string name="integrations_title">Intégrations</string>
+    <string name="integrations_lyrics">Paroles</string>
+    <string name="integrations_lrclib">LRCLIB paroles</string>
+    <string name="integrations_lrclib_summary">Récupérer les paroles synchronisées lorsque votre serveur n’en propose pas</string>
+    <string name="integrations_scrobbling_presence">scrobbling &amp; présence</string>
+    <string name="integrations_metadata">Métadonnées</string>
+    <string name="integrations_artist_info">Artiste informations</string>
+    <string name="integrations_artist_info_summary">Afficher bios &amp; images de MusicBrainz/Wikipedia sur artiste pages</string>
+
+    <string name="integrations_scrobbling_as">scrobbling en tant que %1$s</string>
+    <string name="integrations_disconnect_lastfm">Déconnecter Last.fm</string>
+    <string name="integrations_finish_lastfm">Terminer la liaison Last.fm</string>
+    <string name="integrations_lastfm_finish_help">Appuyez une fois vous\'ve appuyé “Tousow l’accès” dans le navigateur</string>
+    <string name="integrations_done">Terminé</string>
+    <string name="integrations_lastfm_not_authorized">Pas autorisé encore — autorisez l’accès, puis appuyer à nouveau</string>
+    <string name="integrations_lastfm_api_key">Last.fm API clé</string>
+    <string name="integrations_lastfm_secret">Last.fm partagé secret</string>
+    <string name="integrations_connect_lastfm">Connecter Last.fm</string>
+    <string name="integrations_lastfm_scrobble">Scrobble votre écoutes vers Last.fm</string>
+    <string name="integrations_lastfm_setup">Créez un compte API gratuit sur last.fm/api, puis collez la clé et le secret ci-dessus</string>
+    <string name="integrations_lastfm_unreachable">Impossible d’accéder à Last.fm</string>
+
+    <string name="integrations_disconnect_listenbrainz">Déconnecter ListenBrainz</string>
+    <string name="integrations_listenbrainz_token">ListenBrainz utilisateur jeton</string>
+    <string name="integrations_connect_listenbrainz">Connecter ListenBrainz</string>
+    <string name="integrations_listenbrainz_token_help">Coller votre jeton de listenbrainz.org/profil</string>
+    <string name="integrations_invalid_token">Invalide jeton — vérifiez et réessayez à nouveau</string>
+
+    <string name="integrations_discord_presence">Discord présence</string>
+    <string name="integrations_connected_as">Connecteré en tant que %1$s</string>
+    <string name="integrations_connected">Connecteré</string>
+    <string name="integrations_discord_app_id">Identifiant de l’application Discord — pour les pochettes d’album (facultatif)</string>
+    <string name="integrations_imgur_client_id">Identifiant client Imgur — pour les pochettes d’album (facultatif)</string>
+    <string name="integrations_disconnect_discord">Déconnecter Discord</string>
+    <string name="integrations_connect_discord">Connecter Discord</string>
+    <string name="integrations_discord_summary">Afficher la lecture actuelle dans Discord (créez une application gratuite sur discord.com/developers pour les pochettes d’album)</string>
+
+    <!-- Comptes -->
+    <string name="accounts_title">Comptes</string>
+    <string name="accounts_switch">Changer de compte</string>
+    <string name="accounts_add">Ajouter another compte</string>
+    <string name="accounts_switch_warning">Le changement de serveurs arrête lecture de le précédent un.</string>
+    <string name="accounts_active">Actif</string>
+    <string name="accounts_forget">Oublier</string>
+    <string name="accounts_local_library">Bibliothèque locale</string>
+    <string name="server_local">Sur cet appareil</string>
+    <string name="server_spotify">Spotify</string>
+    <string name="server_jellyfin">Jellyfin</string>
+    <string name="server_navidrome">Navidrome</string>
+
+    <!-- Autorisations -->
+    <string name="permissions_title">Autorisations</string>
+    <string name="permissions_intro">Accordez uniquement les autorisations nécessaires. Sonethyst fonctionne sans la plupart d’entre elles, mais chacune active une fonction.</string>
+    <string name="permissions_notifications">Notifications</string>
+    <string name="permissions_notifications_summary">Now-lecture commandes, téléchargements &amp; alarms</string>
+    <string name="permissions_device_music">Musique sur l’appareil</string>
+    <string name="permissions_device_music_summary">Lire les fichiers audio locaux pour la bibliothèque, la lecture et l’analyse Sonic</string>
+    <string name="permissions_battery">Ignorer batterie optimisation</string>
+    <string name="permissions_battery_summary">Maintenir analyse &amp; lecture actif dans le arrière-plan</string>
+    <string name="permissions_exact_alarms">Alarmes exactes</string>
+    <string name="permissions_exact_alarms_summary">Déclencher le wake-vers-musique alarme à le précise temps</string>
+    <string name="permissions_fullscreen_alarm">Alarme plein écran</string>
+    <string name="permissions_fullscreen_alarm_summary">Afficher le alarme plein écran sur le verrouillage écran</string>
+    <string name="permissions_usb_dac">USB DAC</string>
+    <string name="permissions_no_usb_dac">Aucun USB DAC connecteré</string>
+    <string name="permissions_dac_generic">le DAC</string>
+    <string name="permissions_dac_granted">Accès accordé pour %1$s</string>
+    <string name="permissions_dac_allow">Appuyez vers autorisez bit-perfect l’accès vers %1$s</string>
+    <string name="permissions_usb_note">Android ne peut pas accorder définitivement l’accès à un appareil USB sans demande de connexion, donc le DAC peut le redemander lors de la reconnexion — Sonethyst renouvelle automatiquement la demande lorsque le mode bit-perfect est activé.</string>
+    <string name="permissions_granted">accordé</string>
+    <string name="permissions_grant">Accorder</string>
+
+
+    <!-- Bibliothèque sources -->
+    <string name="sources_title">Bibliothèque &amp; sources</string>
+    <string name="sources_best_playback">Lecture depuis la meilleure source</string>
+    <string name="sources_prefer_local">Privilégier les copies locales</string>
+    <string name="sources_prefer_local_summary">Lire le fichier correspondant présent sur l’appareil ou téléchargé plutôt que la version en streaming</string>
+    <string name="sources_priority_help">Lorsqu’un titre est disponible à plusieurs endroits, Sonethyst le lit depuis la première source disponible ci-dessous. Réorganisez-les selon vos préférences.</string>
+
+    <string name="sources_tier_local">Fichier sur l’appareil</string>
+    <string name="sources_tier_downloaded">Téléchargé</string>
+    <string name="sources_tier_stream">Flux du serveur</string>
+    <string name="sources_tier_local_summary">Fichier correspondant dans la bibliothèque musicale de votre appareil</string>
+    <string name="sources_tier_downloaded_summary">Titre téléchargé dans l’application</string>
+    <string name="sources_tier_stream_summary">flux de Navidrome / Jellyfin</string>
+    <string name="sources_move_up">Déplacer vers le haut</string>
+    <string name="sources_move_down">Déplacer vers le bas</string>
+
+    <string name="sources_unified_library">Bibliothèque unifiée</string>
+    <string name="sources_merge_all">Fusionner tous sources</string>
+    <string name="sources_merge_all_summary">Afficher albums, artistes &amp; playlists de votre locaux fichiers et chaque inclus serveur en tant que un bibliothèque</string>
+    <string name="sources_included">inclus dans le unifiée bibliothèque:</string>
+    <string name="sources_local_files">Fichiers locaux</string>
+    <string name="sources_no_servers">Se connecterto Navidrome ou Jellyfin (Paramètres → Comptes) vers merge serveurs. Votre locaux fichiers sont toujours inclus.</string>
+    <string name="sources_duplicates_note">Les doublons sont affichés une seule fois et lus depuis la source de meilleure qualité. Spotify n’est pas encore fusionné.</string>
+
+    <!-- Téléchargements & stockage -->
+    <string name="storage_download_quality">Télécharger qualité</string>
+    <string name="storage_bitrate">Débit</string>
+
+    <plurals name="storage_downloaded_tracks">
+        <item quantity="one">%d downloaded titre</item>
+        <item quantity="other">%d downloaded titres</item>
+    </plurals>
+
+    <string name="storage_used">%1$s utilisés</string>
+    <string name="storage_offline">Hors connexion</string>
+    <string name="storage_offline_mode">Mode hors connexion</string>
+    <string name="storage_offline_summary">Seulement afficher &amp; écoute téléchargés musique</string>
+
+    <string name="storage_scanning_replaygain">analyse ReplayGain…</string>
+    <string name="storage_scan_replaygain">Analyser ReplayGain</string>
+
+    <plurals name="storage_tracks_analysed">
+        <item quantity="one">%d titre analysed — appuyer vers rescan</item>
+        <item quantity="other">%d titres analysed — appuyer vers rescan</item>
+    </plurals>
+
+    <string name="storage_measure_loudness">Mesurer sonie (EBU R128) vers niveau lecture volume</string>
+    <string name="storage_replaygain_note">S’applique lorsque ReplayGain est définir vers Titre ou album dans Égaliseur → Égalisation du volume.</string>
+    <string name="storage_manage">Gérer</string>
+    <string name="storage_remove_all">Supprimer tous téléchargements</string>
+    <string name="storage_private_note">Les téléchargements sont stockés dans l’application et supprimés lorsque vous la désinstallez.</string>
+
+    <!-- Dossiers musicaux -->
+    <string name="folders_choose">Choisir qui dossiers apparaîtront dans Sonethyst.</string>
+    <string name="folders_include_only_description">Seuls les dossiers sélectionnés et leurs sous-dossiers sont affichés. Votre liste d’exclusion est conservée pour le mode normal.</string>
+    <string name="folders_exclude_description">Exclus dossiers et leurs sous-dossiers sont masqué seulement de Sonethyst. Votre réel musique fichiers sont jamais supprimés ou modifiés.</string>
+    <string name="folders_include_only">Inclure seulement sélectionné dossiers</string>
+    <string name="folders_none_selected_warning">Aucun dossiers sélectionné — le locaux bibliothèque est empty until vous sélectionner au moins un dossier sous.</string>
+    <string name="folders_include_only_summary">Lorsqu’un activé, seulement sélectionné dossiers et leurs sous-dossiers apparaîtront dans le locaux bibliothèque.</string>
+    <string name="folders_scanning">analyse…</string>
+    <string name="folders_rescan">Réexaminer</string>
+    <string name="folders_clear_selection">Effacer sélection</string>
+    <string name="folders_include_all">Tout inclure</string>
+    <string name="folders_detected">Dossiers détectés</string>
+    <string name="folders_none_detected">Aucun dossier musical locaux détecté</string>
+    <string name="folders_included_by_parent">inclus par sélectionné parent</string>
+    <string name="folders_not_selected">Pas sélectionné</string>
+    <string name="folders_excluded_by_parent">Exclus par parent dossier</string>
+    <string name="folders_excluded">Exclus</string>
+    <string name="folders_included">inclus</string>
+
+
+    <!-- Sonic discovery -->
+    <string name="sonic_title">Découverte Sonic</string>
+
+    <plurals name="sonic_tracks_analyzed">
+        <item quantity="one">%d titre analysé</item>
+        <item quantity="other">%d titres analysé</item>
+    </plurals>
+
+    <string name="sonic_powers_radio">Powers “Sonic radio” de le player menu</string>
+    <string name="sonic_analyze">Analyser</string>
+    <string name="sonic_analyzing_library">Analyse de la bibliothèque…</string>
+    <string name="sonic_analyze_library">Analyser la bibliothèque</string>
+
+    <plurals name="sonic_analyzed_rescan">
+        <item quantity="one">%d analysé — appuyer vers scan nouveau titres</item>
+        <item quantity="other">%d analysé — appuyer vers scan nouveau titres</item>
+    </plurals>
+
+    <string name="sonic_extract_features">Extraire les caractéristiques audio des titres présents sur l’appareil ou téléchargés</string>
+    <string name="sonic_automation">Automatisation</string>
+    <string name="sonic_auto_analyze">Analyser automatiquement au démarrage</string>
+    <string name="sonic_auto_analyze_summary">Analyser discrètement les nouveaux titres locaux et téléchargés au démarrage de l’application</string>
+    <string name="sonic_description">Sonic radio compare le réel son de votre titres (timbre, harmonie, énergie, tempo) entièrement sur-appareil — aucun compte ou Internet nécessaire. Seulement locaux-bibliothèque et téléchargés titres peuvent  analysés; diffusion-seulement titres reviennent arrière vers votre serveur’s propre radio.</string>
+
+    <!-- À propos -->
+    <string name="about_version_client">Version %1$s • client %2$s</string>
+    <string name="about_local_client">local</string>
+    <string name="about_protocol_local_files">Fichiers locaux</string>
+    <string name="about_connected_server">Serveur connecteré</string>
+    <string name="about_signed_in_as">Connecteré en tant que</string>
+    <string name="about_protocol">Protocole</string>
+    <string name="about_client_name">Nom du client</string>
+    <string name="about_playback_engine">Moteur de lecture</string>
+    <string name="about_credits">construit avec Jetpack Compose &amp; Material 3.\nBased dans partie sur Aurora par nessli420 (Apache 2.0).</string>
+
+    <!-- Discord login -->
+    <string name="discord_login_title">Connecter Discord</string>
+    <string name="discord_login_description">Connectez-vous à Discord ci-dessous — Sonethyst lit votre jeton localement pour configurer Rich Presence (il n’est jamais envoyé ailleurs que sur Discord). Si la page reste vide, collez un jeton à la place.</string>
+    <string name="discord_paste_token">Coller jeton</string>
+    <string name="discord_link">Lier</string>
+
+    <!-- Sauvegarde -->
+    <string name="backup_export">Exporter la sauvegarde</string>
+    <string name="backup_export_summary">Paramètres, playlists, favoris et historique d’écoute</string>
+    <string name="backup_restore">Restaurer la sauvegarde</string>
+    <string name="backup_restore_summary">Remplace les paramètres et playlists actuels</string>
+    <string name="backup_description">Les fichiers audio téléchargés ne sont pas inclus (ils peuvent être téléchargés à nouveau). La restauration remplace vos paramètres, playlists locales, favoris et historique actuels. Les comptes et identifiants de connexion ne sont pas inclus.</string>
+    <string name="backup_exported">Sauvegarde exportée</string>
+    <string name="backup_export_failed">Échec de l’exportation</string>
+    <string name="backup_restored">Sauvegarde restaurée</string>
+    <string name="backup_read_failed">Impossible de lire cette sauvegarde</string>
+
+
+    <!-- alarme -->
+    <string name="alarm_title">alarme</string>
+    <string name="alarm_wakeup">Il est temps de se réveiller</string>
+    <string name="alarm_dismiss">fermer</string>
+    <string name="alarm_disable_daily">Désactiver désactivé quotidiennement alarme</string>
+
+    <!-- Mini-lecteur accessibility -->
+    <string name="mini_like">J’aime</string>
+    <string name="mini_play_pause">Lire / pause</string>
+    <string name="mini_next">Suivant</string>
+
+    <!-- Ajouter songs to playlist -->
+    <string name="playlist_add_songs">Ajouter titres</string>
+    <string name="playlist_search_library">Rechercher bibliothèque</string>
+    <string name="playlist_all_songs_added">Tous les titres de la bibliothèque sont déjà dans cette playlist</string>
+    <string name="playlist_no_matching_songs">Aucun titre correspondant</string>
+    <string name="playlist_select_visible">Sélectionner les éléments visibles</string>
+    <string name="playlist_adding">Ajoutering…</string>
+    <string name="playlist_add_count">Ajouter (%1$d)</string>
+
+    <!-- Historique d’écoute -->
+    <string name="history_title">Historique d’écoute</string>
+    <string name="history_empty">Rien écoutés encore</string>
+    <string name="history_empty_summary">Votre récemment écoutés titres sera apparaîtront ici</string>
+    <string name="history_today">Aujourd’hui</string>
+    <string name="history_yesterday">Hier</string>
+
+    <!-- Profil -->
+    <string name="profile_more">Plus</string>
+    <string name="profile_playlists">Playlists</string>
+    <string name="profile_artists">Artistees</string>
+    <string name="profile_server">Serveur</string>
+    <string name="profile_top_artists">Artistes populaires</string>
+    <string name="profile_your_playlists">Vos playlists</string>
+
+
+    <!-- doublons -->
+    <string name="duplicates_title">Doublons</string>
+    <string name="duplicates_delete_title">Supprimer doublon?</string>
+    <string name="duplicates_delete_message">Le fichier audio sera supprimé de cet appareil.</string>
+    <string name="duplicates_none">Aucun probables doublons trouvé</string>
+    <string name="duplicates_scanning">analyse bibliothèque…</string>
+    <string name="duplicates_rescan">Réexaminer doublons</string>
+    <string name="duplicates_summary">%1$s • %2$s</string>
+    <string name="duplicates_artist_copies">%1$s • %2$s</string>
+    <string name="duplicates_unknown_album">album inconnu</string>
+    <string name="duplicates_best_quality">Meilleure qualité</string>
+    <string name="duplicates_playing">Lecture</string>
+    <string name="duplicates_delete">Supprimer doublon</string>
+    <string name="duplicates_quality_unavailable">Qualité informations indisponible</string>
+
+    <plurals name="duplicates_tracks_scanned">
+        <item quantity="one">%d titre analysé</item>
+        <item quantity="other">%d titres analysés</item>
+    </plurals>
+
+    <plurals name="duplicates_group_count">
+        <item quantity="one">%d doublon group</item>
+        <item quantity="other">%d doublon groups</item>
+    </plurals>
+
+    <plurals name="duplicates_copy_count">
+        <item quantity="one">%d copie</item>
+        <item quantity="other">%d copies</item>
+    </plurals>
+
+    <!-- Podcasts -->
+    <string name="podcasts_title">Podcasts</string>
+    <string name="podcasts_close_search">Fermer recherche</string>
+    <string name="podcasts_search">Rechercher podcasts</string>
+    <string name="podcasts_search_placeholder">Rechercher émissions &amp; thèmes</string>
+    <string name="podcasts_subscribed">Abonné</string>
+    <string name="podcasts_subscribe">S’abonner</string>
+    <string name="podcasts_results">Résultats</string>
+    <string name="podcasts_directory_unavailable">Impossible d’accéder au répertoire</string>
+    <string name="podcasts_no_shows">Aucune émission trouvée</string>
+    <string name="podcasts_get_started">Recherchez un programme à afficher ou choisissez un thème ci-dessus pour commencer.</string>
+    <string name="podcasts_default_show">Podcast</string>
+    <string name="podcasts_episodes">Épisodes</string>
+    <string name="podcasts_feed_unavailable">Impossible de charger ce flux</string>
+    <string name="podcasts_no_episodes">Aucun épisode</string>
+    <string name="podcasts_default_episode">Épisode</string>
+
+    <!-- Podcast topics -->
+    <string name="podcast_topic_news">Actualités</string>
+    <string name="podcast_topic_comedy">Comédie</string>
+    <string name="podcast_topic_technology">Technologie</string>
+    <string name="podcast_topic_science">Sciences</string>
+    <string name="podcast_topic_true_crime">Criminalité réelle</string>
+    <string name="podcast_topic_history">Historique</string>
+    <string name="podcast_topic_business">Économie</string>
+    <string name="podcast_topic_sports">Sports</string>
+    <string name="podcast_topic_health">Santé</string>
+    <string name="podcast_topic_music">Musique</string>
+
+    <!-- Podcast duration -->
+    <plurals name="podcast_hours">
+        <item quantity="one">%d h</item>
+        <item quantity="other">%d h</item>
+    </plurals>
+
+    <plurals name="podcast_minutes">
+        <item quantity="one">%d min</item>
+        <item quantity="other">%d min</item>
+    </plurals>
+
+    <plurals name="podcast_seconds">
+        <item quantity="one">%d s</item>
+        <item quantity="other">%d s</item>
+    </plurals>
+
+    <string name="podcast_hours_minutes">%1$s %2$s</string>
+
+
+    <!-- App messages -->
+    <string name="app_rating_cleared">Note effacée</string>
+    <string name="app_rated">Note : %1$d/5</string>
+    <string name="app_rating_failed">Impossible de mettre à jour la note</string>
+
+    <string name="app_track_hidden">Masqué de bibliothèque</string>
+    <string name="app_hide_track_failed">Impossible de masquer le titre</string>
+    <string name="app_album_hidden">album masqué de bibliothèque</string>
+    <string name="app_hide_album_failed">Impossible de masquer l’album</string>
+    <string name="app_restored_library">Restauré dans la bibliothèque</string>
+    <string name="app_restore_failed">Impossible de restaurer l’élément</string>
+
+    <string name="app_already_downloaded">Déjà téléchargé</string>
+    <string name="app_downloading_named">Téléchargement de « %1$s »</string>
+    <string name="app_removed_download">Téléchargement supprimé</string>
+    <string name="app_download_complete">Télécharger terminé</string>
+
+    <plurals name="app_download_finished_failed">
+        <item quantity="one">Télécharger terminé — %d échec</item>
+        <item quantity="other">Télécharger terminé — %d échec</item>
+    </plurals>
+
+    <plurals name="app_added_songs">
+        <item quantity="one">%d titre ajouté</item>
+        <item quantity="other">%d titres ajoutés</item>
+    </plurals>
+
+    <string name="app_add_songs_failed">Impossible d’ajouter les titres à la playlist</string>
+    <string name="app_added_to_playlist">Ajouté à %1$s</string>
+
+    <plurals name="app_added_tracks_to_playlist">
+        <item quantity="one">%1$d titre ajouté à %2$s</item>
+        <item quantity="other">%1$d titres ajoutés à %2$s</item>
+    </plurals>
+
+    <string name="app_add_to_playlist_failed">Impossible d’ajouter à la playlist</string>
+
+    <plurals name="app_created_playlist_added">
+        <item quantity="one">Créerd %2$s et ajouté %1$d titre</item>
+        <item quantity="other">Créerd %2$s et ajouté %1$d titres</item>
+    </plurals>
+
+    <string name="app_create_playlist_failed">Impossible de créer la playlist</string>
+
+    <string name="app_tags_cleared">tags effacée</string>
+    <string name="app_tags_updated">tags mis à jour</string>
+    <string name="app_tags_failed">Impossible de mettre à jour les tags</string>
+
+    <string name="app_added_to_queue">Ajouté à la file d’attente</string>
+    <string name="app_playing_next">Lecture suivante</string>
+
+    <string name="app_playlist_exported">Playlist exportée</string>
+    <string name="app_export_failed">Échec de l’exportation</string>
+    <string name="app_no_tracks_in_file">Aucun titres trouvé dans ce fichier</string>
+    <string name="app_imported_playlist">Playlist importée</string>
+
+    <plurals name="app_importing_tracks">
+        <item quantity="one">Importation de %d titre…</item>
+        <item quantity="other">Importation de %d titres…</item>
+    </plurals>
+
+    <string name="app_import_failed">Échec de l’importation</string>
+    <string name="app_matched_tracks">Correspondance %1$d de %2$d titres</string>
+    <string name="app_nothing_to_export">Rien à exporter</string>
+
+    <plurals name="app_added_tracks_queue">
+        <item quantity="one">%d titre ajouté à la file</item>
+        <item quantity="other">%d titres ajoutés à la file</item>
+    </plurals>
+
+    <string name="app_selected_downloaded">Sélectionné titres déjà téléchargés</string>
+
+    <plurals name="app_downloading_tracks">
+        <item quantity="one">Téléchargering %d titre</item>
+        <item quantity="other">Téléchargering %d titres</item>
+    </plurals>
+
+    <plurals name="app_added_tracks_liked">
+        <item quantity="one">%d titre ajouté aux favoris</item>
+        <item quantity="other">%d titres ajoutés aux favoris</item>
+    </plurals>
+
+    <plurals name="app_removed_tracks_liked">
+        <item quantity="one">%d titre retiré des favoris</item>
+        <item quantity="other">%d titres retirés des favoris</item>
+    </plurals>
+
+    <string name="app_playlist_order_failed">Impossible d’enregistrer l’ordre de la playlist</string>
+
+    <plurals name="app_removed_tracks_playlist">
+        <item quantity="one">%d titre supprimé de la playlist</item>
+        <item quantity="other">%d titres supprimés de la playlist</item>
+    </plurals>
+
+    <string name="app_remove_selected_failed">Impossible de supprimer les titres sélectionnés</string>
+    <string name="app_removed_named_from_playlist">%1$s supprimé de la playlist</string>
+    <string name="app_remove_track_failed">Impossible de supprimer le titre</string>
+
+    <string name="app_smart_cover_updated">Pochette de la playlist intelligente mise à jour</string>
+    <string name="app_smart_cover_failed">Impossible de mettre à jour la pochette de la playlist intelligente</string>
+    <string name="app_playlist_cover_updated">Pochette de la playlist mise à jour</string>
+    <string name="app_playlist_cover_failed">Impossible de mettre à jour la pochette de la playlist</string>
+
+    <plurals name="app_batch_tracks_updated">
+        <item quantity="one">%d titre mis à jour</item>
+        <item quantity="other">%d titres mis à jour</item>
+    </plurals>
+
+    <plurals name="app_batch_all_failed">
+        <item quantity="one">Échec de la mise à jour de %d titre</item>
+        <item quantity="other">Échec de la mise à jour des %d titres</item>
+    </plurals>
+
+    <string name="app_batch_partial">%1$d mis à jour, %2$d échec</string>
+
+    <string name="app_lyrics_saved">Paroles enregistré</string>
+    <string name="app_lyrics_save_failed">Impossible d’enregistrer les paroles</string>
+    <string name="app_custom_lyrics_removed">Personnalisé paroles supprimé</string>
+    <string name="app_custom_lyrics_remove_failed">Impossible de supprimer les paroles personnalisées</string>
+
+    <string name="app_switched_server">Basculé vers %1$s</string>
+
+    <string name="app_file_deleted">Fichier supprimé</string>
+    <string name="app_only_local_delete">Seuls les fichiers locaux peuvent être supprimés ici</string>
+    <string name="app_delete_request_failed">Impossible de demander la suppression du fichier</string>
+    <string name="app_delete_file_failed">Impossible de supprimer le fichier</string>
+
+
+    <!-- Authentication errors -->
+    <string name="auth_spotify_client_id_required">Collez d’abord l’identifiant client de votre application Spotify.</string>
+    <string name="auth_spotify_failed">Échec de la connexion à Spotify — réessayez.</string>
+    <string name="auth_login_rejected">Connexion refusée</string>
+    <string name="auth_spotify_form_invalid">Pour Spotify, utilisez le bouton de connexion, pas ce formulaire</string>
+    <string name="auth_local_form_invalid">Le mode local n’utilise pas ce formulaire</string>
+    <string name="auth_server_not_found">Serveur introuvable — vérifiez l’adresse.</string>
+    <string name="auth_server_unreachable">Impossible d’atteindre le serveur.</string>
+    <string name="auth_timeout">Délai de connexion dépassé.</string>
+    <string name="auth_wrong_credentials">Nom d’utilisateur ou mot de passe incorrect.</string>
+    <string name="auth_server_error">Serveur erreur (%1$d).</string>
+    <string name="auth_signin_failed">Échec de la connexion.</string>
+
+    <!-- alarme notification -->
+    <string name="alarm_notification_title">Sonethyst alarme</string>
+    <string name="alarm_notification_text">Appuyez pour fermer</string>
+
+    <!-- Audio outputs -->
+    <string name="autoeq_output_speaker">Haut-parleur</string>
+    <string name="autoeq_output_bluetooth">Bluetooth</string>
+    <string name="autoeq_output_usb_dac">USB DAC</string>
+    <string name="autoeq_output_wired">Casque filaire</string>
+
+
+    <!-- Top-niveau navigation -->
+    <string name="nav_home">Accueil</string>
+    <string name="nav_search">Rechercher</string>
+    <string name="nav_library">Bibliothèque</string>
+
+    <!-- Detail types -->
+    <string name="detail_type_album">Album</string>
+    <string name="detail_type_artist">Artiste</string>
+    <string name="detail_type_playlist">Playlist</string>
+    <string name="detail_type_smart_playlist">Playlist intelligente</string>
+    <string name="detail_type_tag">Étiquette</string>
+    <string name="detail_type_genre">Genre</string>
+    <string name="detail_type_collection">Collection</string>
+
+    <!-- Visualiseur -->
+    <string name="visualizer_close">Fermer visualizer</string>
+
+
+    <!-- Sidebar -->
+    <string name="sidebar_initials_fallback">ME</string>
+    <string name="sidebar_view_profile">Voir le profil</string>
+    <string name="sidebar_listener">Auditeur</string>
+    <string name="sidebar_profile">Profil</string>
+    <string name="sidebar_library">Votre bibliothèque</string>
+    <string name="sidebar_radio">Radio</string>
+    <string name="sidebar_podcasts">Podcasts</string>
+    <string name="sidebar_history">Historique d’écoute</string>
+    <string name="sidebar_stats">Statistiques d’écoute</string>
+    <string name="sidebar_duplicates">Rechercher doublons</string>
+    <string name="sidebar_settings">Paramètres</string>
+    <string name="sidebar_logout">Se déconnecter</string>
+
+    <!-- Dossier navigateur -->
+    <string name="folder_root_title">Dossiers</string>
+    <string name="folder_back">Retour</string>
+    <string name="folder_shuffle">Aléatoire dossier</string>
+    <string name="folder_play">Lire dossier</string>
+    <string name="folder_empty">Rien dans ce dossier</string>
+    <string name="folder_clear_selection">Effacer</string>
+    <string name="folder_edit_tags">Modifier tags</string>
+    <plurals name="folder_selected_songs">
+        <item quantity="one">%1$d sélectionné</item>
+        <item quantity="other">%1$d sélectionné</item>
+    </plurals>
+
+    <!-- Groupé tag editor -->
+    <string name="batch_tags_title">Groupé modifier tags</string>
+    <string name="batch_tags_write_denied">Autorisation d’écriture refusée</string>
+    <plurals name="batch_tags_selected">
+        <item quantity="one">%1$d titre sélectionné</item>
+        <item quantity="other">%1$d titres sélectionné</item>
+    </plurals>
+    <string name="batch_tags_explanation">Seuls les champs cochés seront modifiés. Les métadonnées non cochées restent inchangées.</string>
+    <string name="batch_tags_field_title">Titre</string>
+    <string name="batch_tags_field_artist">Artiste</string>
+    <string name="batch_tags_field_album">album</string>
+    <string name="batch_tags_field_album_artist">album artiste</string>
+    <string name="batch_tags_field_genre">Genre</string>
+    <string name="batch_tags_field_year">Année</string>
+    <string name="batch_tags_field_track_number">Titre #</string>
+    <string name="batch_tags_saving">Enregistrement…</string>
+    <string name="batch_tags_apply">Appliquer vers sélectionné titres</string>
+    <string name="batch_tags_multiple_values">Plusieurs valeurs</string>
+    <string name="batch_tags_blank_clears">Vide sera effacera ce champ sur tous sélectionné titres.</string>
+
+
+    <!-- Métadonnées matching messages -->
+    <string name="tag_no_matches">Aucun résultat</string>
+    <string name="tag_no_artwork_matches">Aucune pochette correspondante trouvée</string>
+    <string name="tag_fingerprint_failed">Impossible d’analyser l’empreinte de ce fichier</string>
+    <string name="tag_acoustid_unavailable">Identification automatique indisponible : le client AcoustID n’est pas configuré.</string>
+    <string name="tag_no_acoustid_match">Aucun AcoustID correspondance</string>
+
+    <!-- Custom radio validation -->
+    <string name="radio_custom_edit_only">Seulement personnalisé stations peuvent  modifiées</string>
+    <string name="radio_stream_url_required">Saisissez l’URL du flux</string>
+    <string name="radio_url_no_spaces">L’URL ne doit pas contenir d’espaces</string>
+    <string name="radio_url_invalid">Saisissez une URL de flux valide</string>
+    <string name="radio_url_http_required">Utiliser une http:// ou https:// flux URL</string>
+    <string name="radio_stream_duplicate">Ce flux est déjà enregistré en tant que “%1$s”</string>
+
+    <!-- Lireer result messages -->
+    <plurals name="player_sonic_radio_result">
+        <item quantity="one">Sonic radio · %1$d similaires titre</item>
+        <item quantity="other">Sonic radio · %1$d similaires titres</item>
+    </plurals>
+    <string name="player_radio_started">Radio démarré</string>
+    <string name="player_sonic_not_enough">Pas assez analysés titres — lancez Sonic analyse dans Paramètres</string>
+    <plurals name="player_auto_dj_result">
+        <item quantity="one">Auto-DJ · %1$d titre, clé &amp; tempo correspondant</item>
+        <item quantity="other">Auto-DJ · %1$d titres, clé &amp; tempo correspondant</item>
+    </plurals>
+    <string name="player_nothing_to_save">Rien à enregistrer</string>
+    <string name="player_playlist_saved">Enregistrerd “%1$s”</string>
+    <string name="player_playlist_save_failed">Impossible d’enregistrer la playlist</string>
+
+    <!-- Widget / Quick Paramètres -->
+    <string name="quick_tile_playing">Lecture</string>
+    <string name="quick_tile_paused">En pause</string>
+    <string name="widget_unknown_title">Titre inconnu</string>
+    <string name="widget_nothing_playing">Aucune lecture</string>
+
+
+    <!-- Paroles editor dynamic source -->
+    <string name="lyrics_edit_track_not_found">Titre pas trouvé</string>
+    <string name="lyrics_edit_source_custom">Personnalisé</string>
+    <string name="lyrics_edit_source_none">Aucun</string>
+
+
+    <!-- Audio signal path -->
+    <string name="signal_output_speaker">Haut-parleur</string>
+    <string name="signal_output_usb_dac">USB DAC</string>
+    <string name="signal_output_bluetooth">Bluetooth</string>
+    <string name="signal_output_generic">Sortie</string>
+    <string name="signal_bluetooth_reencoded">Bluetooth — réencodé par le codec système (LDAC/aptX/AAC/SBC)</string>
+    <string name="signal_dsp_not_bitperfect">DSP / effets actif — pas bit-perfect</string>
+    <string name="signal_exclusive_bitperfect">Bit-perfect exclusif vers le DAC</string>
+    <string name="signal_hires_exclusive_not_granted">Hi-res float — accès exclusif non accordé (essayez de rebrancher ou de redémarrer)</string>
+    <string name="signal_hires_no_exclusive">Hi-res float passthrough — cet appareil ne dispose pas d’un chemin bit-perfect exclusif</string>
+    <string name="signal_restart_hires">Redémarrez lecture vers activer haute résolution float sortie</string>
+    <string name="signal_android_mixer">Via le mixeur Android — activez la sortie Hi-res pour le bit-perfect</string>
+
+    <!-- Android system multimédia library -->
+    <string name="media_browser_liked_songs">Titres aimés</string>
+    <string name="media_browser_playlists">Playlists</string>
+    <string name="media_browser_albums">Albums</string>
+    <string name="media_browser_artists">Artistees</string>
+    <string name="media_browser_downloads">Téléchargements</string>
+    <string name="media_action_shuffle">Aléatoire</string>
+    <string name="media_action_repeat">Répéter</string>
+
+
+    <!-- Retourend-générées display text -->
+    <string name="backend_fallback_album">album</string>
+    <string name="backend_fallback_track">titre</string>
+    <string name="backend_liked_songs">Titres aimés</string>
+    <string name="backend_folders">Dossiers</string>
+    <string name="backend_smart_playlist">Playlist intelligente</string>
+    <string name="backend_downloaded">Téléchargé</string>
+
+    <plurals name="backend_song_count">
+        <item quantity="one">%1$d titre</item>
+        <item quantity="other">%1$d titres</item>
+    </plurals>
+
+    <plurals name="backend_songs_you_love">
+        <item quantity="one">%1$d titre vous love</item>
+        <item quantity="other">%1$d titres vous love</item>
+    </plurals>
+
+    <plurals name="backend_downloaded_tracks">
+        <item quantity="one">%1$d downloaded titre</item>
+        <item quantity="other">%1$d downloaded titres</item>
+    </plurals>
+
+    <string name="backend_smart_playlist_summary">%1$s • %2$s</string>
+    <string name="backend_downloaded_album_subtitle">%1$s • Téléchargé</string>
+    <string name="backend_downloaded_item_subtitle">%1$s • %2$s</string>
+
+
+    <!-- Remote backend display text -->
+    <string name="backend_fallback_artist">Artiste</string>
+    <string name="backend_fallback_playlist">Playlist</string>
+    <string name="backend_fallback_folder">Dossier</string>
+    <string name="backend_by_user">par %1$s</string>
+    <string name="backend_album_track_summary">%1$s · %2$s</string>
+
+    <plurals name="backend_album_count">
+        <item quantity="one">%1$d album</item>
+        <item quantity="other">%1$d albums</item>
+    </plurals>
+
+    <plurals name="backend_track_count">
+        <item quantity="one">%1$d titre</item>
+        <item quantity="other">%1$d titres</item>
+    </plurals>
+
+    <plurals name="backend_followers">
+        <item quantity="one">%1$s abonné</item>
+        <item quantity="other">%1$s abonnés</item>
+    </plurals>
+
+
+    <!-- Final localization cleanup -->
+    <string name="common_clear_action">Effacer</string>
+    <string name="library_new_playlist_title">Nouvelle playlist</string>
+    <string name="library_smart_playlist_fallback">Playlist intelligente</string>
+    <plurals name="history_play_count">
+        <item quantity="one">%1$d lecture</item>
+        <item quantity="other">%1$d lectures</item>
+    </plurals>
+    <string name="history_artist_play_count">%1$s · %2$s</string>
+    <string name="media_resume_no_active_session">Aucun actif Sonethyst session</string>
+    <string name="media_resume_no_active_account">Aucun actif compte pour lecture resumption</string>
+    <string name="media_resume_no_saved_queue">Aucun enregistré fichier</string>
+    <string name="media_resume_saved_queue_empty">Enregistrerd fichier est empty</string>
+
+
+    <!-- Final semantic display localization -->
+    <string name="detail_present">à ce jour</string>
+    <string name="library_version_original">original</string>
+    <string name="library_version_alternate_length">Durée alternative</string>
+    <string name="auth_no_user_id">Le serveur n’a pas renvoyé d’identifiant utilisateur</string>
+
+
+    <!-- Radio fallback display text -->
+    <string name="radio_default_station">Station de radio</string>
+    <string name="radio_internet_radio">Radio Internet</string>
+
+    <string name="settings_language">Langue</string>
+    <string name="settings_language_summary">Choisir la langue de l’application</string>
+    <string name="language_system_default">Langue du système</string>
+    <string name="language_english">English</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_ukrainian">Українська</string>
+    <string name="language_french">Français</string>
+
+    <string name="about_third_party_notices">Les avis sur les composants natifs tiers sont inclus dans les sources et les ressources de l’APK.</string>
+    <string name="about_license">Licence de Sonethyst : GPL-3.0-only</string>
+</resources>

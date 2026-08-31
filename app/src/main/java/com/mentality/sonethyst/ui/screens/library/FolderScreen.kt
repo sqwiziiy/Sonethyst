@@ -77,7 +77,10 @@ fun FolderScreen(
 
     val header =
         title.ifBlank {
-            content?.title ?: "Folders"
+            content?.title
+                ?: androidx.compose.ui.res.stringResource(
+                    com.mentality.sonethyst.R.string.folder_root_title
+                )
         }
 
     var selectedSongIds by remember {
@@ -103,7 +106,10 @@ fun FolderScreen(
     Column(Modifier.fillMaxSize().padding(top = topInset)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                Icons.AutoMirrored.Filled.ArrowBack, "Back",
+                Icons.AutoMirrored.Filled.ArrowBack,
+                androidx.compose.ui.res.stringResource(
+                    com.mentality.sonethyst.R.string.folder_back
+                ),
                 modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onBack).padding(8.dp),
             )
             Spacer(Modifier.width(8.dp))
@@ -111,11 +117,17 @@ fun FolderScreen(
             val songs = content?.songs.orEmpty()
             if (songs.isNotEmpty()) {
                 Icon(
-                    Icons.Filled.Shuffle, "Shuffle folder",
+                    Icons.Filled.Shuffle,
+                    androidx.compose.ui.res.stringResource(
+                        com.mentality.sonethyst.R.string.folder_shuffle
+                    ),
                     modifier = Modifier.size(40.dp).clip(CircleShape).clickable { onShufflePlay(songs) }.padding(8.dp),
                 )
                 Icon(
-                    Icons.Filled.PlayArrow, "Play folder",
+                    Icons.Filled.PlayArrow,
+                    androidx.compose.ui.res.stringResource(
+                        com.mentality.sonethyst.R.string.folder_play
+                    ),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(44.dp).clip(CircleShape).clickable { onPlayAll(songs, 0) }.padding(8.dp),
                 )
@@ -126,7 +138,12 @@ fun FolderScreen(
             loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { LottieLoader(modifier = Modifier.size(72.dp)) }
             content == null || (content.folders.isEmpty() && content.songs.isEmpty()) ->
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Nothing in this folder", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        androidx.compose.ui.res.stringResource(
+                            com.mentality.sonethyst.R.string.folder_empty
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             else -> {
                 val bottom = contentPadding.calculateBottomPadding() + 24.dp
@@ -177,7 +194,11 @@ fun FolderScreen(
                                     Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    "${selectedSongIds.size} selected",
+                                    androidx.compose.ui.res.pluralStringResource(
+                                        com.mentality.sonethyst.R.plurals.folder_selected_songs,
+                                        selectedSongIds.size,
+                                        selectedSongIds.size,
+                                    ),
                                     style =
                                         MaterialTheme
                                             .typography
@@ -189,7 +210,9 @@ fun FolderScreen(
                                 )
 
                                 Text(
-                                    "Clear",
+                                    androidx.compose.ui.res.stringResource(
+                                        com.mentality.sonethyst.R.string.folder_clear_selection
+                                    ),
                                     modifier =
                                         Modifier
                                             .clickable {
@@ -204,7 +227,9 @@ fun FolderScreen(
                                     canBatchEdit
                                 ) {
                                     Text(
-                                        "Edit tags",
+                                        androidx.compose.ui.res.stringResource(
+                                            com.mentality.sonethyst.R.string.folder_edit_tags
+                                        ),
                                         color =
                                             MaterialTheme
                                                 .colorScheme

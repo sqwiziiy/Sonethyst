@@ -1,5 +1,6 @@
 package com.mentality.sonethyst.viewmodel
 
+import com.mentality.sonethyst.R
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -85,7 +86,10 @@ class LyricsEditViewModel(
                         loading = false,
                         songId = songId,
                         error =
-                            "Track not found",
+                            getApplication<Application>()
+                                .getString(
+                                    R.string.lyrics_edit_track_not_found
+                                ),
                     )
 
                 return@launch
@@ -159,10 +163,10 @@ class LyricsEditViewModel(
                         },
                     source =
                         if (custom != null) {
-                            "Custom"
+                            ""
                         } else {
                             current?.source
-                                ?: "None"
+                                .orEmpty()
                         },
                     hasCustom =
                         custom != null,
@@ -485,7 +489,7 @@ class LyricsEditViewModel(
                             it.hasCustom,
                     source =
                         if (ok) {
-                            "Custom"
+                            ""
                         } else {
                             it.source
                         },

@@ -68,6 +68,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
@@ -75,12 +76,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.model.Song
 import com.mentality.sonethyst.ui.components.Artwork
 import com.mentality.sonethyst.ui.components.Eyebrow
 import com.mentality.sonethyst.ui.components.PlaylistCoverSheet
 import com.mentality.sonethyst.ui.components.SectionHeader
 import com.mentality.sonethyst.ui.components.SongRow
+import com.mentality.sonethyst.ui.components.displayMetadata
 import com.mentality.sonethyst.viewmodel.DetailUiState
 
 @Composable
@@ -166,11 +169,11 @@ fun DetailScreen(
     if (data == null) {
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             Row(Modifier.fillMaxWidth().padding(top = topInset + 6.dp, start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onBack).padding(8.dp))
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back), modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onBack).padding(8.dp))
             }
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 if (state.loading) com.mentality.sonethyst.ui.components.LottieLoader(modifier = Modifier.size(72.dp))
-                else Text("Couldn't load", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                else Text(stringResource(R.string.detail_couldnt_load), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         return
@@ -280,10 +283,10 @@ fun DetailScreen(
                     Modifier.fillMaxWidth().padding(top = topInset + 6.dp, start = 8.dp, end = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White, modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onBack).padding(8.dp))
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back), tint = Color.White, modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onBack).padding(8.dp))
                     Spacer(Modifier.weight(1f))
                     Box {
-                        Icon(Icons.Filled.MoreVert, "More", tint = Color.White, modifier = Modifier.size(40.dp).clip(CircleShape).clickable { headerMenu = true }.padding(8.dp))
+                        Icon(Icons.Filled.MoreVert, stringResource(R.string.action_more), tint = Color.White, modifier = Modifier.size(40.dp).clip(CircleShape).clickable { headerMenu = true }.padding(8.dp))
                         val isPlaylist =
                             itemKind == "playlist"
 
@@ -291,17 +294,21 @@ fun DetailScreen(
                             itemKind == "smart"
 
                         DropdownMenu(expanded = headerMenu, onDismissRequest = { headerMenu = false }) {
-                            DropdownMenuItem(text = { Text("Play") }, enabled = tracks.isNotEmpty(), onClick = { headerMenu = false; onPlayAll(tracks, 0) }, leadingIcon = { Icon(Icons.Filled.PlayArrow, null) })
-                            DropdownMenuItem(text = { Text("Shuffle") }, enabled = tracks.isNotEmpty(), onClick = { headerMenu = false; onShufflePlay(tracks) }, leadingIcon = { Icon(Icons.Filled.Shuffle, null) })
-                            DropdownMenuItem(text = { Text("Add all to queue") }, enabled = tracks.isNotEmpty(), onClick = { headerMenu = false; tracks.forEach { onAddToQueue(it) } }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.QueueMusic, null) })
+                            DropdownMenuItem(text = { Text(stringResource(R.string.action_play)) }, enabled = tracks.isNotEmpty(), onClick = { headerMenu = false; onPlayAll(tracks, 0) }, leadingIcon = { Icon(Icons.Filled.PlayArrow, null) })
+                            DropdownMenuItem(text = { Text(stringResource(R.string.action_shuffle)) }, enabled = tracks.isNotEmpty(), onClick = { headerMenu = false; onShufflePlay(tracks) }, leadingIcon = { Icon(Icons.Filled.Shuffle, null) })
+                            DropdownMenuItem(text = { Text(stringResource(R.string.detail_add_all_to_queue)) }, enabled = tracks.isNotEmpty(), onClick = { headerMenu = false; tracks.forEach { onAddToQueue(it) } }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.QueueMusic, null) })
                             if (onTogglePin != null) {
                                 DropdownMenuItem(
                                     text = {
                                         Text(
                                             if (isPinned) {
-                                                "Unpin from Library"
+                                                stringResource(
+                                                    R.string.library_unpin
+                                                )
                                             } else {
-                                                "Pin to Library"
+                                                stringResource(
+                                                    R.string.library_pin
+                                                )
                                             }
                                         )
                                     },
@@ -327,7 +334,7 @@ fun DetailScreen(
                             ) {
                                 DropdownMenuItem(
                                     text = {
-                                        Text("Hide album")
+                                        Text(stringResource(R.string.library_hide_album))
                                     },
                                     onClick = {
                                         headerMenu = false
@@ -353,7 +360,7 @@ fun DetailScreen(
                                     DropdownMenuItem(
                                         text = {
                                             Text(
-                                                "Change cover"
+                                                stringResource(R.string.detail_change_cover)
                                             )
                                         },
                                         onClick = {
@@ -379,7 +386,7 @@ fun DetailScreen(
                                     DropdownMenuItem(
                                         text = {
                                             Text(
-                                                "Edit smart playlist"
+                                                stringResource(R.string.detail_edit_smart_playlist)
                                             )
                                         },
                                         onClick = {
@@ -400,7 +407,7 @@ fun DetailScreen(
                                     DropdownMenuItem(
                                         text = {
                                             Text(
-                                                "Edit playlist"
+                                                stringResource(R.string.detail_edit_playlist)
                                             )
                                         },
                                         onClick = {
@@ -423,9 +430,13 @@ fun DetailScreen(
                                             if (
                                                 isSmartPlaylist
                                             ) {
-                                                "Delete smart playlist"
+                                                stringResource(
+                                                    R.string.detail_delete_smart_playlist
+                                                )
                                             } else {
-                                                "Delete playlist"
+                                                stringResource(
+                                                    R.string.library_delete_playlist
+                                                )
                                             }
                                         )
                                     },
@@ -450,11 +461,13 @@ fun DetailScreen(
                     }
                 }
                 Column(Modifier.align(Alignment.BottomStart).padding(start = 20.dp, end = 20.dp, bottom = 14.dp)) {
-                    Eyebrow(info.typeLabel.uppercase(), accent)
+                    Eyebrow(stringResource(
+                        detailTypeLabelRes(itemKind)
+                    ).uppercase(), accent)
                     Spacer(Modifier.height(6.dp))
                     Text(info.title, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black, color = Color.White)
                     Spacer(Modifier.height(4.dp))
-                    Text(info.subtitle, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.85f))
+                    Text(displayMetadata(info.subtitle), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.85f))
                 }
             }
         }
@@ -473,13 +486,13 @@ fun DetailScreen(
                         .padding(horizontal = 28.dp, vertical = 13.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Filled.PlayArrow, "Play", tint = onAccent, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Filled.PlayArrow, stringResource(R.string.action_play), tint = onAccent, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Play", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black, color = onAccent)
+                    Text(stringResource(R.string.action_play), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black, color = onAccent)
                 }
                 Spacer(Modifier.width(10.dp))
                 Icon(
-                    Icons.Filled.Shuffle, "Shuffle",
+                    Icons.Filled.Shuffle, stringResource(R.string.action_shuffle),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(46.dp).clip(CircleShape).clickable(enabled = tracks.isNotEmpty()) { onShufflePlay(tracks) }.padding(11.dp),
                 )
@@ -487,7 +500,11 @@ fun DetailScreen(
                 if (itemKind == "album" || itemKind == "playlist" || itemKind == "artist") {
                     Icon(
                         if (isItemLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        if (isItemLiked) "Unlike" else "Like",
+                        if (isItemLiked) {
+                            stringResource(R.string.action_unlike)
+                        } else {
+                            stringResource(R.string.action_like)
+                        },
                         tint = if (isItemLiked) accent else MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(44.dp).clip(CircleShape).clickable { onToggleItemLike() }.padding(9.dp),
                     )
@@ -496,7 +513,11 @@ fun DetailScreen(
                     val allDownloaded = tracks.isNotEmpty() && tracks.all { downloadedIds.contains(it.id) }
                     Icon(
                         if (allDownloaded) Icons.Filled.DownloadDone else Icons.Filled.Download,
-                        if (allDownloaded) "Remove downloads" else "Download",
+                        if (allDownloaded) {
+                            stringResource(R.string.detail_remove_downloads)
+                        } else {
+                            stringResource(R.string.song_download)
+                        },
                         tint = if (allDownloaded) accent else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(44.dp).clip(CircleShape).clickable {
                             if (allDownloaded) onRemoveDownloads() else onDownloadAll()
@@ -515,7 +536,7 @@ fun DetailScreen(
 
         if (info.isArtist && data.albums.isNotEmpty()) {
             item {
-                SectionHeader("Albums", Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+                SectionHeader(stringResource(R.string.library_filter_albums), Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
                 Spacer(Modifier.height(6.dp))
                 androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 8.dp)) {
                     items(
@@ -543,7 +564,7 @@ fun DetailScreen(
                 if (selectionMode) {
                     Icon(
                         Icons.Filled.Close,
-                        "Clear selection",
+                        stringResource(R.string.detail_clear_selection),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
                             .size(40.dp)
@@ -555,7 +576,10 @@ fun DetailScreen(
                     Spacer(Modifier.width(4.dp))
 
                     Text(
-                        "${selectedTrackIds.size} selected",
+                        stringResource(
+                            R.string.library_selected_count,
+                            selectedTrackIds.size,
+                        ),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f),
@@ -563,7 +587,7 @@ fun DetailScreen(
 
                     Icon(
                         Icons.Filled.SelectAll,
-                        "Select all",
+                        stringResource(R.string.detail_select_all),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
                             .size(42.dp)
@@ -583,7 +607,7 @@ fun DetailScreen(
                     if (onAddSelectedToPlaylist != null) {
                         Icon(
                             Icons.AutoMirrored.Filled.PlaylistAdd,
-                            "Add selected to playlist",
+                            stringResource(R.string.detail_add_selected_to_playlist),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .size(42.dp)
@@ -607,7 +631,7 @@ fun DetailScreen(
                     if (onAddSelectedToQueue != null) {
                         Icon(
                             Icons.AutoMirrored.Filled.QueueMusic,
-                            "Add selected to queue",
+                            stringResource(R.string.detail_add_selected_to_queue),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .size(42.dp)
@@ -633,7 +657,7 @@ fun DetailScreen(
                     ) {
                         Icon(
                             Icons.Filled.Delete,
-                            "Remove selected from playlist",
+                            stringResource(R.string.detail_remove_selected_from_playlist),
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier
                                 .size(42.dp)
@@ -661,7 +685,7 @@ fun DetailScreen(
                         Box {
                             Icon(
                                 Icons.Filled.MoreVert,
-                                "More selected actions",
+                                stringResource(R.string.detail_more_selected_actions),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier
                                     .size(42.dp)
@@ -699,7 +723,7 @@ fun DetailScreen(
                                     DropdownMenuItem(
                                         text = {
                                             Text(
-                                                "Edit selected tags"
+                                                stringResource(R.string.detail_edit_selected_tags)
                                             )
                                         },
                                         onClick = {
@@ -722,7 +746,7 @@ fun DetailScreen(
 
                                 if (onDownloadSelected != null) {
                                     DropdownMenuItem(
-                                        text = { Text("Download selected") },
+                                        text = { Text(stringResource(R.string.detail_download_selected)) },
                                         onClick = {
                                             selectionMenuOpen = false
                                             onDownloadSelected(selected)
@@ -743,9 +767,13 @@ fun DetailScreen(
                                         text = {
                                             Text(
                                                 if (allLiked) {
-                                                    "Remove selected from liked"
+                                                    stringResource(
+                                                        R.string.detail_remove_selected_from_liked
+                                                    )
                                                 } else {
-                                                    "Add selected to liked"
+                                                    stringResource(
+                                                        R.string.detail_add_selected_to_liked
+                                                    )
                                                 }
                                             )
                                         },
@@ -774,7 +802,11 @@ fun DetailScreen(
                     }
                 } else {
                     Text(
-                        if (info.isArtist) "Popular" else "Tracks",
+                        if (info.isArtist) {
+                            stringResource(R.string.detail_popular)
+                        } else {
+                            stringResource(R.string.detail_tracks)
+                        },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f),
@@ -783,7 +815,11 @@ fun DetailScreen(
                     if (tracks.size > 5) {
                         Icon(
                             if (searchOpen) Icons.Filled.Close else Icons.Filled.Search,
-                            if (searchOpen) "Close search" else "Search tracks",
+                            if (searchOpen) {
+                                stringResource(R.string.detail_close_search)
+                            } else {
+                                stringResource(R.string.detail_search_tracks)
+                            },
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(40.dp).clip(CircleShape)
                                 .clickable {
@@ -807,9 +843,18 @@ fun DetailScreen(
                         value = query,
                         onValueChange = { query = it },
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).focusRequester(searchFocus),
-                        placeholder = { Text("Search in ${info.typeLabel.lowercase()}") },
+                        placeholder = {
+                            Text(
+                                stringResource(
+                                    R.string.detail_search_in,
+                                    stringResource(
+                                detailTypeLabelRes(itemKind)
+                            ).lowercase(),
+                                )
+                            )
+                        },
                         leadingIcon = { Icon(Icons.Filled.Search, null, tint = MaterialTheme.colorScheme.primary) },
-                        trailingIcon = { if (query.isNotEmpty()) Icon(Icons.Filled.Close, "Clear", modifier = Modifier.clip(CircleShape).clickable { query = "" }.padding(4.dp)) },
+                        trailingIcon = { if (query.isNotEmpty()) Icon(Icons.Filled.Close, stringResource(R.string.action_clear), modifier = Modifier.clip(CircleShape).clickable { query = "" }.padding(4.dp)) },
                         singleLine = true,
                         shape = RoundedCornerShape(14.dp),
                         colors = TextFieldDefaults.colors(
@@ -1019,9 +1064,34 @@ fun DetailScreen(
 private fun ArtistAbout(info: com.mentality.sonethyst.data.remote.ArtistInfo, accent: Color) {
     var expanded by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
-        SectionHeader("About")
+        SectionHeader(stringResource(R.string.detail_about))
         Spacer(Modifier.height(10.dp))
-        val meta = listOf(info.country, info.yearsActive).filter { it.isNotBlank() }.joinToString("  •  ")
+        val displayedYears =
+            if (
+                info.yearsActive.endsWith(
+                    "–present"
+                )
+            ) {
+                info.yearsActive
+                    .removeSuffix(
+                        "present"
+                    ) +
+                    stringResource(
+                        R.string.detail_present
+                    )
+            } else {
+                info.yearsActive
+            }
+
+        val meta =
+            listOf(
+                info.country,
+                displayedYears,
+            )
+                .filter {
+                    it.isNotBlank()
+                }
+                .joinToString("  •  ")
         if (meta.isNotBlank()) {
             Text(meta, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = accent)
             Spacer(Modifier.height(8.dp))
@@ -1036,7 +1106,11 @@ private fun ArtistAbout(info: com.mentality.sonethyst.data.remote.ArtistInfo, ac
                 modifier = Modifier.clickable { expanded = !expanded },
             )
             Text(
-                if (expanded) "Show less" else "Show more",
+                if (expanded) {
+                    stringResource(R.string.detail_show_less)
+                } else {
+                    stringResource(R.string.detail_show_more)
+                },
                 style = MaterialTheme.typography.labelLarge,
                 color = accent,
                 modifier = Modifier.clip(RoundedCornerShape(50)).clickable { expanded = !expanded }.padding(vertical = 4.dp),
@@ -1066,15 +1140,42 @@ private fun EditPlaylistDialog(initialName: String, initialDesc: String, onSave:
     var desc by remember { mutableStateOf(initialDesc) }
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit playlist", fontWeight = FontWeight.Bold) },
+        title = { Text(stringResource(R.string.detail_edit_playlist), fontWeight = FontWeight.Bold) },
         text = {
             Column {
-                androidx.compose.material3.OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, singleLine = true)
+                androidx.compose.material3.OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(stringResource(R.string.detail_name)) }, singleLine = true)
                 Spacer(Modifier.height(10.dp))
-                androidx.compose.material3.OutlinedTextField(value = desc, onValueChange = { desc = it }, label = { Text("Description") })
+                androidx.compose.material3.OutlinedTextField(value = desc, onValueChange = { desc = it }, label = { Text(stringResource(R.string.detail_description)) })
             }
         },
-        confirmButton = { androidx.compose.material3.TextButton(onClick = { if (name.isNotBlank()) onSave(name.trim(), desc.trim()) }, enabled = name.isNotBlank()) { Text("Save") } },
-        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = { if (name.isNotBlank()) onSave(name.trim(), desc.trim()) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.action_save)) } },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
+
+
+private fun detailTypeLabelRes(
+    itemKind: String,
+): Int =
+    when (itemKind) {
+        "album" ->
+            R.string.detail_type_album
+
+        "artist" ->
+            R.string.detail_type_artist
+
+        "playlist" ->
+            R.string.detail_type_playlist
+
+        "smart" ->
+            R.string.detail_type_smart_playlist
+
+        "tag" ->
+            R.string.detail_type_tag
+
+        "genre" ->
+            R.string.detail_type_genre
+
+        else ->
+            R.string.detail_type_collection
+    }

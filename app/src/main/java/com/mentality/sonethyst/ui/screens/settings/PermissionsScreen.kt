@@ -48,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
@@ -55,6 +56,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+
+import com.mentality.sonethyst.R
 
 @Composable
 fun PermissionsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
@@ -94,58 +97,99 @@ fun PermissionsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
     }
 
     Column(Modifier.fillMaxWidth()) {
-        SettingsTopBar("Permissions", onBack)
+        SettingsTopBar(stringResource(R.string.permissions_title), onBack)
         LazyColumn(
             Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding() + 24.dp),
         ) {
             item {
                 Text(
-                    "Grant what you use. Sonethyst works without any of these, but each unlocks a feature.",
+                    stringResource(R.string.permissions_intro),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 4.dp),
                 )
             }
             item {
-                PermRow(Icons.Filled.Notifications, "Notifications", "Now-playing controls, downloads & alarms", notifOk) {
+                PermRow(
+                    Icons.Filled.Notifications,
+                    stringResource(R.string.permissions_notifications),
+                    stringResource(R.string.permissions_notifications_summary), notifOk) {
                     if (Build.VERSION.SDK_INT >= 33) notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     else open(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                 }
             }
             item {
-                PermRow(Icons.Filled.LibraryMusic, "On-device music", "Read local audio for the library, playback & sonic analysis", audioOk) {
+                PermRow(
+                    Icons.Filled.LibraryMusic,
+                    stringResource(R.string.permissions_device_music),
+                    stringResource(R.string.permissions_device_music_summary), audioOk) {
                     audioLauncher.launch(audioPerm)
                 }
             }
             item {
-                PermRow(Icons.Filled.BatteryStd, "Ignore battery optimization", "Keep scanning & playback running in the background", batteryOk) {
+                PermRow(
+                    Icons.Filled.BatteryStd,
+                    stringResource(R.string.permissions_battery),
+                    stringResource(R.string.permissions_battery_summary), batteryOk) {
                     open(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, withPackage = true)
                 }
             }
             item {
-                PermRow(Icons.Filled.Alarm, "Exact alarms", "Fire the wake-to-music alarm at the precise time", exactOk) {
+                PermRow(
+                    Icons.Filled.Alarm,
+                    stringResource(R.string.permissions_exact_alarms),
+                    stringResource(R.string.permissions_exact_alarms_summary), exactOk) {
                     if (Build.VERSION.SDK_INT >= 31) open(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
                 }
             }
             item {
-                PermRow(Icons.Filled.Fullscreen, "Full-screen alarm", "Show the alarm full-screen over the lock screen", fsOk) {
+                PermRow(
+                    Icons.Filled.Fullscreen,
+                    stringResource(R.string.permissions_fullscreen_alarm),
+                    stringResource(R.string.permissions_fullscreen_alarm_summary), fsOk) {
                     if (Build.VERSION.SDK_INT >= 34) open(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, withPackage = true)
                 }
             }
             item {
-                val sub = when {
-                    dac == null -> "No USB DAC connected"
-                    dacOk -> "Access granted for ${dac.productName ?: "the DAC"}"
-                    else -> "Tap to allow bit-perfect access to ${dac.productName ?: "the DAC"}"
-                }
-                PermRow(Icons.Filled.Usb, "USB DAC", sub, dacOk, enabled = dac != null) {
+                val dacName =
+                    dac?.productName
+                        ?.toString()
+                        ?.takeIf {
+                            it.isNotBlank()
+                        }
+                        ?: stringResource(
+                            R.string.permissions_dac_generic
+                        )
+
+                val sub =
+                    when {
+                        dac == null ->
+                            stringResource(
+                                R.string.permissions_no_usb_dac
+                            )
+
+                        dacOk ->
+                            stringResource(
+                                R.string.permissions_dac_granted,
+                                dacName,
+                            )
+
+                        else ->
+                            stringResource(
+                                R.string.permissions_dac_allow,
+                                dacName,
+                            )
+                    }
+                PermRow(
+                    Icons.Filled.Usb,
+                    stringResource(R.string.permissions_usb_dac),
+                    sub, dacOk, enabled = dac != null) {
                     dac?.let { usbDev.requestPermission(it) { refresh++ } }
                 }
             }
             item {
                 Text(
-                    "Android can't grant a USB device permanently without a per-plug prompt, so the DAC " +
-                        "may re-ask on reconnect — Sonethyst re-requests automatically when bit-perfect is on.",
+                    stringResource(R.string.permissions_usb_note),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                 )
@@ -185,14 +229,14 @@ private fun PermRow(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Granted", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.permissions_granted), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
             }
         } else if (enabled) {
             Box(
                 Modifier.clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.primary)
                     .clickable(onClick = onGrant).padding(horizontal = 14.dp, vertical = 7.dp),
             ) {
-                Text("Grant", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                Text(stringResource(R.string.permissions_grant), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
             }
         }
     }

@@ -17,10 +17,27 @@ data class RadioStation(
     val homepage: String? = "",
     val custom: Boolean? = false,
 ) {
-    val displayName: String get() = name?.takeIf { it.isNotBlank() } ?: "Radio station"
-    val genre: String get() = tags?.split(",")?.firstOrNull()?.trim()?.takeIf { it.isNotBlank() }
-        ?: country?.takeIf { it.isNotBlank() }
-        ?: "Internet radio"
+    val displayName: String
+        get() =
+            name
+                ?.takeIf {
+                    it.isNotBlank()
+                }
+                .orEmpty()
+    val genre: String
+        get() =
+            tags
+                ?.split(",")
+                ?.firstOrNull()
+                ?.trim()
+                ?.takeIf {
+                    it.isNotBlank()
+                }
+                ?: country
+                    ?.takeIf {
+                        it.isNotBlank()
+                    }
+                ?: ""
 }
 
 fun normalizedRadioStreamUrl(
@@ -146,11 +163,24 @@ fun dedupeRadioStations(
 }
 
 // durationSec 0 marks non-seekable live stream
-fun RadioStation.toSong(): Song = Song(
+fun RadioStation.toSong(
+    fallbackName: String,
+    fallbackGenre: String,
+): Song = Song(
     id = "radio:$uuid",
-    title = displayName,
-    artist = genre,
-    album = "Internet radio",
+    title =
+        if (displayName.isBlank()) {
+            fallbackName
+        } else {
+            displayName
+        },
+    artist =
+        if (genre.isBlank()) {
+            fallbackGenre
+        } else {
+            genre
+        },
+    album = fallbackGenre,
     artworkUrl = faviconUrl.orEmpty(),
     durationSec = 0,
     streamUrl = streamUrl.orEmpty(),

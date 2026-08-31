@@ -32,8 +32,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.model.Song
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,14 +71,14 @@ fun PlaylistCoverSheet(
             ListItem(
                 headlineContent = {
                     Text(
-                        "Choose track artwork",
+                        stringResource(R.string.cover_choose_track_artwork),
                         fontWeight = FontWeight.Bold,
                     )
                 },
                 leadingContent = {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
-                        "Back",
+                        stringResource(R.string.action_back),
                     )
                 },
                 modifier = Modifier.clickable {
@@ -89,7 +91,7 @@ fun PlaylistCoverSheet(
 
             if (trackArtworks.isEmpty()) {
                 Text(
-                    "No track artwork available",
+                    stringResource(R.string.cover_no_track_artwork),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(24.dp),
                 )
@@ -106,13 +108,13 @@ fun PlaylistCoverSheet(
                         ListItem(
                             headlineContent = {
                                 Text(
-                                    song.title,
+                                    displayTitle(song.title),
                                     maxLines = 1,
                                 )
                             },
                             supportingContent = {
                                 Text(
-                                    song.artist,
+                                    displayArtist(song.artist),
                                     maxLines = 1,
                                 )
                             },
@@ -141,7 +143,7 @@ fun PlaylistCoverSheet(
                     .padding(bottom = 24.dp),
             ) {
                 Text(
-                    "Playlist cover",
+                    stringResource(R.string.cover_playlist_cover),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(
@@ -151,9 +153,9 @@ fun PlaylistCoverSheet(
                 )
 
                 ListItem(
-                    headlineContent = { Text("Automatic") },
+                    headlineContent = { Text(stringResource(R.string.cover_automatic)) },
                     supportingContent = {
-                        Text("Use the playlist's default artwork")
+                        Text(stringResource(R.string.cover_automatic_description))
                     },
                     leadingContent = {
                         Icon(Icons.Filled.AutoAwesome, null)
@@ -162,7 +164,7 @@ fun PlaylistCoverSheet(
                         if (currentMode == "automatic") {
                             Icon(
                                 Icons.Filled.Check,
-                                "Selected",
+                                stringResource(R.string.song_selected),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }
@@ -174,9 +176,9 @@ fun PlaylistCoverSheet(
                 )
 
                 ListItem(
-                    headlineContent = { Text("First track") },
+                    headlineContent = { Text(stringResource(R.string.cover_first_track)) },
                     supportingContent = {
-                        Text("Follow the artwork of the first track")
+                        Text(stringResource(R.string.cover_first_track_description))
                     },
                     leadingContent = {
                         Icon(Icons.Filled.Filter1, null)
@@ -185,7 +187,7 @@ fun PlaylistCoverSheet(
                         if (currentMode == "first") {
                             Icon(
                                 Icons.Filled.Check,
-                                "Selected",
+                                stringResource(R.string.song_selected),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }
@@ -200,13 +202,13 @@ fun PlaylistCoverSheet(
                 )
 
                 ListItem(
-                    headlineContent = { Text("2×2 collage") },
+                    headlineContent = { Text(stringResource(R.string.cover_collage)) },
                     supportingContent = {
                         Text(
                             if (distinctArtworkCount >= 4) {
-                                "Combine the first four different covers"
+                                stringResource(R.string.cover_collage_description)
                             } else {
-                                "Needs at least 4 different covers"
+                                stringResource(R.string.cover_collage_requirement)
                             }
                         )
                     },
@@ -217,7 +219,7 @@ fun PlaylistCoverSheet(
                         if (currentMode == "collage") {
                             Icon(
                                 Icons.Filled.Check,
-                                "Selected",
+                                stringResource(R.string.song_selected),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }
@@ -232,9 +234,9 @@ fun PlaylistCoverSheet(
                 )
 
                 ListItem(
-                    headlineContent = { Text("Track artwork") },
+                    headlineContent = { Text(stringResource(R.string.cover_track_artwork)) },
                     supportingContent = {
-                        Text("Choose any track already in this playlist")
+                        Text(stringResource(R.string.cover_track_artwork_description))
                     },
                     leadingContent = {
                         Icon(Icons.Filled.MusicNote, null)
@@ -243,7 +245,7 @@ fun PlaylistCoverSheet(
                         if (currentMode == "track") {
                             Icon(
                                 Icons.Filled.Check,
-                                "Selected",
+                                stringResource(R.string.song_selected),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }
@@ -259,9 +261,9 @@ fun PlaylistCoverSheet(
                 )
 
                 ListItem(
-                    headlineContent = { Text("Image from device") },
+                    headlineContent = { Text(stringResource(R.string.cover_device_image)) },
                     supportingContent = {
-                        Text("Use your own custom playlist cover")
+                        Text(stringResource(R.string.cover_device_image_description))
                     },
                     leadingContent = {
                         Icon(Icons.Filled.Image, null)
@@ -270,7 +272,7 @@ fun PlaylistCoverSheet(
                         if (currentMode == "custom") {
                             Icon(
                                 Icons.Filled.Check,
-                                "Selected",
+                                stringResource(R.string.song_selected),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }

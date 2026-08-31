@@ -1,5 +1,9 @@
 package com.mentality.sonethyst.ui.screens.library
 
+import com.mentality.sonethyst.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -40,6 +44,7 @@ import com.mentality.sonethyst.data.DuplicateGroup
 import com.mentality.sonethyst.model.Song
 import com.mentality.sonethyst.ui.components.Artwork
 import com.mentality.sonethyst.ui.components.LottieLoader
+import com.mentality.sonethyst.ui.components.displayAlbum
 import com.mentality.sonethyst.ui.screens.settings.SettingsTopBar
 import java.util.Locale
 
@@ -68,12 +73,18 @@ fun DuplicatesScreen(
                 deleteCandidate = null
             },
             title = {
-                Text("Delete duplicate?")
+                Text(
+                    stringResource(
+                        R.string.duplicates_delete_title
+                    )
+                )
             },
             text = {
                 Column {
                     Text(
-                        "This will delete the audio file from this device."
+                        stringResource(
+                            R.string.duplicates_delete_message
+                        )
                     )
 
                     if (song.path.isNotBlank()) {
@@ -100,7 +111,11 @@ fun DuplicatesScreen(
                         onDelete(song)
                     }
                 ) {
-                    Text("Delete")
+                    Text(
+                        stringResource(
+                            R.string.action_delete
+                        )
+                    )
                 }
             },
             dismissButton = {
@@ -109,7 +124,11 @@ fun DuplicatesScreen(
                         deleteCandidate = null
                     }
                 ) {
-                    Text("Cancel")
+                    Text(
+                        stringResource(
+                            R.string.action_cancel
+                        )
+                    )
                 }
             },
         )
@@ -119,7 +138,10 @@ fun DuplicatesScreen(
         Modifier.fillMaxSize()
     ) {
         SettingsTopBar(
-            title = "Duplicates",
+            title =
+                stringResource(
+                    R.string.duplicates_title
+                ),
             onBack = onBack,
         )
 
@@ -150,7 +172,10 @@ fun DuplicatesScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No likely duplicates found",
+                        text =
+                            stringResource(
+                                R.string.duplicates_none
+                            ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyLarge,
                     )
@@ -223,20 +248,42 @@ private fun ScanHeader(
             Text(
                 text =
                     if (loading) {
-                        "Scanning library…"
+                        stringResource(
+                            R.string.duplicates_scanning
+                        )
                     } else {
-                        "$scanned tracks scanned"
+                        pluralStringResource(
+                            R.plurals.duplicates_tracks_scanned,
+                            scanned,
+                            scanned,
+                        )
                     },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             if (!loading && groups.isNotEmpty()) {
+                val groupCount =
+                    pluralStringResource(
+                        R.plurals.duplicates_group_count,
+                        groups.size,
+                        groups.size,
+                    )
+
+                val copyCount =
+                    pluralStringResource(
+                        R.plurals.duplicates_copy_count,
+                        copies,
+                        copies,
+                    )
+
                 Text(
                     text =
-                        "${groups.size} duplicate " +
-                            "group${if (groups.size == 1) "" else "s"}" +
-                            " • $copies copies",
+                        stringResource(
+                            R.string.duplicates_summary,
+                            groupCount,
+                            copyCount,
+                        ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium,
@@ -250,7 +297,10 @@ private fun ScanHeader(
         ) {
             Icon(
                 imageVector = Icons.Filled.Refresh,
-                contentDescription = "Rescan duplicates",
+                contentDescription =
+                    stringResource(
+                        R.string.duplicates_rescan
+                    ),
                 tint =
                     if (loading) {
                         MaterialTheme.colorScheme.onSurfaceVariant
@@ -295,9 +345,20 @@ private fun GroupCard(
             overflow = TextOverflow.Ellipsis,
         )
 
+        val copiesLabel =
+            pluralStringResource(
+                R.plurals.duplicates_copy_count,
+                group.songs.size,
+                group.songs.size,
+            )
+
         Text(
             text =
-                "${group.artist} • ${group.songs.size} copies",
+                stringResource(
+                    R.string.duplicates_artist_copies,
+                    group.artist,
+                    copiesLabel,
+                ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
@@ -335,6 +396,9 @@ private fun DuplicateSongRow(
     onDeleteRequest: (Song) -> Unit,
     onPlay: (Song) -> Unit,
 ) {
+    val resources =
+        LocalContext.current.resources
+
     Row(
         modifier =
             Modifier
@@ -364,9 +428,11 @@ private fun DuplicateSongRow(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text =
-                        song.album.ifBlank {
-                            "Unknown album"
+                        text =
+                            displayAlbum(song.album).ifBlank {
+                            stringResource(
+                                R.string.duplicates_unknown_album
+                            )
                         },
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium,
@@ -377,7 +443,11 @@ private fun DuplicateSongRow(
             }
 
             Text(
-                text = specLine(song),
+                text =
+                    specLine(
+                        resources,
+                        song,
+                    ),
                 style = MaterialTheme.typography.labelSmall,
                 color =
                     MaterialTheme.colorScheme
@@ -404,7 +474,10 @@ private fun DuplicateSongRow(
 
             if (bestQuality) {
                 Text(
-                    text = "Best quality",
+                    text =
+                        stringResource(
+                            R.string.duplicates_best_quality
+                        ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
@@ -419,7 +492,10 @@ private fun DuplicateSongRow(
                 Icon(
                     imageVector =
                         Icons.Filled.MusicNote,
-                    contentDescription = "Playing",
+                    contentDescription =
+                        stringResource(
+                            R.string.duplicates_playing
+                        ),
                     tint =
                         MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp),
@@ -442,7 +518,9 @@ private fun DuplicateSongRow(
                         imageVector =
                             Icons.Filled.DeleteOutline,
                         contentDescription =
-                            "Delete duplicate",
+                            stringResource(
+                                R.string.duplicates_delete
+                            ),
                         tint =
                             MaterialTheme.colorScheme.error,
                     )
@@ -524,6 +602,7 @@ private fun duplicateQualityScore(
 }
 
 private fun specLine(
+    resources: android.content.res.Resources,
     song: Song,
 ): String {
     val parts =
@@ -561,7 +640,9 @@ private fun specLine(
     return parts
         .joinToString(" • ")
         .ifBlank {
-            "Quality information unavailable"
+            resources.getString(
+                R.string.duplicates_quality_unavailable
+            )
         }
 }
 

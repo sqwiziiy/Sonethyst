@@ -1,5 +1,7 @@
 package com.mentality.sonethyst.ui.screens.visualizer
 
+import com.mentality.sonethyst.R
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -54,6 +56,8 @@ import com.mentality.sonethyst.data.VisualizerStyle
 import com.mentality.sonethyst.data.VizBackground
 import com.mentality.sonethyst.data.VizColor
 import com.mentality.sonethyst.ui.components.Artwork
+import com.mentality.sonethyst.ui.components.displayArtist
+import com.mentality.sonethyst.ui.components.displayTitle
 import com.mentality.sonethyst.util.rememberDominantColor
 import com.mentality.sonethyst.viewmodel.PlayerUiState
 import kotlinx.coroutines.delay
@@ -135,13 +139,16 @@ fun VisualizerScreen(state: PlayerUiState, onClose: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
-                    Icons.Filled.Close, "Close",
+                    Icons.Filled.Close,
+                    stringResource(
+                        R.string.visualizer_close
+                    ),
                     tint = Color.White,
                     modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onClose).background(Color.White.copy(alpha = 0.12f)).padding(8.dp),
                 )
                 Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                    Text(song.title.ifBlank { "Sonethyst" }, color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium)
-                    if (song.artist.isNotBlank()) Text(song.artist, color = Color.White.copy(alpha = 0.7f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
+                    Text(displayTitle(song.title).ifBlank { "Sonethyst" }, color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium)
+                    if (song.artist.isNotBlank()) Text(displayArtist(song.artist), color = Color.White.copy(alpha = 0.7f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -162,7 +169,9 @@ fun VisualizerScreen(state: PlayerUiState, onClose: () -> Unit) {
                             .padding(horizontal = 14.dp, vertical = 9.dp),
                     ) {
                         Text(
-                            VisualizerStyle.label(s),
+                            stringResource(
+                                visualizerStyleLabelRes(s)
+                            ),
                             color = if (selected) Color.Black else Color.White,
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                             style = MaterialTheme.typography.labelMedium,
@@ -175,6 +184,66 @@ fun VisualizerScreen(state: PlayerUiState, onClose: () -> Unit) {
 
     BackHandler { onClose() }
 }
+
+private fun visualizerStyleLabelRes(
+    style: Int,
+): Int =
+    when (style) {
+        VisualizerStyle.BARS ->
+            R.string.visualizer_style_spectrum_bars
+        VisualizerStyle.MIRROR_BARS ->
+            R.string.visualizer_style_mirror_bars
+        VisualizerStyle.WAVEFORM ->
+            R.string.visualizer_style_waveform
+        VisualizerStyle.FILLED_WAVE ->
+            R.string.visualizer_style_filled_wave
+        VisualizerStyle.RADIAL_BARS ->
+            R.string.visualizer_style_radial_spectrum
+        VisualizerStyle.RADIAL_WAVE ->
+            R.string.visualizer_style_radial_wave
+        VisualizerStyle.PARTICLES ->
+            R.string.visualizer_style_particles
+        VisualizerStyle.FLUID ->
+            R.string.visualizer_style_fluid_blob
+        VisualizerStyle.COMBO ->
+            R.string.visualizer_style_combo
+        VisualizerStyle.SMOOTH_CURVE ->
+            R.string.visualizer_style_spectrum_curve
+        VisualizerStyle.DOT_GRID ->
+            R.string.visualizer_style_dot_matrix
+        VisualizerStyle.RINGS ->
+            R.string.visualizer_style_pulse_rings
+        VisualizerStyle.ORB ->
+            R.string.visualizer_style_orb
+        VisualizerStyle.LADDER ->
+            R.string.visualizer_style_led_ladder
+        VisualizerStyle.HORIZON ->
+            R.string.visualizer_style_horizon
+        VisualizerStyle.CONSTELLATION ->
+            R.string.visualizer_style_constellation
+        VisualizerStyle.PEAK_DOTS ->
+            R.string.visualizer_style_peak_dots
+        VisualizerStyle.SPECTRUM_LINE ->
+            R.string.visualizer_style_neon_line
+        VisualizerStyle.NORTHERN_LIGHTS ->
+            R.string.visualizer_style_northern_lights
+        VisualizerStyle.SPECTRAL_RIVER ->
+            R.string.visualizer_style_spectral_river
+        VisualizerStyle.SPECTRAL_TERRAIN ->
+            R.string.visualizer_style_terrain
+        VisualizerStyle.CURL_FLOW ->
+            R.string.visualizer_style_curl_flow
+        VisualizerStyle.STRANGE_ATTRACTOR ->
+            R.string.visualizer_style_strange_attractor
+        VisualizerStyle.CYMATIC ->
+            R.string.visualizer_style_cymatics
+        VisualizerStyle.SUPERFORMULA_BLOOM ->
+            R.string.visualizer_style_bloom
+        VisualizerStyle.WORMHOLE ->
+            R.string.visualizer_style_wormhole
+        else ->
+            R.string.visualizer_style_spectrum_bars
+    }
 
 private fun bgGradient(c: Color): Brush = Brush.verticalGradient(
     listOf(c.copy(alpha = 0.35f), c.copy(alpha = 0.08f), Color.Black, Color.Black),

@@ -1,5 +1,7 @@
 package com.mentality.sonethyst.ui.components
 
+import com.mentality.sonethyst.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -85,7 +87,9 @@ fun AddSongsToPlaylistSheet(
                 .padding(bottom = 20.dp),
         ) {
             Text(
-                "Add songs",
+                stringResource(
+                    R.string.playlist_add_songs
+                ),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(
@@ -99,7 +103,13 @@ fun AddSongsToPlaylistSheet(
                 onValueChange = { query = it },
                 singleLine = true,
                 enabled = !saving,
-                label = { Text("Search library") },
+                label = {
+                    Text(
+                        stringResource(
+                            R.string.playlist_search_library
+                        )
+                    )
+                },
                 leadingIcon = {
                     Icon(Icons.Filled.Search, null)
                 },
@@ -128,7 +138,9 @@ fun AddSongsToPlaylistSheet(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            "All library songs are already in this playlist",
+                            stringResource(
+                                R.string.playlist_all_songs_added
+                            ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -142,7 +154,9 @@ fun AddSongsToPlaylistSheet(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            "No matching songs",
+                            stringResource(
+                                R.string.playlist_no_matching_songs
+                            ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -160,18 +174,16 @@ fun AddSongsToPlaylistSheet(
                             contentType = { "song-picker-row" },
                         ) { song ->
                             val selected = song.id in selectedIds
-                            val subtitle = remember(song.artist, song.album) {
-                                when {
-                                    song.artist.isBlank() -> song.album
-                                    song.album.isBlank() -> song.artist
-                                    else -> "${song.artist} • ${song.album}"
-                                }
+                            val subtitle = when {
+                                song.artist.isBlank() -> displayAlbum(song.album)
+                                song.album.isBlank() -> displayArtist(song.artist)
+                                else -> "${displayArtist(song.artist)} • ${displayAlbum(song.album)}"
                             }
 
                             ListItem(
                                 headlineContent = {
                                     Text(
-                                        song.title,
+                                        displayTitle(song.title),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )
@@ -238,7 +250,11 @@ fun AddSongsToPlaylistSheet(
                             }
                     },
                 ) {
-                    Text("Select visible")
+                    Text(
+                        stringResource(
+                            R.string.playlist_select_visible
+                        )
+                    )
                 }
 
                 Button(
@@ -250,9 +266,14 @@ fun AddSongsToPlaylistSheet(
                 ) {
                     Text(
                         if (saving) {
-                            "Adding…"
+                            stringResource(
+                                R.string.playlist_adding
+                            )
                         } else {
-                            "Add (${selectedSongs.size})"
+                            stringResource(
+                                R.string.playlist_add_count,
+                                selectedSongs.size,
+                            )
                         }
                     )
                 }

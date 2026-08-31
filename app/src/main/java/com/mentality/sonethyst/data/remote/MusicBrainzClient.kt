@@ -38,7 +38,12 @@ data class MbRelease(
 
 data class MbReleaseGroup(val id: String? = "", @SerializedName("primary-type") val primaryType: String? = "")
 data class MbMedia(val position: Int? = null, val track: List<MbTrack>? = emptyList())
-data class MbTrack(val number: String? = "", val title: String? = "")
+data class MbTrack(
+    val number: String? = "",
+    val title: String? = "",
+    val recording: MbTrackRecording? = null,
+)
+data class MbTrackRecording(val id: String? = "")
 
 interface MusicBrainzApi {
     @GET("ws/2/recording")
@@ -348,27 +353,34 @@ class MusicBrainzClient {
         }.getOrNull()
     }
 
-    private fun MbRecording.toMatch(): MetadataMatch? {
-        val t = title?.takeIf { it.isNotBlank() } ?: return null
-        val artistName = artistCredit.orEmpty().joinToString("") { (it.name ?: it.artist?.name ?: "") + (it.joinphrase ?: "") }
-            .ifBlank { artistCredit.orEmpty().firstOrNull()?.artist?.name ?: "" }
-        // prefer an official album release over singles/compilations for album + track number
-        val release = releases.orEmpty().firstOrNull { it.releaseGroup?.primaryType.equals("Album", true) }
-            ?: releases.orEmpty().firstOrNull()
-        val trackNo = release?.media.orEmpty().firstNotNullOfOrNull { m -> m.track.orEmpty().firstOrNull()?.number }
-        val cover = release?.id?.takeIf { it.isNotBlank() }?.let { "https://coverartarchive.org/release/$it/front-500" } ?: ""
-        return MetadataMatch(
-            title = t,
-            artist = artistName.trim(),
-            album = release?.title ?: "",
-            year = release?.date?.take(4) ?: "",
-            trackNumber = trackNo ?: "",
-            coverUrl = cover,
-            score = score ?: 0,
-        )
-    }
-
     private companion object {
         const val USER_AGENT = "Sonethyst/0.1 (https://github.com/sqwiziiy/Sonethyst)"
     }
+}
+
+internal fun MbRecording.toMatch(): MetadataMatch? {
+    val t = title?.takeIf { it.isNotBlank() } ?: return null
+    val artistName = artistCredit.orEmpty().joinToString("") { (it.name ?: it.artist?.name ?: "") + (it.joinphrase ?: "") }
+        .ifBlank { artistCredit.orEmpty().firstOrNull()?.artist?.name ?: "" }
+    // prefer an official album release over singles/compilations for album + track number
+    val release = releases.orEmpty().firstOrNull { it.releaseGroup?.primaryType.equals("Album", true) }
+        ?: releases.orEmpty().firstOrNull()
+    val recordingId = id?.takeIf { it.isNotBlank() }
+    val trackNo = recordingId?.let { currentId ->
+        release?.media.orEmpty()
+            .asSequence()
+            .flatMap { it.track.orEmpty().asSequence() }
+            .firstOrNull { it.recording?.id == currentId }
+            ?.number
+    }
+    val cover = release?.id?.takeIf { it.isNotBlank() }?.let { "https://coverartarchive.org/release/$it/front-500" } ?: ""
+    return MetadataMatch(
+        title = t,
+        artist = artistName.trim(),
+        album = release?.title ?: "",
+        year = release?.date?.take(4) ?: "",
+        trackNumber = trackNo ?: "",
+        coverUrl = cover,
+        score = score ?: 0,
+    )
 }

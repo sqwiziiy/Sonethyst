@@ -31,8 +31,8 @@ class BackupManager(
             version = 1,
             createdAt = nowMs,
             prefs = settingsStore.exportPrefs(),
-            localStore = localStore.exportJson(),
-            playHistory = playHistory.snapshot(),
+            localStore = PortableBackupSanitizer.preferenceString(localStore.exportJson()),
+            playHistory = PortableBackupSanitizer.playEvents(playHistory.snapshot()),
         )
         return gson.toJson(backup)
     }
@@ -40,8 +40,10 @@ class BackupManager(
     suspend fun import(json: String): Boolean {
         val backup = runCatching { gson.fromJson(json, SonethystBackup::class.java) }.getOrNull() ?: return false
         settingsStore.importPrefs(backup.prefs)
-        if (backup.localStore.isNotBlank()) localStore.importJson(backup.localStore)
-        playHistory.restore(backup.playHistory)
+        if (backup.localStore.isNotBlank()) {
+            localStore.importJson(PortableBackupSanitizer.preferenceString(backup.localStore))
+        }
+        playHistory.restore(PortableBackupSanitizer.playEvents(backup.playHistory))
         return true
     }
 }

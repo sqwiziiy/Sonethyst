@@ -173,8 +173,8 @@ class SmartPlaylistViewModel(
                         name =
                             sp.name
                                 ?.trim()
-                                ?.ifBlank {
-                                    "Smart playlist"
+                                ?.takeIf {
+                                    it.isNotBlank()
                                 }
                     )
                 )

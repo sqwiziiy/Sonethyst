@@ -11,7 +11,13 @@ data class Podcast(
     val imageUrl: String? = "",
     val description: String? = "",
 ) {
-    val displayTitle: String get() = title?.takeIf { it.isNotBlank() } ?: "Podcast"
+    val displayTitle: String
+        get() =
+            title
+                ?.takeIf {
+                    it.isNotBlank()
+                }
+                .orEmpty()
 }
 
 data class PodcastEpisode(
@@ -25,9 +31,17 @@ data class PodcastEpisode(
     val podcastTitle: String = "",
 )
 
-fun PodcastEpisode.toSong(podcastImage: String = ""): Song = Song(
+fun PodcastEpisode.toSong(
+    podcastImage: String = "",
+    fallbackTitle: String = "",
+): Song = Song(
     id = "podcast:$id",
-    title = title.ifBlank { "Episode" },
+    title =
+        if (title.isBlank()) {
+            fallbackTitle
+        } else {
+            title
+        },
     artist = podcastTitle,
     album = podcastTitle,
     artworkUrl = imageUrl.ifBlank { podcastImage },

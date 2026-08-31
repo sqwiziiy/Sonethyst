@@ -58,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
@@ -67,6 +68,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.data.ServerType
 import com.mentality.sonethyst.viewmodel.AuthStep
 import com.mentality.sonethyst.viewmodel.AuthUiState
@@ -143,14 +145,39 @@ fun SignInScreen(
             }
 
             Spacer(Modifier.height(24.dp))
-            Text("Sonethyst", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onBackground)
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.height(4.dp))
             Text(
                 when (state.step) {
-                    AuthStep.TYPE -> "Choose your music server"
-                    AuthStep.SERVER -> "Enter the server address"
-                    AuthStep.CREDENTIALS -> "Sign in to ${if (state.type == ServerType.JELLYFIN) "Jellyfin" else "Navidrome"}"
-                    AuthStep.SPOTIFY -> "Connect your own Spotify app"
+                    AuthStep.TYPE ->
+                        stringResource(
+                            R.string.auth_choose_server
+                        )
+
+                    AuthStep.SERVER ->
+                        stringResource(
+                            R.string.auth_enter_server
+                        )
+
+                    AuthStep.CREDENTIALS ->
+                        stringResource(
+                            R.string.auth_sign_in_to,
+                            stringResource(
+                                if (
+                                    state.type ==
+                                    ServerType.JELLYFIN
+                                ) {
+                                    R.string.auth_jellyfin
+                                } else {
+                                    R.string.auth_navidrome
+                                }
+                            ),
+                        )
+
+                    AuthStep.SPOTIFY ->
+                        stringResource(
+                            R.string.auth_connect_spotify_app
+                        )
                 },
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -169,7 +196,7 @@ fun SignInScreen(
             if (state.loading && state.type == ServerType.SPOTIFY) {
                 Spacer(Modifier.height(20.dp))
                 com.mentality.sonethyst.ui.components.LottieLoader(modifier = Modifier.size(56.dp))
-                Text("Connecting to Spotify…", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
+                Text(stringResource(R.string.auth_connecting_spotify), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
             }
 
             AnimatedVisibility(visible = state.error != null) {
@@ -196,46 +223,62 @@ private fun TypeStep(
 ) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         if (savedSessions.isNotEmpty()) {
-            Text("Saved logins", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.auth_saved_logins), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
             savedSessions.forEach { s ->
                 val host = s.server.removePrefix("http://").removePrefix("https://")
                 ServerTypeCard(
                     icon = Icons.Outlined.Person,
-                    title = "Continue as ${s.username}",
-                    subtitle = "${s.typeLabel}${if (s.type != ServerType.LOCAL) " · $host" else ""}",
+                    title =
+                        stringResource(
+                            R.string.auth_continue_as,
+                            s.username,
+                        ),
+                    subtitle =
+                        stringResource(
+                            signInServerTypeLabelRes(
+                                s.type
+                            )
+                        ) +
+                            if (
+                                s.type != ServerType.LOCAL
+                            ) {
+                                " · $host"
+                            } else {
+                                ""
+                            },
                     onClick = { onUseSaved(s) },
                 )
             }
             Spacer(Modifier.height(4.dp))
-            Text("Or add a server", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.auth_or_add_server), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         ServerTypeCard(
             icon = Icons.Outlined.PhoneAndroid,
-            title = "Local",
-            subtitle = "Music files on this device · no sign-in",
+            title = stringResource(R.string.auth_local),
+            subtitle = stringResource(R.string.auth_local_description),
             onClick = onLocal,
         )
         ServerTypeCard(
             icon = Icons.Outlined.Dns,
-            title = "Navidrome",
-            subtitle = "Subsonic / OpenSubsonic",
+            title = stringResource(R.string.auth_navidrome),
+            subtitle = stringResource(R.string.auth_subsonic_description),
             onClick = { onSelectType(ServerType.SUBSONIC) },
         )
         ServerTypeCard(
             icon = Icons.Outlined.Cloud,
-            title = "Jellyfin",
-            subtitle = "Jellyfin media server",
+            title = stringResource(R.string.auth_jellyfin),
+            subtitle = stringResource(R.string.auth_jellyfin_description),
             onClick = { onSelectType(ServerType.JELLYFIN) },
         )
         ServerTypeCard(
             icon = Icons.Outlined.MusicNote,
-            title = "Spotify",
-            subtitle = "Your library · streamed via YouTube",
+            title = stringResource(R.string.auth_spotify),
+            subtitle = stringResource(R.string.auth_spotify_description),
             onClick = { onSelectType(ServerType.SPOTIFY) },
         )
         if (permDenied) {
             Text(
-                "Permission to read your music is needed for Local mode. Enable it in Settings → Apps → Sonethyst → Permissions.",
+                stringResource(R.string.auth_local_permission_required),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
             )
@@ -249,17 +292,27 @@ private fun SpotifyStep(state: AuthUiState, onBack: () -> Unit, onConnect: (Stri
     var clientId by remember { mutableStateOf("") }
     Column(Modifier.fillMaxWidth()) {
         Text(
-            "Sonethyst streams your Spotify library through YouTube, so it needs your own free Spotify app:",
+            stringResource(R.string.auth_spotify_intro),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(12.dp))
         listOf(
-            "Open the Spotify Developer Dashboard and create an app.",
-            "Set the Redirect URI to exactly:  sonethyst://spotify",
-            "Under APIs, tick Web API (and Android).",
-            "In User Management, add your own Spotify account email.",
-            "Copy the app's Client ID and paste it below.",
+            stringResource(
+                R.string.auth_spotify_step_dashboard
+            ),
+            stringResource(
+                R.string.auth_spotify_step_redirect
+            ),
+            stringResource(
+                R.string.auth_spotify_step_api
+            ),
+            stringResource(
+                R.string.auth_spotify_step_user
+            ),
+            stringResource(
+                R.string.auth_spotify_step_client_id
+            ),
         ).forEachIndexed { i, line ->
             Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
                 Text("${i + 1}.", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.width(22.dp))
@@ -275,13 +328,13 @@ private fun SpotifyStep(state: AuthUiState, onBack: () -> Unit, onConnect: (Stri
                 }
                 .padding(vertical = 12.dp),
             contentAlignment = Alignment.Center,
-        ) { Text("Open Spotify Dashboard", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) }
+        ) { Text(stringResource(R.string.auth_open_spotify_dashboard), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) }
         Spacer(Modifier.height(16.dp))
         OutlinedTextField(
             value = clientId,
             onValueChange = { clientId = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Client ID") },
+            label = { Text(stringResource(R.string.auth_client_id)) },
             placeholder = { Text("e.g. 4e041c00d85a40d9…") },
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
@@ -291,7 +344,14 @@ private fun SpotifyStep(state: AuthUiState, onBack: () -> Unit, onConnect: (Stri
         Spacer(Modifier.height(22.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             BackButton(onBack)
-            PrimaryButton(if (state.loading) "" else "Connect", enabled = clientId.isNotBlank() && !state.loading, modifier = Modifier.weight(1f), loading = state.loading) { onConnect(clientId) }
+            PrimaryButton(
+                if (state.loading) {
+                    ""
+                } else {
+                    stringResource(
+                        R.string.auth_connect
+                    )
+                }, enabled = clientId.isNotBlank() && !state.loading, modifier = Modifier.weight(1f), loading = state.loading) { onConnect(clientId) }
         }
     }
 }
@@ -349,7 +409,7 @@ private fun ServerStep(
             value = state.host,
             onValueChange = onHost,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Server IP and port") },
+            label = { Text(stringResource(R.string.auth_server_ip_port)) },
             placeholder = { Text(if (state.type == ServerType.JELLYFIN) "192.168.1.10:8096" else "192.168.1.10:4533") },
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
@@ -360,7 +420,7 @@ private fun ServerStep(
         Spacer(Modifier.height(22.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             BackButton(onBack)
-            PrimaryButton("Continue", enabled = canContinue, modifier = Modifier.weight(1f), onClick = onContinue)
+            PrimaryButton(stringResource(R.string.auth_continue), enabled = canContinue, modifier = Modifier.weight(1f), onClick = onContinue)
         }
     }
 }
@@ -379,7 +439,7 @@ private fun CredentialsStep(
             value = state.username,
             onValueChange = onUsername,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Username") },
+            label = { Text(stringResource(R.string.auth_username)) },
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
             leadingIcon = { Icon(Icons.Outlined.Person, null) },
@@ -390,7 +450,7 @@ private fun CredentialsStep(
             value = state.password,
             onValueChange = onPassword,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Password") },
+            label = { Text(stringResource(R.string.auth_password)) },
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
             leadingIcon = { Icon(Icons.Outlined.Lock, null) },
@@ -401,7 +461,14 @@ private fun CredentialsStep(
         Spacer(Modifier.height(22.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             BackButton(onBack)
-            PrimaryButton(if (state.loading) "" else "Connect", enabled = canSubmit && !state.loading, modifier = Modifier.weight(1f), loading = state.loading, onClick = onSignIn)
+            PrimaryButton(
+                if (state.loading) {
+                    ""
+                } else {
+                    stringResource(
+                        R.string.auth_connect
+                    )
+                }, enabled = canSubmit && !state.loading, modifier = Modifier.weight(1f), loading = state.loading, onClick = onSignIn)
         }
     }
 }
@@ -435,7 +502,7 @@ private fun BackButton(onClick: () -> Unit) {
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
-    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurface) }
+    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back), tint = MaterialTheme.colorScheme.onSurface) }
 }
 
 @Composable
@@ -460,3 +527,21 @@ private fun PrimaryButton(label: String, enabled: Boolean, modifier: Modifier = 
         }
     }
 }
+
+
+private fun signInServerTypeLabelRes(
+    type: ServerType,
+): Int =
+    when (type) {
+        ServerType.SPOTIFY ->
+            R.string.server_spotify
+
+        ServerType.JELLYFIN ->
+            R.string.server_jellyfin
+
+        ServerType.SUBSONIC ->
+            R.string.server_navidrome
+
+        ServerType.LOCAL ->
+            R.string.server_local
+    }

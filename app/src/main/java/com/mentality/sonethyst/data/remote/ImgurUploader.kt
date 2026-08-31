@@ -18,7 +18,7 @@ class ImgurUploader {
         if (clientId.isBlank() || imageUrl.isBlank()) return@withContext null
         runCatching {
             val bytes = http.newCall(Request.Builder().url(imageUrl).build()).execute().use { it.body?.bytes() }
-            if (bytes == null) { android.util.Log.w(TAG, "could not fetch image bytes from $imageUrl"); return@runCatching null }
+            if (bytes == null) { android.util.Log.w(TAG, "could not fetch image bytes"); return@runCatching null }
             val b64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
             val form = FormBody.Builder().add("image", b64).add("type", "base64").build()
             val req = Request.Builder()
@@ -29,7 +29,7 @@ class ImgurUploader {
             http.newCall(req).execute().use { resp ->
                 val bodyStr = resp.body?.string()
                 val link = gson.fromJson(bodyStr, ImgurResp::class.java)?.data?.link
-                if (link == null) android.util.Log.w(TAG, "imgur upload HTTP ${resp.code}: ${bodyStr?.take(300)}")
+                if (link == null) android.util.Log.w(TAG, "imgur upload HTTP ${resp.code}")
                 link
             }
         }.getOrNull()

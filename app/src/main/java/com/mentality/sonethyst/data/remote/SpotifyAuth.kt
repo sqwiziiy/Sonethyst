@@ -75,7 +75,7 @@ object SpotifyAuth {
         val req = Request.Builder().url("$AUTH_HOST/api/token").post(form).build()
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) {
-                android.util.Log.d("SpotifyOAuth", "token exchange HTTP ${resp.code}: ${resp.body?.string()?.take(200)}")
+                android.util.Log.d("SpotifyOAuth", "token exchange HTTP ${resp.code}")
                 return null
             }
             gson.fromJson(resp.body?.string(), TokenResp::class.java)

@@ -3,6 +3,7 @@ package com.mentality.sonethyst.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.ServerType
 import com.mentality.sonethyst.data.Session
@@ -67,7 +68,18 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
 
     fun connectSpotify(clientId: String) {
         val id = clientId.trim()
-        if (id.isBlank()) { _state.update { it.copy(error = "Paste your Spotify app's Client ID first.") }; return }
+        if (id.isBlank()) {
+            _state.update {
+                it.copy(
+                    error =
+                        getApplication<Application>()
+                            .getString(
+                                R.string.auth_spotify_client_id_required
+                            )
+                )
+            }
+            return
+        }
         spotifyClientId = id
         viewModelScope.launch { runCatching { container.settingsStore.setSpotifyClientId(id) } }
         val verifier = SpotifyAuth.newVerifier()
@@ -103,7 +115,16 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
                 container.applySession(session)
                 _state.update { it.copy(loading = false, error = null) }
             } else {
-                _state.update { it.copy(loading = false, error = "Spotify sign-in failed — try again.") }
+                _state.update {
+                    it.copy(
+                        loading = false,
+                        error =
+                            getApplication<Application>()
+                                .getString(
+                                    R.string.auth_spotify_failed
+                                ),
+                    )
+                }
             }
         }
     }
@@ -141,12 +162,32 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
                         ServerType.SUBSONIC -> {
                             val session = SubsonicClient.buildSession(server, s.username, s.password)
                             val resp = SubsonicClient(session).api.ping().response
-                            if (!resp.isOk) throw IllegalStateException(resp.error?.message ?: "Login rejected")
+                            if (!resp.isOk) {
+                                throw IllegalStateException(
+                                    resp.error?.message
+                                        ?: getApplication<Application>()
+                                            .getString(
+                                                R.string.auth_login_rejected
+                                            )
+                                )
+                            }
                             session
                         }
                         ServerType.JELLYFIN -> JellyfinClient.authenticate(server, s.username, s.password)
-                        ServerType.SPOTIFY -> throw IllegalStateException("Spotify uses the connect button, not this form")
-                        ServerType.LOCAL -> throw IllegalStateException("Local mode doesn't use this form")
+                        ServerType.SPOTIFY ->
+                            throw IllegalStateException(
+                                getApplication<Application>()
+                                    .getString(
+                                        R.string.auth_spotify_form_invalid
+                                    )
+                            )
+                        ServerType.LOCAL ->
+                            throw IllegalStateException(
+                                getApplication<Application>()
+                                    .getString(
+                                        R.string.auth_local_form_invalid
+                                    )
+                            )
                     }
                 }
             }
@@ -160,11 +201,59 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun friendlyError(e: Throwable): String = when (e) {
-        is java.net.UnknownHostException -> "Server not found — check the address."
-        is java.net.ConnectException -> "Can't reach the server."
-        is java.net.SocketTimeoutException -> "Connection timed out."
-        is retrofit2.HttpException -> if (e.code() == 401) "Wrong username or password." else "Server error (${e.code()})."
-        else -> e.message ?: "Sign-in failed."
+    private fun friendlyError(
+        e: Throwable,
+    ): String {
+        val app =
+            getApplication<Application>()
+
+        return when (e) {
+            is java.net.UnknownHostException ->
+                app.getString(
+                    R.string.auth_server_not_found
+                )
+
+            is java.net.ConnectException ->
+                app.getString(
+                    R.string.auth_server_unreachable
+                )
+
+            is java.net.SocketTimeoutException ->
+                app.getString(
+                    R.string.auth_timeout
+                )
+
+            is retrofit2.HttpException ->
+                if (e.code() == 401) {
+                    app.getString(
+                        R.string.auth_wrong_credentials
+                    )
+                } else {
+                    app.getString(
+                        R.string.auth_server_error,
+                        e.code(),
+                    )
+                }
+
+            else ->
+                when (
+                    e.message
+                ) {
+                    "Login rejected" ->
+                        app.getString(
+                            R.string.auth_login_rejected
+                        )
+
+                    "No user id returned" ->
+                        app.getString(
+                            R.string.auth_no_user_id
+                        )
+
+                    else ->
+                        app.getString(
+                            R.string.auth_signin_failed
+                        )
+                }
+        }
     }
 }

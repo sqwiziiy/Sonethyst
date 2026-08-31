@@ -1,5 +1,7 @@
 package com.mentality.sonethyst.data
 
+import android.content.Context
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
 import com.mentality.sonethyst.model.CustomTag
@@ -53,6 +55,7 @@ data class DownloadRow(
 
 // server-agnostic facade online delegates to backend offline serves downloaded files
 class MusicRepository(
+    private val context: Context,
     private val backendProvider: () -> MediaBackend?,
     private val downloadManager: DownloadManager,
     private val localStore: LocalStore,
@@ -63,6 +66,20 @@ class MusicRepository(
     private val onPlaylistChanged: () -> Unit = {},
 ) {
     private val backend: MediaBackend? get() = backendProvider()
+
+    private fun songCountText(count: Int): String =
+        context.resources.getQuantityString(
+            R.plurals.backend_song_count,
+            count,
+            count,
+        )
+
+    private fun downloadedTracksText(count: Int): String =
+        context.resources.getQuantityString(
+            R.plurals.backend_downloaded_tracks,
+            count,
+            count,
+        )
     private val offline: Boolean get() = offlineProvider()
 
     private fun playlistStorageKey(
@@ -379,7 +396,11 @@ class MusicRepository(
                 DownloadRow(
                     aid,
                     "album",
-                    f.album.ifBlank { "Album" },
+                    f.album.ifBlank {
+                        context.getString(
+                            R.string.backend_fallback_album
+                        )
+                    },
                     f.albumArtist
                         ?.takeIf { it.isNotBlank() }
                         ?: f.artist,
@@ -397,7 +418,12 @@ class MusicRepository(
             val first = songs.first()
             Album(
                 id = albumId,
-                title = first.album.ifBlank { "Album" },
+                title =
+                    first.album.ifBlank {
+                        context.getString(
+                            R.string.backend_fallback_album
+                        )
+                    },
                 artist =
                     first.albumArtist
                         ?.takeIf { it.isNotBlank() }
@@ -1198,7 +1224,9 @@ class MusicRepository(
                     DetailInfo(
                         title = id,
                         subtitle =
-                            "${tracks.size} song${if (tracks.size == 1) "" else "s"}",
+                            songCountText(
+                                tracks.size
+                            ),
                         artUrl =
                             tracks.firstOrNull()
                                 ?.artworkUrl
@@ -1234,7 +1262,9 @@ class MusicRepository(
                     DetailInfo(
                         title = id,
                         subtitle =
-                            "$total song${if (total == 1) "" else "s"}",
+                            songCountText(
+                                total
+                            ),
                         artUrl =
                             tracks.firstOrNull()
                                 ?.artworkUrl
@@ -1263,9 +1293,19 @@ class MusicRepository(
                 DetailInfo(
                     title =
                         sp.name
-                            ?: "Smart playlist",
+                            ?: context.getString(
+                                R.string.backend_smart_playlist
+                            ),
                     subtitle =
-                        "Smart playlist • ${tracks.size} songs",
+                        context.getString(
+                            R.string.backend_smart_playlist_summary,
+                            context.getString(
+                                R.string.backend_smart_playlist
+                            ),
+                            songCountText(
+                                tracks.size
+                            ),
+                        ),
                     artUrl =
                         resolveSmartPlaylistCover(
                             sp,
@@ -1293,12 +1333,43 @@ class MusicRepository(
                     dls.filter { it.albumId == id }
                 ).takeIf { it.isNotEmpty() }?.let { tracks ->
                     val f = tracks.first()
-                    DetailData(DetailInfo(f.album.ifBlank { "Album" }, "${f.artist} • Downloaded", f.artworkUrl, accentFor(id), false, tracks.size, "Album"), tracks)
+                    DetailData(
+                        DetailInfo(
+                            f.album.ifBlank {
+                                context.getString(
+                                    R.string.backend_fallback_album
+                                )
+                            },
+                            context.getString(
+                                R.string.backend_downloaded_album_subtitle,
+                                f.artist,
+                            ),
+                            f.artworkUrl,
+                            accentFor(id),
+                            false,
+                            tracks.size,
+                            "Album",
+                        ),
+                        tracks,
+                    )
                 }
                 "artist" -> visibleSongs(
                     dls.filter { it.artistId == id }
                 ).takeIf { it.isNotEmpty() }?.let { tracks ->
-                    DetailData(DetailInfo(tracks.first().artist, "${tracks.size} downloaded tracks", tracks.first().artworkUrl, accentFor(id), true, tracks.size, "Artist"), tracks)
+                    DetailData(
+                        DetailInfo(
+                            tracks.first().artist,
+                            downloadedTracksText(
+                                tracks.size
+                            ),
+                            tracks.first().artworkUrl,
+                            accentFor(id),
+                            true,
+                            tracks.size,
+                            "Artist",
+                        ),
+                        tracks,
+                    )
                 }
                 "playlist" -> downloadManager.collections.value.firstOrNull { it.id == id }?.let { col ->
                     val byId = downloadManager.downloads.value

@@ -20,10 +20,14 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.ui.screens.settings.SettingsTopBar
 import com.mentality.sonethyst.viewmodel.LyricsEditState
+import com.mentality.sonethyst.ui.components.displayArtist
+import com.mentality.sonethyst.ui.components.displayTitle
 
 @Composable
 fun LyricsEditScreen(
@@ -56,7 +60,9 @@ fun LyricsEditScreen(
         Modifier.fillMaxSize()
     ) {
         SettingsTopBar(
-            "Edit lyrics",
+            stringResource(
+                R.string.player_edit_lyrics
+            ),
             onBack,
         )
 
@@ -88,7 +94,7 @@ fun LyricsEditScreen(
                 )
         ) {
             Text(
-                state.title,
+                displayTitle(state.title),
                 style =
                     MaterialTheme
                         .typography
@@ -98,15 +104,34 @@ fun LyricsEditScreen(
             )
 
             Text(
-                state.artist,
+                displayArtist(state.artist),
                 color =
                     MaterialTheme
                         .colorScheme
                         .onSurfaceVariant,
             )
 
+            val displayedSource =
+                when {
+                    state.hasCustom ->
+                        stringResource(
+                            R.string.lyrics_edit_source_custom
+                        )
+
+                    state.source.isBlank() ->
+                        stringResource(
+                            R.string.lyrics_edit_source_none
+                        )
+
+                    else ->
+                        state.source
+                }
+
             Text(
-                "Source: ${state.source}",
+                stringResource(
+                    R.string.lyrics_edit_source,
+                    displayedSource,
+                ),
                 style =
                     MaterialTheme
                         .typography
@@ -134,7 +159,7 @@ fun LyricsEditScreen(
                         onSynced(false)
                     },
                     label = {
-                        Text("Plain text")
+                        Text(stringResource(R.string.lyrics_edit_plain_text))
                     },
                 )
 
@@ -145,14 +170,14 @@ fun LyricsEditScreen(
                         onSynced(true)
                     },
                     label = {
-                        Text("Synced LRC")
+                        Text(stringResource(R.string.lyrics_edit_synced_lrc))
                     },
                 )
             }
 
             if (state.synced) {
                 Text(
-                    "Use LRC timestamps, for example: [01:23.456]Line",
+                    stringResource(R.string.lyrics_edit_lrc_hint),
                     style =
                         MaterialTheme
                             .typography
@@ -167,15 +192,18 @@ fun LyricsEditScreen(
                     Modifier.height(8.dp)
                 )
 
+                val offsetValue =
+                    if (state.offsetMs > 0) {
+                        "+${state.offsetMs}"
+                    } else {
+                        state.offsetMs.toString()
+                    }
+
                 Text(
-                    "Timing offset: " +
-                        (
-                            if (state.offsetMs > 0) {
-                                "+${state.offsetMs} ms"
-                            } else {
-                                "${state.offsetMs} ms"
-                            }
-                        ),
+                    stringResource(
+                        R.string.lyrics_edit_timing_offset,
+                        offsetValue,
+                    ),
                     style =
                         MaterialTheme
                             .typography
@@ -243,7 +271,7 @@ fun LyricsEditScreen(
                         modifier =
                             Modifier.fillMaxWidth(),
                     ) {
-                        Text("Reset timing offset")
+                        Text(stringResource(R.string.lyrics_edit_reset_offset))
                     }
                 }
             }
@@ -272,9 +300,9 @@ fun LyricsEditScreen(
                 label = {
                     Text(
                         if (state.synced) {
-                            "LRC lyrics"
+                            stringResource(R.string.lyrics_edit_lrc_lyrics)
                         } else {
-                            "Lyrics"
+                            stringResource(R.string.player_lyrics)
                         }
                     )
                 },
@@ -289,7 +317,7 @@ fun LyricsEditScreen(
                 )
 
                 Text(
-                    "Line timing",
+                    stringResource(R.string.lyrics_edit_line_timing),
                     style =
                         MaterialTheme
                             .typography
@@ -299,7 +327,7 @@ fun LyricsEditScreen(
                 )
 
                 Text(
-                    "NOW uses the current playback position.",
+                    stringResource(R.string.lyrics_edit_now_help),
                     style =
                         MaterialTheme
                             .typography
@@ -410,7 +438,7 @@ fun LyricsEditScreen(
                                             1f
                                         ),
                                 ) {
-                                    Text("NOW")
+                                    Text(stringResource(R.string.lyrics_edit_now))
                                 }
 
                                 OutlinedButton(
@@ -453,9 +481,9 @@ fun LyricsEditScreen(
                 ) {
                     Text(
                         if (state.saving) {
-                            "Saving…"
+                            stringResource(R.string.lyrics_edit_saving)
                         } else {
-                            "Save"
+                            stringResource(R.string.action_save)
                         }
                     )
                 }
@@ -464,7 +492,7 @@ fun LyricsEditScreen(
                     OutlinedButton(
                         onClick = onClear,
                     ) {
-                        Text("Reset")
+                        Text(stringResource(R.string.action_reset))
                     }
                 }
             }

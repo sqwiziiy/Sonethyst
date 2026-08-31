@@ -34,6 +34,9 @@ import com.mentality.sonethyst.data.AudioEffectsController
 import com.mentality.sonethyst.data.AudioPrefs
 import com.mentality.sonethyst.data.DspMode
 import com.mentality.sonethyst.data.SignalPath
+import com.mentality.sonethyst.ui.components.displayAlbum
+import com.mentality.sonethyst.ui.components.displayArtist
+import com.mentality.sonethyst.ui.components.displayTitle
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
@@ -331,6 +334,11 @@ class PlaybackService : MediaLibraryService() {
             }
         }
         scope.launch {
+            container.offline.collect { enabled ->
+                if (enabled) enforceOfflineSource(mediaSession?.player ?: player)
+            }
+        }
+        scope.launch {
             store.audioPrefs.collect {
                 replayGainMode = it.replayGain
                 lastAudioPrefs = it
@@ -412,9 +420,38 @@ class PlaybackService : MediaLibraryService() {
                         publishNowPlaying()
                     }
 
+                    if (container.offline.value &&
+                        (events.contains(Player.EVENT_MEDIA_ITEM_TRANSITION) ||
+                            events.contains(Player.EVENT_IS_PLAYING_CHANGED) ||
+                            events.contains(Player.EVENT_PLAYBACK_STATE_CHANGED))
+                    ) {
+                        enforceOfflineSource(p)
+                    }
+
                 }
             }
         )
+    }
+
+    private fun isLocalSource(uri: String): Boolean {
+        val value = uri.trim().lowercase()
+        return value.startsWith("content://") || value.startsWith("file://")
+    }
+
+    private fun offlinePlayableSong(song: com.mentality.sonethyst.model.Song): com.mentality.sonethyst.model.Song? {
+        if (!container.offline.value) return song
+        if (isLocalSource(song.streamUrl)) return song
+        return container.downloadManager.getByOriginalId(song.id)?.toSong()
+    }
+
+    private fun enforceOfflineSource(active: Player) {
+        val uri = active.currentMediaItem?.localConfiguration?.uri?.toString().orEmpty()
+        if (uri.isBlank() || isLocalSource(uri)) return
+        cancelXfade()
+        runCatching { active.pause(); active.stop(); active.clearMediaItems() }
+        runCatching { if (active !== player) player.pause() }
+        runCatching { fadePlayer?.pause(); fadePlayer?.stop(); fadePlayer?.clearMediaItems() }
+        publishNowPlaying()
     }
 
 
@@ -559,10 +596,22 @@ class PlaybackService : MediaLibraryService() {
         val device = currentOutputDevice()
         val outName = device?.productName?.toString()?.trim()?.ifBlank { null }
             ?: when {
-                device == null -> "Speaker"
-                isUsb(device.type) -> "USB DAC"
-                device.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "Bluetooth"
-                else -> "Output"
+                device == null ->
+                    getString(
+                        com.mentality.sonethyst.R.string.signal_output_speaker
+                    )
+                isUsb(device.type) ->
+                    getString(
+                        com.mentality.sonethyst.R.string.signal_output_usb_dac
+                    )
+                device.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ->
+                    getString(
+                        com.mentality.sonethyst.R.string.signal_output_bluetooth
+                    )
+                else ->
+                    getString(
+                        com.mentality.sonethyst.R.string.signal_output_generic
+                    )
             }
 
         val wantBitPerfect = useFloatOut && device != null && isUsb(device.type)
@@ -585,13 +634,34 @@ class PlaybackService : MediaLibraryService() {
             device.type == android.media.AudioDeviceInfo.TYPE_BLE_SPEAKER)
         // truly bit-perfect needs an exclusive mixer grant float passthrough alone may still get sample-rate-converted by the mixer bluetooth is always re-encoded
         val (bitPerfect, note) = when {
-            isBt -> false to "Bluetooth — re-encoded by the system codec (LDAC/aptX/AAC/SBC)"
-            modifying -> false to "DSP / effects active — not bit-perfect"
-            useFloatOut && grantedBitPerfect -> true to "Exclusive bit-perfect to DAC"
-            useFloatOut && deviceSupportsBitPerfect -> false to "Hi-res float — exclusive not granted (try replug / restart)"
-            useFloatOut -> false to "Hi-res float passthrough — this device has no exclusive bit-perfect path"
-            preferHighResPref -> false to "Restart playback to engage hi-res float output"
-            else -> false to "Through Android mixer — enable Hi-res output for bit-perfect"
+            isBt ->
+                false to getString(
+                    com.mentality.sonethyst.R.string.signal_bluetooth_reencoded
+                )
+            modifying ->
+                false to getString(
+                    com.mentality.sonethyst.R.string.signal_dsp_not_bitperfect
+                )
+            useFloatOut && grantedBitPerfect ->
+                true to getString(
+                    com.mentality.sonethyst.R.string.signal_exclusive_bitperfect
+                )
+            useFloatOut && deviceSupportsBitPerfect ->
+                false to getString(
+                    com.mentality.sonethyst.R.string.signal_hires_exclusive_not_granted
+                )
+            useFloatOut ->
+                false to getString(
+                    com.mentality.sonethyst.R.string.signal_hires_no_exclusive
+                )
+            preferHighResPref ->
+                false to getString(
+                    com.mentality.sonethyst.R.string.signal_restart_hires
+                )
+            else ->
+                false to getString(
+                    com.mentality.sonethyst.R.string.signal_android_mixer
+                )
         }
         container.signalPath.value = SignalPath(
             active = true, codec = codec, sampleRateHz = fmt.sampleRate.takeIf { it > 0 } ?: 0,
@@ -1645,7 +1715,9 @@ class PlaybackService : MediaLibraryService() {
 
             if (ready != true) {
                 throw IllegalStateException(
-                    "No active Sonethyst session"
+                    getString(
+                      com.mentality.sonethyst.R.string.media_resume_no_active_session
+                  )
                 )
             }
 
@@ -1654,7 +1726,9 @@ class PlaybackService : MediaLibraryService() {
 
             if (accountKey.isBlank()) {
                 throw IllegalStateException(
-                    "No active account for playback resumption"
+                    getString(
+                      com.mentality.sonethyst.R.string.media_resume_no_active_account
+                  )
                 )
             }
 
@@ -1662,7 +1736,9 @@ class PlaybackService : MediaLibraryService() {
                 container.queueStore
                     .get(accountKey)
                     ?: throw IllegalStateException(
-                        "No saved queue"
+                        getString(
+                          com.mentality.sonethyst.R.string.media_resume_no_saved_queue
+                      )
                     )
 
             val songs =
@@ -1671,6 +1747,7 @@ class PlaybackService : MediaLibraryService() {
                     .map {
                         it.toSong()
                     }
+                    .mapNotNull { offlinePlayableSong(it) }
                     .filter {
                         it.id.isNotBlank() &&
                             it.streamUrl.isNotBlank()
@@ -1678,7 +1755,9 @@ class PlaybackService : MediaLibraryService() {
 
             if (songs.isEmpty()) {
                 throw IllegalStateException(
-                    "Saved queue is empty"
+                    getString(
+                      com.mentality.sonethyst.R.string.media_resume_saved_queue_empty
+                  )
                 )
             }
 
@@ -1736,6 +1815,7 @@ class PlaybackService : MediaLibraryService() {
                 .add(SessionCommand(CMD_SHUFFLE, Bundle.EMPTY))
                 .add(SessionCommand(CMD_REPEAT, Bundle.EMPTY))
                 .add(SessionCommand(CMD_SLEEP_FADE, Bundle.EMPTY))
+                .add(SessionCommand(CMD_OFFLINE_STOP, Bundle.EMPTY))
                 .build()
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
                 .setAvailableSessionCommands(sessionCommands)
@@ -1760,6 +1840,7 @@ class PlaybackService : MediaLibraryService() {
                     if (ms > 0) { sleepFadeMs = ms; sleepFadeStartMs = android.os.SystemClock.elapsedRealtime(); sleepFadeActive = true }
                     else { sleepFadeActive = false; player.volume = replayGainMultiplier() }
                 }
+                CMD_OFFLINE_STOP -> enforceOfflineSource(mediaSession?.player ?: player)
             }
             return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
         }
@@ -1834,7 +1915,15 @@ class PlaybackService : MediaLibraryService() {
         val r = container.repository.search(query)
         val songs = r.songs.map { songItem(it) }
         val albums = r.albums.map { collectionItem("alb_${it.id}", it.title, it.artist, it.artworkUrl, MediaMetadata.MEDIA_TYPE_ALBUM) }
-        val artists = r.artists.map { collectionItem("art_${it.id}", it.name, "Artist", it.imageUrl, MediaMetadata.MEDIA_TYPE_ARTIST) }
+        val artists = r.artists.map { collectionItem(
+            "art_${it.id}",
+            it.name,
+            getString(
+                com.mentality.sonethyst.R.string.backend_fallback_artist
+            ),
+            it.imageUrl,
+            MediaMetadata.MEDIA_TYPE_ARTIST,
+        ) }
         return songs + albums + artists
     }
 
@@ -1849,17 +1938,45 @@ class PlaybackService : MediaLibraryService() {
         val items: List<MediaItem> = runCatching {
             when {
                 parentId == LIBRARY_ROOT -> listOf(
-                    browseItem("cat_liked", "Liked Songs", MediaMetadata.MEDIA_TYPE_PLAYLIST, styleExtras(styleList, styleList)),
-                    browseItem("cat_playlists", "Playlists", MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS, styleExtras(styleGrid, styleList)),
-                    browseItem("cat_albums", "Albums", MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS, styleExtras(styleGrid, styleList)),
-                    browseItem("cat_artists", "Artists", MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS, styleExtras(styleGrid, styleList)),
-                    browseItem("cat_downloads", "Downloads", MediaMetadata.MEDIA_TYPE_PLAYLIST, styleExtras(styleList, styleList)),
+                    browseItem(
+                    "cat_liked",
+                    getString(
+                        com.mentality.sonethyst.R.string.media_browser_liked_songs
+                    ), MediaMetadata.MEDIA_TYPE_PLAYLIST, styleExtras(styleList, styleList)),
+                    browseItem(
+                    "cat_playlists",
+                    getString(
+                        com.mentality.sonethyst.R.string.media_browser_playlists
+                    ), MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS, styleExtras(styleGrid, styleList)),
+                    browseItem(
+                    "cat_albums",
+                    getString(
+                        com.mentality.sonethyst.R.string.media_browser_albums
+                    ), MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS, styleExtras(styleGrid, styleList)),
+                    browseItem(
+                    "cat_artists",
+                    getString(
+                        com.mentality.sonethyst.R.string.media_browser_artists
+                    ), MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS, styleExtras(styleGrid, styleList)),
+                    browseItem(
+                    "cat_downloads",
+                    getString(
+                        com.mentality.sonethyst.R.string.media_browser_downloads
+                    ), MediaMetadata.MEDIA_TYPE_PLAYLIST, styleExtras(styleList, styleList)),
                 )
                 parentId == "cat_liked" -> repo.starredSongs().map { songItem(it) }
                 parentId == "cat_downloads" -> repo.downloadedSongs().map { songItem(it) }
                 parentId == "cat_playlists" -> repo.allPlaylists().map { collectionItem("pl_${it.id}", it.title, it.subtitle, it.coverUrl, MediaMetadata.MEDIA_TYPE_PLAYLIST) }
                 parentId == "cat_albums" -> repo.allAlbums().map { collectionItem("alb_${it.id}", it.title, it.artist, it.artworkUrl, MediaMetadata.MEDIA_TYPE_ALBUM) }
-                parentId == "cat_artists" -> repo.allArtists().map { collectionItem("art_${it.id}", it.name, "Artist", it.imageUrl, MediaMetadata.MEDIA_TYPE_ARTIST) }
+                parentId == "cat_artists" -> repo.allArtists().map { collectionItem(
+            "art_${it.id}",
+            it.name,
+            getString(
+                com.mentality.sonethyst.R.string.backend_fallback_artist
+            ),
+            it.imageUrl,
+            MediaMetadata.MEDIA_TYPE_ARTIST,
+        ) }
                 parentId.startsWith("alb_") -> repo.detail("album", parentId.removePrefix("alb_"))?.tracks?.map { songItem(it) }.orEmpty()
                 parentId.startsWith("pl_") -> repo.detail("playlist", parentId.removePrefix("pl_"))?.tracks?.map { songItem(it) }.orEmpty()
                 parentId.startsWith("art_") -> repo.detail("artist", parentId.removePrefix("art_"))?.tracks?.map { songItem(it) }.orEmpty()
@@ -1911,9 +2028,9 @@ class PlaybackService : MediaLibraryService() {
             .setUri(song.streamUrl)
             .setMediaMetadata(
                 MediaMetadata.Builder()
-                    .setTitle(song.title)
-                    .setArtist(song.artist)
-                    .setAlbumTitle(song.album)
+                    .setTitle(this@PlaybackService.displayTitle(song.title))
+                    .setArtist(this@PlaybackService.displayArtist(song.artist))
+                    .setAlbumTitle(this@PlaybackService.displayAlbum(song.album))
                     .apply {
                         if (song.durationSec > 0) {
                             setDurationMs(
@@ -1963,7 +2080,7 @@ class PlaybackService : MediaLibraryService() {
     private fun songItem(song: com.mentality.sonethyst.model.Song): MediaItem {
         val id = "song_${song.id}"
         val item = MediaItem.Builder().setMediaId(id).setUri(song.streamUrl).setMediaMetadata(
-            MediaMetadata.Builder().setTitle(song.title).setArtist(song.artist).setAlbumTitle(song.album)
+            MediaMetadata.Builder().setTitle(this.displayTitle(song.title)).setArtist(this.displayArtist(song.artist)).setAlbumTitle(this.displayAlbum(song.album))
                 .setIsBrowsable(false).setIsPlayable(true).setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
                 .apply { if (song.artworkUrl.isNotBlank()) setArtworkUri(android.net.Uri.parse(song.artworkUrl)) }.build()
         ).build()
@@ -1975,7 +2092,11 @@ class PlaybackService : MediaLibraryService() {
         val shuffleBtn = CommandButton.Builder(
             if (player.shuffleModeEnabled) CommandButton.ICON_SHUFFLE_ON else CommandButton.ICON_SHUFFLE_OFF
         )
-            .setDisplayName("Shuffle")
+            .setDisplayName(
+                getString(
+                    com.mentality.sonethyst.R.string.media_action_shuffle
+                )
+            )
             .setSessionCommand(SessionCommand(CMD_SHUFFLE, Bundle.EMPTY))
             .build()
         val repeatIcon = when (player.repeatMode) {
@@ -1984,7 +2105,11 @@ class PlaybackService : MediaLibraryService() {
             else -> CommandButton.ICON_REPEAT_OFF
         }
         val repeatBtn = CommandButton.Builder(repeatIcon)
-            .setDisplayName("Repeat")
+            .setDisplayName(
+                getString(
+                    com.mentality.sonethyst.R.string.media_action_repeat
+                )
+            )
             .setSessionCommand(SessionCommand(CMD_REPEAT, Bundle.EMPTY))
             .build()
         return listOf(shuffleBtn, repeatBtn)
@@ -2260,7 +2385,13 @@ class PlaybackService : MediaLibraryService() {
         if (android.os.Build.VERSION.SDK_INT >= 26) {
             nm.deleteNotificationChannel("aurora_alarm")
             nm.createNotificationChannel(
-                NotificationChannel("sonethyst_alarm", "Alarm", NotificationManager.IMPORTANCE_HIGH)
+                NotificationChannel(
+                    "sonethyst_alarm",
+                    getString(
+                        com.mentality.sonethyst.R.string.alarm_title
+                    ),
+                    NotificationManager.IMPORTANCE_HIGH,
+                )
             )
         }
         val piFlags = android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT
@@ -2271,15 +2402,29 @@ class PlaybackService : MediaLibraryService() {
         )
         val notif = androidx.core.app.NotificationCompat.Builder(this, "sonethyst_alarm")
             .setSmallIcon(com.mentality.sonethyst.R.drawable.ic_launcher_monochrome)
-            .setContentTitle("Sonethyst alarm")
-            .setContentText("Tap to dismiss")
+            .setContentTitle(
+                getString(
+                    com.mentality.sonethyst.R.string.alarm_notification_title
+                )
+            )
+            .setContentText(
+                getString(
+                    com.mentality.sonethyst.R.string.alarm_notification_text
+                )
+            )
             .setPriority(androidx.core.app.NotificationCompat.PRIORITY_MAX)
             .setCategory(androidx.core.app.NotificationCompat.CATEGORY_ALARM)
             .setOngoing(true)
             .setAutoCancel(true)
             .setContentIntent(fsPending)
             .setFullScreenIntent(fsPending, true)
-            .addAction(0, "Dismiss", dismissPending)
+            .addAction(
+                0,
+                getString(
+                    com.mentality.sonethyst.R.string.alarm_dismiss
+                ),
+                dismissPending,
+            )
             .build()
         nm.notify(ALARM_NOTIF_ID, notif)
     }
@@ -2321,6 +2466,7 @@ class PlaybackService : MediaLibraryService() {
         const val CMD_SHUFFLE = "com.mentality.sonethyst.SHUFFLE"
         const val CMD_REPEAT = "com.mentality.sonethyst.REPEAT"
         const val CMD_SLEEP_FADE = "com.mentality.sonethyst.SLEEP_FADE"
+        const val CMD_OFFLINE_STOP = "com.mentality.sonethyst.OFFLINE_STOP"
         const val ACTION_PLAY_PAUSE = "com.mentality.sonethyst.action.PLAY_PAUSE"
         const val ACTION_NEXT = "com.mentality.sonethyst.action.NEXT"
         const val ACTION_PREV = "com.mentality.sonethyst.action.PREV"

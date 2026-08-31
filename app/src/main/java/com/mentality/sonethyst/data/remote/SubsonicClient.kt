@@ -88,7 +88,9 @@ class SubsonicClient(val session: Session) {
         fun normalizeServer(raw: String): String {
             var s = raw.trim().trimEnd('/')
             if (s.isEmpty()) return s
-            if (!s.startsWith("http://") && !s.startsWith("https://")) s = "http://$s"
+            // Explicit http remains supported for legacy self-hosted servers;
+            // an omitted scheme defaults to the safer https transport.
+            if (!s.startsWith("http://") && !s.startsWith("https://")) s = "https://$s"
             val url: HttpUrl? = s.toHttpUrlOrNull()
             return url?.toString()?.trimEnd('/') ?: s
         }

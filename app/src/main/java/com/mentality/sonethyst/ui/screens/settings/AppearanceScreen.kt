@@ -31,9 +31,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.AccentMode
 import com.mentality.sonethyst.data.CornerStyle
@@ -53,23 +55,99 @@ fun AppearanceScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
     val store = container.settingsStore
     val prefs by store.uiPrefs.collectAsStateWithLifecycle(initialValue = UiPrefs())
     val scope = rememberCoroutineScope()
-    val materialYouSupported = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S
+    val materialYouSupported =
+        android.os.Build.VERSION.SDK_INT >=
+            android.os.Build.VERSION_CODES.S
+
+    val themeOptions =
+        listOf(
+            stringResource(R.string.appearance_system),
+            stringResource(R.string.appearance_light),
+            stringResource(R.string.appearance_dark),
+            stringResource(R.string.appearance_amoled),
+        )
+
+    val accentOptions =
+        listOf(
+            stringResource(R.string.appearance_presets),
+            stringResource(R.string.appearance_custom),
+            stringResource(R.string.appearance_material_you),
+        )
+
+    val cornerOptions =
+        listOf(
+            stringResource(R.string.appearance_corner_sharp),
+            stringResource(R.string.appearance_corner_default),
+            stringResource(R.string.appearance_corner_rounded),
+            stringResource(R.string.appearance_corner_pill),
+        )
+
+    val seekOptions =
+        listOf(
+            stringResource(R.string.appearance_waveform),
+            stringResource(R.string.appearance_bar),
+        )
+
+    val miniStyleOptions =
+        listOf(
+            stringResource(R.string.appearance_standard),
+            stringResource(R.string.appearance_compact),
+            stringResource(R.string.appearance_prominent),
+        )
+
+    val miniProgressOptions =
+        listOf(
+            stringResource(R.string.appearance_line),
+            stringResource(R.string.appearance_bar),
+            stringResource(R.string.appearance_none),
+        )
+
+    val homeSections =
+        listOf(
+            HomeSection.HERO to
+                stringResource(R.string.appearance_home_hero),
+            HomeSection.RECENT to
+                stringResource(R.string.home_jump_back_in),
+            HomeSection.PLAYLISTS to
+                stringResource(R.string.home_your_playlists),
+            HomeSection.FAVOURITE to
+                stringResource(R.string.home_from_favourites),
+            HomeSection.MOST to
+                stringResource(R.string.home_most_played),
+            HomeSection.ARTISTS to
+                stringResource(R.string.home_artists),
+            HomeSection.NEW to
+                stringResource(R.string.home_new_releases),
+        )
 
     Column(Modifier.fillMaxWidth()) {
-        SettingsTopBar("Appearance", onBack)
+        SettingsTopBar(
+            stringResource(R.string.appearance_title),
+            onBack,
+        )
         LazyColumn(Modifier.fillMaxWidth(), contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding() + 24.dp)) {
 
-            item { SettingsSectionTitle("Theme") }
+            item { SettingsSectionTitle(stringResource(R.string.appearance_theme)) }
             item {
-                SegmentedRow("Mode", listOf("System", "Light", "Dark", "AMOLED"), prefs.themeMode) { i ->
+                SegmentedRow(
+                    stringResource(R.string.appearance_mode),
+                    themeOptions,
+                    prefs.themeMode,
+                ) { i ->
                     scope.launch { store.setThemeMode(i) }
                 }
             }
             item {
                 Text(
                     when (prefs.themeMode) {
-                        ThemeMode.AMOLED -> "True-black surfaces — saves power on OLED screens."
-                        ThemeMode.SYSTEM -> "Follows your device's light/dark setting."
+                        ThemeMode.AMOLED ->
+                            stringResource(
+                                R.string.appearance_amoled_description
+                            )
+                        ThemeMode.SYSTEM ->
+                            stringResource(
+                                R.string.appearance_system_description
+                            )
                         else -> ""
                     },
                     style = MaterialTheme.typography.bodySmall,
@@ -78,9 +156,13 @@ fun AppearanceScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
                 )
             }
 
-            item { SettingsSectionTitle("Accent") }
+            item { SettingsSectionTitle(stringResource(R.string.appearance_accent)) }
             item {
-                SegmentedRow("Source", listOf("Presets", "Custom", "Material You"), prefs.accentMode) { i ->
+                SegmentedRow(
+                    stringResource(R.string.appearance_source),
+                    accentOptions,
+                    prefs.accentMode,
+                ) { i ->
                     scope.launch { store.setAccentMode(i) }
                 }
             }
@@ -96,8 +178,15 @@ fun AppearanceScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
                 }
                 else -> item {
                     Text(
-                        if (materialYouSupported) "Using your wallpaper colors (Material You)."
-                        else "Material You needs Android 12+. Falling back to the preset accent.",
+                        if (materialYouSupported) {
+                            stringResource(
+                                R.string.appearance_material_you_active
+                            )
+                        } else {
+                            stringResource(
+                                R.string.appearance_material_you_unavailable
+                            )
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
@@ -105,76 +194,97 @@ fun AppearanceScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
                 }
             }
 
-            item { SettingsSectionTitle("Display") }
+            item { SettingsSectionTitle(stringResource(R.string.appearance_display)) }
             item {
-                SettingsSliderRow("Font size", "${(prefs.fontScale * 100).roundToInt()}%", prefs.fontScale, 0.85f..1.3f) { v ->
+                SettingsSliderRow(
+                    stringResource(R.string.appearance_font_size), "${(prefs.fontScale * 100).roundToInt()}%", prefs.fontScale, 0.85f..1.3f) { v ->
                     scope.launch { store.setFontScale(v) }
                 }
             }
             item {
-                SegmentedRow("Corners", listOf("Sharp", "Default", "Rounded", "Pill"), prefs.cornerStyle) { i ->
+                SegmentedRow(
+                    stringResource(R.string.appearance_corners),
+                    cornerOptions,
+                    prefs.cornerStyle,
+                ) { i ->
                     scope.launch { store.setCornerStyle(i) }
                 }
             }
 
-            item { SettingsSectionTitle("Player") }
+            item { SettingsSectionTitle(stringResource(R.string.appearance_player)) }
             item {
-                SegmentedRow("Seek bar", listOf("Waveform", "Bar"), prefs.playerSeekStyle) { i ->
+                SegmentedRow(
+                    stringResource(R.string.appearance_seek_bar),
+                    seekOptions,
+                    prefs.playerSeekStyle,
+                ) { i ->
                     scope.launch { store.setPlayerSeekStyle(i) }
                 }
             }
             if (prefs.playerSeekStyle == SeekStyle.WAVEFORM) {
                 item {
-                    SettingsSliderRow("Waveform bars", "${prefs.playerWaveBars}", prefs.playerWaveBars.toFloat(), 24f..96f) { v ->
+                    SettingsSliderRow(
+                        stringResource(R.string.appearance_waveform_bars), "${prefs.playerWaveBars}", prefs.playerWaveBars.toFloat(), 24f..96f) { v ->
                         scope.launch { store.setPlayerWaveBars(v.roundToInt()) }
                     }
                 }
             }
             item {
-                SettingsSliderRow("Artwork size", "${(prefs.playerArtSize * 100).roundToInt()}%", prefs.playerArtSize, 0.6f..1f) { v ->
+                SettingsSliderRow(
+                    stringResource(R.string.appearance_artwork_size), "${(prefs.playerArtSize * 100).roundToInt()}%", prefs.playerArtSize, 0.6f..1f) { v ->
                     scope.launch { store.setPlayerArtSize(v) }
                 }
             }
             item {
-                SettingsSliderRow("Gradient intensity", "${(prefs.playerGradient * 100).roundToInt()}%", prefs.playerGradient, 0f..1.5f) { v ->
+                SettingsSliderRow(
+                    stringResource(R.string.appearance_gradient_intensity), "${(prefs.playerGradient * 100).roundToInt()}%", prefs.playerGradient, 0f..1.5f) { v ->
                     scope.launch { store.setPlayerGradient(v) }
                 }
             }
             item {
-                SettingsSwitchRow(title = "Bottom utilities", subtitle = "Speed · Lyrics · Queue row", checked = prefs.playerShowUtilities) { v ->
+                SettingsSwitchRow(
+                    title =
+                        stringResource(
+                            R.string.appearance_bottom_utilities
+                        ),
+                    subtitle =
+                        stringResource(
+                            R.string.appearance_bottom_utilities_summary
+                        ), checked = prefs.playerShowUtilities) { v ->
                     scope.launch { store.setPlayerShowUtilities(v) }
                 }
             }
 
-            item { SettingsSectionTitle("Miniplayer") }
+            item { SettingsSectionTitle(stringResource(R.string.appearance_miniplayer)) }
             item {
-                SegmentedRow("Style", listOf("Standard", "Compact", "Prominent"), prefs.miniStyle) { i ->
+                SegmentedRow(
+                    stringResource(R.string.appearance_style),
+                    miniStyleOptions,
+                    prefs.miniStyle,
+                ) { i ->
                     scope.launch { store.setMiniStyle(i) }
                 }
             }
             item {
-                SegmentedRow("Progress", listOf("Line", "Bar", "None"), prefs.miniProgress) { i ->
+                SegmentedRow(
+                    stringResource(R.string.appearance_progress),
+                    miniProgressOptions,
+                    prefs.miniProgress,
+                ) { i ->
                     scope.launch { store.setMiniProgress(i) }
                 }
             }
 
-            item { SettingsSectionTitle("Library") }
+            item { SettingsSectionTitle(stringResource(R.string.appearance_library)) }
             item {
-                SegmentedRow("Grid columns", listOf("2", "3", "4"), (prefs.libraryColumns - 2).coerceIn(0, 2)) { i ->
+                SegmentedRow(
+                    stringResource(R.string.appearance_grid_columns),
+                    listOf("2", "3", "4"), (prefs.libraryColumns - 2).coerceIn(0, 2)) { i ->
                     scope.launch { store.setLibraryColumns(i + 2) }
                 }
             }
 
-            item { SettingsSectionTitle("Home sections") }
-            val homeSections = listOf(
-                HomeSection.HERO to "New release hero",
-                HomeSection.RECENT to "Jump back in",
-                HomeSection.PLAYLISTS to "Your playlists",
-                HomeSection.FAVOURITE to "From your favourites",
-                HomeSection.MOST to "Most played",
-                HomeSection.ARTISTS to "Artists",
-                HomeSection.NEW to "New releases",
-            )
+            item { SettingsSectionTitle(stringResource(R.string.appearance_home_sections)) }
             items(homeSections.size) { idx ->
                 val (id, label) = homeSections[idx]
                 SettingsSwitchRow(title = label, checked = id !in prefs.hiddenHomeSections) { v ->
@@ -202,7 +312,8 @@ private fun AccentPresetGrid(selected: Int, onSelect: (Int) -> Unit) {
                     ) {
                         if (isSel) {
                             val on = if (preset.seed.luminanceApprox() > 0.5f) Color.Black else Color.White
-                            Icon(Icons.Filled.Check, "Selected", tint = on, modifier = Modifier.size(22.dp))
+                            Icon(Icons.Filled.Check,
+                                stringResource(R.string.song_selected), tint = on, modifier = Modifier.size(22.dp))
                         }
                     }
                 }
@@ -228,11 +339,15 @@ private fun CustomColorPicker(initialArgb: Int, onChange: (Int) -> Unit) {
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(56.dp).clip(CircleShape).background(preview).border(2.dp, MaterialTheme.colorScheme.outline, CircleShape))
-            Text("  Live preview", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                stringResource(R.string.appearance_live_preview), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        SettingsSliderRow("Hue", "${hue.roundToInt()}°", hue, 0f..360f) { hue = it; push() }
-        SettingsSliderRow("Saturation", "${(sat * 100).roundToInt()}%", sat, 0f..1f) { sat = it; push() }
-        SettingsSliderRow("Brightness", "${(bri * 100).roundToInt()}%", bri, 0f..1f) { bri = it; push() }
+        SettingsSliderRow(
+            stringResource(R.string.appearance_hue), "${hue.roundToInt()}°", hue, 0f..360f) { hue = it; push() }
+        SettingsSliderRow(
+            stringResource(R.string.appearance_saturation), "${(sat * 100).roundToInt()}%", sat, 0f..1f) { sat = it; push() }
+        SettingsSliderRow(
+            stringResource(R.string.appearance_brightness), "${(bri * 100).roundToInt()}%", bri, 0f..1f) { bri = it; push() }
     }
 }
 

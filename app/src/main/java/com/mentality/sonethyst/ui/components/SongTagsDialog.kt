@@ -24,7 +24,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.model.Song
 import java.util.Locale
 
@@ -74,12 +76,12 @@ fun SongTagsDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Tags")
+            Text(stringResource(R.string.tags_title))
         },
         text = {
             Column {
                 Text(
-                    song.title,
+                    displayTitle(song.title),
                     style =
                         MaterialTheme.typography.titleSmall,
                 )
@@ -167,7 +169,7 @@ fun SongTagsDialog(
                             }
                         },
                         modifier = Modifier.weight(1f),
-                        label = { Text("New tag") },
+                        label = { Text(stringResource(R.string.tags_new_tag)) },
                         singleLine = true,
                     )
 
@@ -178,7 +180,7 @@ fun SongTagsDialog(
                             addNewTag()
                         },
                     ) {
-                        Text("Add")
+                        Text(stringResource(R.string.action_add))
                     }
                 }
             }
@@ -201,14 +203,14 @@ fun SongTagsDialog(
                     )
                 },
             ) {
-                Text("Save")
+                Text(stringResource(R.string.action_save))
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
             ) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         },
     )

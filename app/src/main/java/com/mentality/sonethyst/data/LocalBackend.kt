@@ -1,6 +1,8 @@
 package com.mentality.sonethyst.data
 
+import android.content.Context
 import android.util.Base64
+import com.mentality.sonethyst.R
 
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
@@ -10,12 +12,26 @@ import com.mentality.sonethyst.model.Playlist
 import com.mentality.sonethyst.model.Song
 import com.mentality.sonethyst.util.accentFor
 
+internal fun activeLikeIds(
+    persistedIds: Set<String>,
+    availableIds: Set<String>,
+): Set<String> =
+    persistedIds.filterTo(LinkedHashSet()) { it in availableIds }
+
 // mediabackend over on-device files only server-only ops are no-ops
 class LocalBackend(
+    private val context: Context,
     private val library: LocalLibrary,
     private val store: LocalStore,
     override val session: Session,
 ) : MediaBackend {
+
+    private fun songCountText(count: Int): String =
+        context.resources.getQuantityString(
+            R.plurals.backend_song_count,
+            count,
+            count,
+        )
 
     private fun Song.withRating(): Song {
         val stored = store.rating(id)
@@ -95,7 +111,10 @@ class LocalBackend(
         return Playlist(
             id = id,
             title = title ?: "",
-            subtitle = (subtitle ?: "").ifBlank { "${tracks.size} song${if (tracks.size == 1) "" else "s"}" },
+            subtitle =
+                (subtitle ?: "").ifBlank {
+                    songCountText(tracks.size)
+                },
             coverUrl = resolvedCover(tracks),
             songCount = tracks.size,
             accent = accentFor(id),
@@ -183,7 +202,7 @@ class LocalBackend(
 
     override suspend fun starredSongs(): List<Song> {
         library.ensureLoaded()
-        val liked = store.likedIds()
+        val liked = activeStarredIds()
         return library.songs
             .filter { it.id in liked }
             .withRatings()
@@ -191,7 +210,7 @@ class LocalBackend(
 
     override suspend fun starredCount(): Int = starredSongs().size
 
-    override suspend fun starredIds(): Set<String> = store.likedIds()
+    override suspend fun starredIds(): Set<String> = activeStarredIds()
 
     override suspend fun songFor(id: String): Song? {
         library.ensureLoaded()
@@ -199,8 +218,14 @@ class LocalBackend(
     }
 
     override suspend fun likedSongIds(ids: List<String>): Set<String> {
-        val liked = store.likedIds()
+        val liked = activeStarredIds()
         return ids.filterTo(HashSet()) { it in liked }
+    }
+
+    private suspend fun activeStarredIds(): Set<String> {
+        library.ensureLoaded()
+        val availableIds = library.songs.asSequence().mapTo(HashSet()) { it.id }
+        return activeLikeIds(store.likedIds(), availableIds)
     }
 
     override suspend fun search(query: String): SearchResults {
@@ -269,11 +294,24 @@ class LocalBackend(
                 )
             }
             "artist" -> {
-                val artist = library.artists.firstOrNull { it.id == id } ?: return null
-                val tracks = library.songsByArtistId(id).withRatings()
-                val albums = library.albumsByArtistId(id)
+                // Keep old queue/download records with MediaStore numeric IDs
+                // resolvable while new scans use logical local artist IDs.
+                val artistId =
+                    if (library.artists.any { it.id == id }) id
+                    else library.songs.firstOrNull { it.artistId == id }?.let(library::primaryArtistId)
+                val artist = artistId?.let { resolved -> library.artists.firstOrNull { it.id == resolved } } ?: return null
+                val tracks = library.songsByArtistId(artist.id).withRatings()
+                val albums = library.albumsByArtistId(artist.id)
                 DetailData(
-                    info = DetailInfo(artist.name, "${tracks.size} song${if (tracks.size == 1) "" else "s"}", artist.imageUrl, accentFor(id), true, tracks.size, "Artist"),
+                    info = DetailInfo(
+                        artist.name,
+                        songCountText(tracks.size),
+                        artist.imageUrl,
+                        accentFor(id),
+                        true,
+                        tracks.size,
+                        "Artist",
+                    ),
                     tracks = tracks,
                     albums = albums,
                 )
@@ -301,7 +339,18 @@ class LocalBackend(
             "liked" -> {
                 val tracks = starredSongs()
                 DetailData(
-                    info = DetailInfo("Liked Songs", "${tracks.size} song${if (tracks.size == 1) "" else "s"}", tracks.firstOrNull()?.artworkUrl ?: "", accentFor("liked"), false, tracks.size, "Liked"),
+                    info = DetailInfo(
+                        context.getString(
+                            R.string.backend_liked_songs
+                        ),
+                        songCountText(tracks.size),
+                        tracks.firstOrNull()?.artworkUrl
+                            ?: "",
+                        accentFor("liked"),
+                        false,
+                        tracks.size,
+                        "Liked",
+                    ),
                     tracks = tracks,
                 )
             }
@@ -365,7 +414,14 @@ class LocalBackend(
         val (subdirs, tracks) = library.browse(base)
         return FolderContent(
             id = base,
-            title = if (folderId.isBlank()) "Folders" else base.substringAfterLast('/'),
+            title =
+                if (folderId.isBlank()) {
+                    context.getString(
+                        R.string.backend_folders
+                    )
+                } else {
+                    base.substringAfterLast('/')
+                },
             folders = subdirs.map { FolderNode("$base/$it", it) },
             songs = tracks.withRatings(),
         )

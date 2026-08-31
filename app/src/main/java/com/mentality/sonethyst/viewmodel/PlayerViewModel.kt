@@ -1,5 +1,6 @@
 package com.mentality.sonethyst.viewmodel
 
+import com.mentality.sonethyst.R
 import android.app.Application
 import android.content.ComponentName
 import android.net.Uri
@@ -20,6 +21,9 @@ import com.mentality.sonethyst.data.isRadio
 import com.mentality.sonethyst.data.toSavedTrack
 import com.mentality.sonethyst.model.Song
 import com.mentality.sonethyst.playback.PlaybackService
+import com.mentality.sonethyst.ui.components.displayAlbum
+import com.mentality.sonethyst.ui.components.displayArtist
+import com.mentality.sonethyst.ui.components.displayTitle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -29,11 +33,21 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.pow
 
 enum class RepeatMode { OFF, ALL, ONE }
 
-private val EMPTY_SONG = Song("", "Nothing playing", "", "", "", 0)
+internal fun shouldRollbackLikeMutation(
+    currentGeneration: Long,
+    requestGeneration: Long,
+    succeeded: Boolean,
+): Boolean = !succeeded && currentGeneration == requestGeneration
+
+internal fun shouldEmitLikesChanged(kind: String, succeeded: Boolean): Boolean =
+    kind != "playlist" && succeeded
+
+private val EMPTY_SONG = Song("", "", "", "", "", 0)
 
 data class PlayerUiState(
     val current: Song = EMPTY_SONG,
@@ -53,8 +67,15 @@ data class PlayerUiState(
     val bpm: Int = 0,
     val camelot: String = "",
     val keyName: String = "",
+    val playbackDurationSec: Int = 0,
 ) {
-    val durationSec: Int get() = current.durationSec
+    val durationSec: Int
+        get() =
+            if (playbackDurationSec > 0) {
+                playbackDurationSec
+            } else {
+                current.durationSec
+            }
     val progress: Float get() = if (durationSec == 0) 0f else (positionSec / durationSec).coerceIn(0f, 1f)
     val isCurrentLiked: Boolean get() = likedIds.contains(current.id)
     val hasTrack: Boolean get() = current.id.isNotEmpty()
@@ -108,7 +129,12 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
 
         override fun onMediaItemTransition(item: MediaItem?, reason: Int) {
             // reset position so the bar doesn't show the previous track during the gap usb sink lags across a skip
-            _state.update { it.copy(positionSec = 0f) }
+            _state.update {
+                it.copy(
+                    positionSec = 0f,
+                    playbackDurationSec = 0,
+                )
+            }
             if (_state.value.sleepEndOfTrack && reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
                 controller?.pause()
                 _state.update { it.copy(sleepEndOfTrack = false) }
@@ -147,6 +173,7 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val more = runCatching { container.repository.radio(seed) }.getOrDefault(emptyList())
                 .filter { it.id !in songById.keys }
+                .mapNotNull(::offlinePlayableSong)
             if (more.isNotEmpty()) {
                 songById = songById + more.associateBy { it.id }
                 c.addMediaItems(more.map { toMediaItem(it) })
@@ -184,6 +211,14 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
 
         viewModelScope.launch {
             container.sessionReady.collect { ready -> if (ready == true) refreshLikes() }
+        }
+        viewModelScope.launch {
+            container.libraryReload.drop(1).collect { refreshLikes() }
+        }
+        viewModelScope.launch {
+            container.offline.collect { enabled ->
+                if (enabled) enforceOfflinePlayback()
+            }
         }
         // subsonic can't star playlists so locally-liked ones merge into the same set
         viewModelScope.launch {
@@ -228,7 +263,15 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         lastRecordedId = null
         lastNowPlayingId = null
         _state.update {
-            it.copy(current = EMPTY_SONG, queue = emptyList(), isPlaying = false, positionSec = 0f, currentIndex = 0, expanded = false)
+            it.copy(
+                current = EMPTY_SONG,
+                queue = emptyList(),
+                isPlaying = false,
+                positionSec = 0f,
+                playbackDurationSec = 0,
+                currentIndex = 0,
+                expanded = false,
+            )
         }
     }
 
@@ -308,6 +351,10 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
             it.copy(
                 queue = songs,
                 current = songs[idx],
+                playbackDurationSec =
+                    songs[idx]
+                        .durationSec
+                        .coerceAtLeast(0),
                 positionSec =
                     resumePositionMs /
                         1000f,
@@ -433,7 +480,18 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
                 val c = controller ?: continue
                 if (c.isPlaying) {
                     val posSec = (c.currentPosition / 1000f).coerceAtLeast(0f)
-                    _state.update { it.copy(positionSec = posSec) }
+                    val durationSec =
+                        resolvedPlayerDurationSec(
+                            c,
+                            _state.value.current.durationSec,
+                        )
+
+                    _state.update {
+                        it.copy(
+                            positionSec = posSec,
+                            playbackDurationSec = durationSec,
+                        )
+                    }
                     maybeNowPlaying()
                     recordIfPlayed(posSec)
                     val now = System.currentTimeMillis()
@@ -443,10 +501,44 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private fun resolvedPlayerDurationSec(
+        player: Player,
+        fallbackSec: Int,
+    ): Int {
+        val durationMs =
+            player.duration
+
+        if (durationMs <= 0L) {
+            return fallbackSec.coerceAtLeast(0)
+        }
+
+        return (
+            durationMs /
+                1000L
+            )
+            .coerceIn(
+                1L,
+                Int.MAX_VALUE.toLong(),
+            )
+            .toInt()
+    }
+
     private fun syncFromController() {
         val c = controller ?: return
         val mediaId = c.currentMediaItem?.mediaId
-        val cur = mediaId?.let { songById[it] } ?: _state.value.current
+        val cur =
+            mediaId
+                ?.let {
+                    songById[it]
+                }
+                ?: _state.value.current
+
+        val playbackDurationSec =
+            resolvedPlayerDurationSec(
+                c,
+                cur.durationSec,
+            )
+
         val q = (0 until c.mediaItemCount).mapNotNull { i -> songById[c.getMediaItemAt(i).mediaId] }
         if (cur.id != lastKeyInfoId) { lastKeyInfoId = cur.id; lastKeyInfo = runCatching { container.sonicEngine.keyInfo(cur.id) }.getOrNull() }
         val ki = lastKeyInfo
@@ -460,7 +552,13 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
                     Player.REPEAT_MODE_ALL -> RepeatMode.ALL
                     else -> RepeatMode.OFF
                 },
-                positionSec = (c.currentPosition / 1000f).coerceAtLeast(0f),
+                positionSec =
+                    (
+                        c.currentPosition /
+                            1000f
+                    ).coerceAtLeast(0f),
+                playbackDurationSec =
+                    playbackDurationSec,
                 queue = if (q.isNotEmpty()) q else it.queue,
                 currentIndex = c.currentMediaItemIndex.coerceAtLeast(0),
                 bpm = ki?.bpm ?: 0,
@@ -523,9 +621,9 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         .setUri(song.streamUrl)
         .setMediaMetadata(
             MediaMetadata.Builder()
-                .setTitle(song.title)
-                .setArtist(song.artist)
-                .setAlbumTitle(song.album)
+                .setTitle(getApplication<Application>().displayTitle(song.title))
+                .setArtist(getApplication<Application>().displayArtist(song.artist))
+                .setAlbumTitle(getApplication<Application>().displayAlbum(song.album))
                 .apply {
                     if (song.durationSec > 0) {
                         setDurationMs(
@@ -571,19 +669,20 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun playAll(songs: List<Song>, startIndex: Int = 0) {
         val c = controller ?: return
-        if (songs.isEmpty()) return
+        val playable = songs.mapNotNull(::offlinePlayableSong)
+        if (playable.isEmpty()) return
         container.haptic()
         playingAccountKey = container.currentAccountKey()
-        songById = songs.associateBy { it.id }
+        songById = playable.associateBy { it.id }
         val items =
-            songs.map {
+            playable.map {
                 toMediaItem(it)
             }
 
         val idx =
             startIndex.coerceIn(
                 0,
-                songs.lastIndex,
+                playable.lastIndex,
             )
 
         c.setMediaItems(
@@ -609,9 +708,13 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
 
         _state.update {
             it.copy(
-                queue = songs,
-                current = songs[idx],
+                queue = playable,
+                current = playable[idx],
                 positionSec = 0f,
+                playbackDurationSec =
+                    playable[idx]
+                        .durationSec
+                        .coerceAtLeast(0),
                 isPlaying = true,
                 shuffle = false,
             )
@@ -640,7 +743,7 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
             while (offset < total) {
                 val page = runCatching { container.repository.detailPage(kind, id, offset) }.getOrDefault(emptyList())
                 if (page.isEmpty()) break
-                val fresh = page.filter { it.id.isNotEmpty() && have.add(it.id) }
+                val fresh = page.mapNotNull(::offlinePlayableSong).filter { it.id.isNotEmpty() && have.add(it.id) }
                 if (fresh.isNotEmpty()) {
                     val toAdd = if (shuffle) fresh.shuffled() else fresh
                     songById = songById + toAdd.associateBy { it.id }
@@ -660,15 +763,36 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
             val sonic = runCatching { container.sonicEngine.buildRadio(seed) }.getOrDefault(emptyList())
             if (sonic.size >= 2) {
                 playAll(sonic, 0)
-                onResult("Sonic radio · ${sonic.size - 1} similar tracks")
+                val similarCount =
+                    sonic.size - 1
+
+                onResult(
+                    getApplication<Application>()
+                        .resources
+                        .getQuantityString(
+                            R.plurals.player_sonic_radio_result,
+                            similarCount,
+                            similarCount,
+                        )
+                )
             } else {
                 val more = runCatching { container.repository.radio(seed.id) }.getOrDefault(emptyList())
                     .filter { it.id != seed.id }
                 if (more.isNotEmpty()) {
                     playAll(listOf(seed) + more, 0)
-                    onResult("Radio started")
+                    onResult(
+                        getApplication<Application>()
+                            .getString(
+                                R.string.player_radio_started
+                            )
+                    )
                 } else {
-                    onResult("Not enough analyzed tracks — run Sonic analysis in Settings")
+                    onResult(
+                        getApplication<Application>()
+                            .getString(
+                                R.string.player_sonic_not_enough
+                            )
+                    )
                 }
             }
             loadingRadio = false
@@ -682,7 +806,15 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
             val set = runCatching { container.sonicEngine.buildAutoDj(seed) }.getOrDefault(emptyList())
             if (set.size >= 2) {
                 playAll(set, 0)
-                onResult("Auto-DJ · ${set.size} tracks, key & tempo matched")
+                onResult(
+                    getApplication<Application>()
+                        .resources
+                        .getQuantityString(
+                            R.plurals.player_auto_dj_result,
+                            set.size,
+                            set.size,
+                        )
+                )
             } else {
                 loadingRadio = false
                 startSonicRadio(seed, onResult)
@@ -694,10 +826,11 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun shufflePlay(songs: List<Song>) {
         val c = controller ?: return
-        if (songs.isEmpty()) return
+        val playable = songs.mapNotNull(::offlinePlayableSong)
+        if (playable.isEmpty()) return
         playingAccountKey = container.currentAccountKey()
-        songById = songs.associateBy { it.id }
-        val shuffled = songs.shuffled()
+        songById = playable.associateBy { it.id }
+        val shuffled = playable.shuffled()
         c.setMediaItems(shuffled.map { toMediaItem(it) }, 0, 0L)
         c.playbackParameters = currentParams()
         c.prepare()
@@ -707,27 +840,29 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         c.sendCustomCommand(
             SessionCommand(PlaybackService.CMD_SHUFFLE, android.os.Bundle().apply {
                 putInt("target", 1)
-                putStringArrayList("order", ArrayList(songs.map { it.id }))
+                putStringArrayList("order", ArrayList(playable.map { it.id }))
             }),
             android.os.Bundle.EMPTY,
         )
     }
 
     fun addToQueue(song: Song) {
-        val c = controller ?: run { play(song); return }
-        if (c.mediaItemCount == 0) { play(song); return }
-        songById = songById + (song.id to song)
-        c.addMediaItem(toMediaItem(song))
+        val playable = offlinePlayableSong(song) ?: return
+        val c = controller ?: run { play(playable); return }
+        if (c.mediaItemCount == 0) { play(playable); return }
+        songById = songById + (playable.id to playable)
+        c.addMediaItem(toMediaItem(playable))
         if (c.playbackState == Player.STATE_IDLE) c.prepare()
         syncFromController()
     }
 
     fun playNext(song: Song) {
-        val c = controller ?: run { play(song); return }
-        if (c.mediaItemCount == 0) { play(song); return }
-        songById = songById + (song.id to song)
+        val playable = offlinePlayableSong(song) ?: return
+        val c = controller ?: run { play(playable); return }
+        if (c.mediaItemCount == 0) { play(playable); return }
+        songById = songById + (playable.id to playable)
         val idx = (c.currentMediaItemIndex + 1).coerceIn(0, c.mediaItemCount)
-        c.addMediaItem(idx, toMediaItem(song))
+        c.addMediaItem(idx, toMediaItem(playable))
         syncFromController()
     }
 
@@ -777,15 +912,40 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
             .map { it.id }
             .filter { it.isNotEmpty() }
             .distinct()
-        if (ids.isEmpty()) { onResult("Nothing to save"); return }
+        if (ids.isEmpty()) {
+            onResult(
+                getApplication<Application>()
+                    .getString(
+                        R.string.player_nothing_to_save
+                    )
+            )
+            return
+        }
         viewModelScope.launch {
             val ok = runCatching { container.repository.createPlaylistFromSongs(title, ids) }.getOrDefault(false)
-            onResult(if (ok) "Saved “$title”" else "Couldn't save playlist")
+            onResult(
+                if (ok) {
+                    getApplication<Application>()
+                        .getString(
+                            R.string.player_playlist_saved,
+                            title,
+                        )
+                } else {
+                    getApplication<Application>()
+                        .getString(
+                            R.string.player_playlist_save_failed
+                        )
+                }
+            )
         }
     }
 
     fun togglePlay() {
         val c = controller ?: return
+        if (container.offline.value && !isLocalPlaybackSource(_state.value.current.streamUrl)) {
+            enforceOfflinePlayback()
+            return
+        }
         container.haptic()
         if (c.isPlaying) c.pause() else c.play()
     }
@@ -805,6 +965,27 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         val c = controller ?: return
         container.haptic()
         if (c.currentPosition > 4000) c.seekTo(0) else c.seekToPreviousMediaItem()
+    }
+
+    private fun offlinePlayableSong(song: Song): Song? {
+        if (!container.offline.value) return song
+        if (isLocalPlaybackSource(song.streamUrl)) return song
+        return container.downloadManager.getByOriginalId(song.id)?.toSong()
+    }
+
+    private fun isLocalPlaybackSource(url: String): Boolean {
+        val value = url.trim().lowercase()
+        return value.startsWith("content://") || value.startsWith("file://")
+    }
+
+    private fun enforceOfflinePlayback() {
+        val c = controller ?: return
+        if (_state.value.current.id.isEmpty() || isLocalPlaybackSource(_state.value.current.streamUrl)) return
+        c.sendCustomCommand(
+            SessionCommand(PlaybackService.CMD_OFFLINE_STOP, android.os.Bundle.EMPTY),
+            android.os.Bundle.EMPTY,
+        )
+        stopPlayback()
     }
 
     fun toggleShuffle() = sendShuffle(-1)
@@ -838,6 +1019,7 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private val likeChecked = java.util.Collections.synchronizedSet(HashSet<String>())
+    private val likeGenerations = ConcurrentHashMap<String, Long>()
 
     fun refreshLikes() {
         viewModelScope.launch {
@@ -870,9 +1052,21 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
             // also sync to backend no-op for backends that can't star playlists
             viewModelScope.launch { runCatching { container.repository.setStarred(id, nowLiked, "playlist") } }
         } else {
+            val previousLiked = serverLikedIds.contains(id)
+            val generation = likeGenerations.merge(id, 1L, Long::plus) ?: 1L
             serverLikedIds = if (nowLiked) serverLikedIds + id else serverLikedIds - id
             recomputeLikes()
-            viewModelScope.launch { runCatching { container.repository.setStarred(id, nowLiked, kind) } }
+            viewModelScope.launch {
+                val succeeded = runCatching { container.repository.setStarred(id, nowLiked, kind) }.getOrDefault(false)
+                val currentGeneration = likeGenerations[id] ?: generation
+                if (shouldEmitLikesChanged(kind, succeeded)) {
+                    container.notifyLikesChanged()
+                }
+                if (shouldRollbackLikeMutation(currentGeneration, generation, succeeded)) {
+                    serverLikedIds = if (previousLiked) serverLikedIds + id else serverLikedIds - id
+                    recomputeLikes()
+                }
+            }
         }
     }
 

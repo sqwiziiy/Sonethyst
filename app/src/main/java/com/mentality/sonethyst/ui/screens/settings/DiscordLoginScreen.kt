@@ -28,8 +28,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+
+import com.mentality.sonethyst.R
 
 // grabs token from a fresh iframe localStorage discord scrubs it from the top window but not an iframe
 @SuppressLint("SetJavaScriptEnabled")
@@ -37,9 +40,12 @@ import androidx.compose.ui.viewinterop.AndroidView
 fun DiscordLoginScreen(contentPadding: PaddingValues, onBack: () -> Unit, onToken: (String) -> Unit) {
     var manual by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize()) {
-        SettingsTopBar("Connect Discord", onBack)
+        SettingsTopBar(
+            stringResource(R.string.discord_login_title),
+            onBack,
+        )
         Text(
-            "Log in to Discord below — Sonethyst reads your token locally to set Rich Presence (never sent anywhere but Discord). If the page stays blank, paste a token instead.",
+            stringResource(R.string.discord_login_description),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
@@ -52,11 +58,19 @@ fun DiscordLoginScreen(contentPadding: PaddingValues, onBack: () -> Unit, onToke
             OutlinedTextField(
                 value = manual,
                 onValueChange = { manual = it },
-                label = { Text("Paste token") },
+                label = {
+                    Text(
+                        stringResource(R.string.discord_paste_token)
+                    )
+                },
                 singleLine = true,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = { if (manual.isNotBlank()) onToken(manual.trim()) }) { Text("Link") }
+            TextButton(onClick = { if (manual.isNotBlank()) onToken(manual.trim()) }) {
+                Text(
+                    stringResource(R.string.discord_link)
+                )
+            }
         }
         AndroidView(
             modifier = Modifier.fillMaxWidth().weight(1f),
@@ -82,7 +96,6 @@ fun DiscordLoginScreen(contentPadding: PaddingValues, onBack: () -> Unit, onToke
                     var captured = false
                     webViewClient = object : WebViewClient() {
                         override fun onPageFinished(view: WebView, url: String?) {
-                            Log.d(TAG, "finished $url")
                             if (captured) return
                             if (url != null && (url.contains("/channels") || url.contains("/app"))) {
                                 tryGrabToken(view, attemptsLeft = 8) { token ->
@@ -91,7 +104,7 @@ fun DiscordLoginScreen(contentPadding: PaddingValues, onBack: () -> Unit, onToke
                             }
                         }
                         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
-                            Log.d(TAG, "error ${error.errorCode} ${error.description} url=${request.url} main=${request.isForMainFrame}")
+                            Log.d(TAG, "web request error ${error.errorCode} main=${request.isForMainFrame}")
                         }
                     }
                     loadUrl("https://discord.com/login")

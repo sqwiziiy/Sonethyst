@@ -1,5 +1,7 @@
 package com.mentality.sonethyst.data
 
+import android.content.Context
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.model.Album
 import com.mentality.sonethyst.model.Artist
 import com.mentality.sonethyst.model.DetailInfo
@@ -13,21 +15,49 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withTimeoutOrNull
 
+internal fun mergedRouteTarget(id: String): Pair<Int, String>? {
+    val separator = id.indexOf(MERGE_NAMESPACE_SEP)
+    if (separator <= 0) return null
+    val sourceIndex = id.substring(0, separator).toIntOrNull() ?: return null
+    return sourceIndex to id.substring(separator + 1)
+}
+
+internal fun mergedSourceIndex(id: String): Int? = mergedRouteTarget(id)?.first
+
+internal fun chooseDuplicateRepresentative(
+    cluster: List<Song>,
+    activeSourceIndex: Int?,
+    qualityScore: (Song) -> Long,
+): Song =
+    activeSourceIndex
+        ?.let { index -> cluster.firstOrNull { mergedSourceIndex(it.id) == index } }
+        ?: cluster.maxByOrNull(qualityScore)
+        ?: cluster.first()
+
 // composite backend merging several live backends ids namespaced per source so calls route back
 class MergedBackend(
+    private val context: Context,
     private val sources: List<MediaBackend>,
     override val session: Session,
 ) : MediaBackend {
 
+    private fun songsYouLoveText(count: Int): String =
+        context.resources.getQuantityString(
+            R.plurals.backend_songs_you_love,
+            count,
+            count,
+        )
+
     private val primary: MediaBackend? = sources.firstOrNull { it.session.type != ServerType.LOCAL } ?: sources.firstOrNull()
+    private val activeSourceIndex: Int? =
+        sources.indexOfFirst { it.session.accountKey() == session.accountKey() }
+            .takeIf { it >= 0 }
 
     private fun wrapId(idx: Int, id: String): String = if (id.isBlank()) "" else "$idx$SEP$id"
     private fun unwrap(wrapped: String): Pair<Int, String>? {
-        val i = wrapped.indexOf(SEP)
-        if (i <= 0) return null
-        val idx = wrapped.substring(0, i).toIntOrNull() ?: return null
+        val (idx, originalId) = mergedRouteTarget(wrapped) ?: return null
         if (idx !in sources.indices) return null
-        return idx to wrapped.substring(i + 1)
+        return idx to originalId
     }
 
     override fun customTagKey(
@@ -100,7 +130,7 @@ class MergedBackend(
                     if (cur != null && s.durationSec - cur.first().durationSec <= TrackMatch.DURATION_TOLERANCE_SEC) cur.add(s)
                     else clusters.add(mutableListOf(s))
                 }
-                clusters.map { c -> c.maxByOrNull { qualityScore(it) } ?: c.first() }
+            clusters.map { c -> chooseDuplicateRepresentative(c, activeSourceIndex, ::qualityScore) }
             }
 
     private fun qualityScore(s: Song): Long {
@@ -278,7 +308,14 @@ class MergedBackend(
                 folders += c.folders.map { FolderNode(wrapId(i, it.id), it.name) }
                 songs += c.songs.map { it.wrap(i) }
             }
-            return FolderContent(id = "", title = "Folders", folders = folders, songs = songs)
+            return FolderContent(
+                id = "",
+                title = context.getString(
+                    R.string.backend_folders
+                ),
+                folders = folders,
+                songs = songs,
+            )
         }
         val (i, oid) = unwrap(folderId) ?: return null
         val c = runCatching { sources.getOrNull(i)?.browseFolder(oid) }.getOrNull() ?: return null
@@ -316,7 +353,17 @@ class MergedBackend(
         if (kind == "liked") {
             val songs = starredSongs()
             return DetailData(
-                DetailInfo("Liked Songs", "${songs.size} songs you love", songs.firstOrNull()?.artworkUrl ?: "", accentFor("liked"), false, songs.size, "Liked"),
+                DetailInfo(
+                    context.getString(
+                        R.string.backend_liked_songs
+                    ),
+                    songsYouLoveText(songs.size),
+                    songs.firstOrNull()?.artworkUrl ?: "",
+                    accentFor("liked"),
+                    false,
+                    songs.size,
+                    "Liked",
+                ),
                 songs,
             )
         }

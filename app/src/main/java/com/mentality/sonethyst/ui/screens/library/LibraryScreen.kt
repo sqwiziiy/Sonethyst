@@ -1,9 +1,11 @@
 package com.mentality.sonethyst.ui.screens.library
 
+import android.content.res.Resources
 import androidx.compose.foundation.background
 import androidx.compose.animation.core.tween
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -76,9 +78,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.data.SongVersionGroup
 import com.mentality.sonethyst.data.PlaylistFolder
 import com.mentality.sonethyst.model.LibraryFilter
@@ -87,6 +91,8 @@ import com.mentality.sonethyst.model.LibrarySort
 import com.mentality.sonethyst.model.Playlist
 import com.mentality.sonethyst.model.Song
 import com.mentality.sonethyst.ui.components.Artwork
+import com.mentality.sonethyst.ui.components.displayAlbum
+import com.mentality.sonethyst.ui.components.displayArtist
 import com.mentality.sonethyst.ui.components.SongRow
 import com.mentality.sonethyst.util.accentFor
 import com.mentality.sonethyst.viewmodel.LibraryUiState
@@ -106,6 +112,18 @@ private data class LibRow(
     val canMovePinDown: Boolean = false,
     val pinMoveWithinKind: Boolean = false,
 )
+
+private fun downloadedKindLabel(kind: String, resources: Resources): String {
+    val resourceId = when (kind) {
+        "album" -> R.string.backend_fallback_album
+        "artist" -> R.string.backend_fallback_artist
+        "playlist" -> R.string.backend_fallback_playlist
+        "smart" -> R.string.backend_smart_playlist
+        "track" -> R.string.backend_fallback_track
+        else -> return kind
+    }
+    return resources.getString(resourceId)
+}
 
 private class LibActions(
     val isLiked: (String) -> Boolean,
@@ -251,6 +269,17 @@ fun LibraryScreen(
     val filter = state.filter
     val sort = state.sort
     val layout = state.layout
+
+    val resources =
+        LocalContext.current.resources
+
+    /*
+     * Keep remembered Library rows locale-aware. App language
+     * changes must invalidate cached display strings.
+     */
+    val localeKey =
+        resources.configuration.locales[0]
+            .toLanguageTag()
 
     var selectedSongIds by remember {
         mutableStateOf<Set<String>>(emptySet())
@@ -529,8 +558,16 @@ fun LibraryScreen(
         }
     }
 
-    val userInitials = remember(username) {
-        username.take(2).uppercase().ifBlank { "ME" }
+    val avatarFallback =
+        stringResource(R.string.user_avatar_fallback)
+
+    val userInitials = remember(
+        username,
+        avatarFallback,
+    ) {
+        username.take(2).uppercase().ifBlank {
+            avatarFallback
+        }
     }
 
     Column(
@@ -548,12 +585,12 @@ fun LibraryScreen(
                 contentAlignment = Alignment.Center,
             ) { Text(userInitials, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onPrimary) }
             Spacer(Modifier.width(12.dp))
-            Text("Your Library", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            Icon(Icons.Filled.Search, "Search", modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onOpenSearch).padding(8.dp))
+            Text(stringResource(R.string.library_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Icon(Icons.Filled.Search, stringResource(R.string.action_search), modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onOpenSearch).padding(8.dp))
             Box {
                 Icon(
                     imageVector = Icons.Filled.Add,
-                    contentDescription = "Create",
+                    contentDescription = stringResource(R.string.library_create),
                     modifier =
                         Modifier
                             .size(40.dp)
@@ -572,7 +609,7 @@ fun LibraryScreen(
                 ) {
                     DropdownMenuItem(
                         text = {
-                            Text("New playlist")
+                            Text(stringResource(R.string.library_new_playlist))
                         },
                         onClick = {
                             showCreateMenu = false
@@ -588,7 +625,7 @@ fun LibraryScreen(
 
                     DropdownMenuItem(
                         text = {
-                            Text("New folder")
+                            Text(stringResource(R.string.library_new_folder))
                         },
                         onClick = {
                             showCreateMenu = false
@@ -613,7 +650,7 @@ fun LibraryScreen(
 
                     DropdownMenuItem(
                         text = {
-                            Text("Smart playlist")
+                            Text(stringResource(R.string.library_smart_playlist))
                         },
                         onClick = {
                             showCreateMenu = false
@@ -629,7 +666,7 @@ fun LibraryScreen(
 
                     DropdownMenuItem(
                         text = {
-                            Text("Import playlist")
+                            Text(stringResource(R.string.library_import_playlist))
                         },
                         onClick = {
                             showCreateMenu = false
@@ -648,9 +685,9 @@ fun LibraryScreen(
 
         createFolderParentId?.let { parentId ->
             PlaylistFolderNameDialog(
-                title = "New folder",
+                title = stringResource(R.string.library_new_folder),
                 initialName = "",
-                confirmLabel = "Create",
+                confirmLabel = stringResource(R.string.action_create),
                 existingNames =
                     (
                         state.playlistFolders
@@ -685,9 +722,9 @@ fun LibraryScreen(
 
         renameFolder?.let { folder ->
             PlaylistFolderNameDialog(
-                title = "Rename folder",
+                title = stringResource(R.string.library_rename_folder),
                 initialName = folder.name,
-                confirmLabel = "Rename",
+                confirmLabel = stringResource(R.string.action_rename),
                 existingNames =
                     (
                         state.playlistFolders
@@ -818,7 +855,7 @@ fun LibraryScreen(
                     Box(
                         Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh).clickable { onFilter(LibraryFilter.ALL) },
                         contentAlignment = Alignment.Center,
-                    ) { Icon(Icons.Filled.Close, "Clear", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                    ) { Icon(Icons.Filled.Close, stringResource(R.string.action_clear), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
                 }
             }
             // local mode has no downloads
@@ -830,7 +867,7 @@ fun LibraryScreen(
                 val f = visibleFilters[i]
                 if (f == LibraryFilter.ALL && filter != LibraryFilter.ALL) return@items
                 FilterChip(
-                    f.label,
+                    libraryFilterLabel(f),
                     selected =
                         f == pagerDisplayFilter,
                 ) {
@@ -884,7 +921,7 @@ fun LibraryScreen(
                             )
 
                             Text(
-                                displayedSort.label,
+                                librarySortLabel(displayedSort),
                                 style =
                                     MaterialTheme.typography
                                         .labelLarge,
@@ -905,7 +942,7 @@ fun LibraryScreen(
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            option.label
+                                            librarySortLabel(option)
                                         )
                                     },
                                     onClick = {
@@ -950,7 +987,7 @@ fun LibraryScreen(
                                     .Filled.List
                             },
                         contentDescription =
-                            "Toggle layout",
+                            stringResource(R.string.library_toggle_layout),
                         modifier =
                             Modifier
                                 .size(40.dp)
@@ -1101,7 +1138,7 @@ fun LibraryScreen(
                     Alignment.Center,
             ) {
                 Text(
-                    "No genres found",
+                    stringResource(R.string.library_no_genres_found),
                     color =
                         MaterialTheme.colorScheme
                             .onSurfaceVariant,
@@ -1196,7 +1233,7 @@ fun LibraryScreen(
                             imageVector =
                                 Icons.Filled.ArrowBack,
                             contentDescription =
-                                "Parent folder",
+                                stringResource(R.string.library_parent_folder),
                             modifier =
                                 Modifier
                                     .size(40.dp)
@@ -1220,7 +1257,7 @@ fun LibraryScreen(
                         Text(
                             text =
                                 currentFolder?.name
-                                    ?: "Playlists",
+                                    ?: stringResource(R.string.library_playlists),
                             style =
                                 MaterialTheme.typography
                                     .titleMedium,
@@ -1234,8 +1271,17 @@ fun LibraryScreen(
                         if (currentFolder != null) {
                             Text(
                                 text =
-                                    "${childFolders.size} folders • " +
-                                        "${folderPlaylists.size} playlists",
+                                    stringResource(
+                                        R.string.library_folder_summary,
+                                        libraryFolderCount(
+                                            resources,
+                                            childFolders.size,
+                                        ),
+                                        libraryPlaylistCount(
+                                            resources,
+                                            folderPlaylists.size,
+                                        ),
+                                    ),
                                 style =
                                     MaterialTheme.typography
                                         .labelSmall,
@@ -1262,9 +1308,9 @@ fun LibraryScreen(
                         Text(
                             text =
                                 if (currentFolder == null) {
-                                    "No playlists or folders yet"
+                                    stringResource(R.string.library_no_playlists_or_folders)
                                 } else {
-                                    "This folder is empty"
+                                    stringResource(R.string.library_folder_empty)
                                 },
                             color =
                                 MaterialTheme
@@ -1283,7 +1329,7 @@ fun LibraryScreen(
                     LazyColumn(
                         modifier =
                             Modifier
-                                .fillMaxWidth()
+                                .fillMaxSize()
                                 .padding(
                                     horizontal = 8.dp
                                 ),
@@ -1380,7 +1426,10 @@ fun LibraryScreen(
                                             title =
                                                 playlist.title,
                                             subtitle =
-                                                "Playlist • ${playlist.songCount} songs",
+                                                libraryPlaylistSubtitle(
+                                                resources,
+                                                playlist.songCount,
+                                            ),
                                             coverUrl =
                                                 playlist.coverUrl,
                                         )
@@ -1412,7 +1461,7 @@ fun LibraryScreen(
                             ),
                         modifier =
                             Modifier
-                                .fillMaxWidth()
+                                .fillMaxSize()
                                 .padding(
                                     horizontal = 12.dp
                                 ),
@@ -1520,7 +1569,10 @@ fun LibraryScreen(
                                             title =
                                                 playlist.title,
                                             subtitle =
-                                                "Playlist • ${playlist.songCount} songs",
+                                                libraryPlaylistSubtitle(
+                                                resources,
+                                                playlist.songCount,
+                                            ),
                                             coverUrl =
                                                 playlist.coverUrl,
                                         )
@@ -1576,7 +1628,7 @@ fun LibraryScreen(
                             Alignment.Center,
                     ) {
                         Text(
-                            "No alternate song versions found",
+                            stringResource(R.string.library_no_alternate_versions),
                             color =
                                 MaterialTheme.colorScheme
                                     .onSurfaceVariant,
@@ -1593,7 +1645,7 @@ fun LibraryScreen(
                     LazyColumn(
                         modifier =
                             Modifier
-                                .fillMaxWidth()
+                                .fillMaxSize()
                                 .padding(horizontal = 10.dp),
                         contentPadding =
                             PaddingValues(
@@ -1607,9 +1659,17 @@ fun LibraryScreen(
                         ) {
                             Text(
                                 text =
-                                    "${state.versionGroups.size} song " +
-                                        "group${if (state.versionGroups.size == 1) "" else "s"}" +
-                                        " • $versionCount versions",
+                                    stringResource(
+                                        R.string.library_versions_summary,
+                                        librarySongGroupCount(
+                                            resources,
+                                            state.versionGroups.size,
+                                        ),
+                                        libraryVersionCount(
+                                            resources,
+                                            versionCount,
+                                        ),
+                                    ),
                                 style =
                                     MaterialTheme.typography
                                         .bodySmall,
@@ -1694,7 +1754,7 @@ fun LibraryScreen(
 
             LazyColumn(
                 Modifier
-                    .fillMaxWidth()
+                    .fillMaxSize()
                     .padding(horizontal = 8.dp),
                 state = songsListState,
                 contentPadding = PaddingValues(bottom = bottom),
@@ -1715,7 +1775,7 @@ fun LibraryScreen(
                                 Alignment.CenterVertically,
                         ) {
                             Text(
-                                "${selectedSongIds.size} selected",
+                                stringResource(R.string.library_selected_count, selectedSongIds.size),
                                 style =
                                     MaterialTheme
                                         .typography
@@ -1727,7 +1787,7 @@ fun LibraryScreen(
                             )
 
                             Text(
-                                "Clear",
+                                stringResource(R.string.common_clear_action),
                                 color =
                                     MaterialTheme
                                         .colorScheme
@@ -1773,7 +1833,7 @@ fun LibraryScreen(
                                 )
 
                                 Text(
-                                    "Edit tags",
+                                    stringResource(R.string.action_edit_tags),
                                     color =
                                         MaterialTheme
                                             .colorScheme
@@ -1824,6 +1884,7 @@ fun LibraryScreen(
 
                     SongRow(
                         s,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         isPlaying = s.id == currentSongId && isPlaying,
                         isLiked = likedIds.contains(s.id),
                         selected = selected,
@@ -1893,7 +1954,7 @@ fun LibraryScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        "No hidden tracks or albums",
+                        stringResource(R.string.library_no_hidden_items),
                         color =
                             MaterialTheme.colorScheme
                                 .onSurfaceVariant,
@@ -1904,7 +1965,7 @@ fun LibraryScreen(
 
             LazyColumn(
                 Modifier
-                    .fillMaxWidth()
+                    .fillMaxSize()
                     .padding(horizontal = 8.dp),
                 contentPadding =
                     PaddingValues(bottom = bottom),
@@ -1927,11 +1988,16 @@ fun LibraryScreen(
         }
 
         if (filter == LibraryFilter.DOWNLOADED) {
-            val dlRows = remember(state.downloadedRows) {
+            val dlRows = remember(state.downloadedRows, localeKey) {
                 state.downloadedRows.map {
+                    val kindLabel = downloadedKindLabel(it.kind, resources)
                     LibRow(
                         it.title,
-                        "${it.kind.replaceFirstChar { c -> c.uppercase() }} • Downloaded",
+                        resources.getString(
+                            R.string.backend_downloaded_item_subtitle,
+                            kindLabel,
+                            resources.getString(R.string.backend_downloaded),
+                        ),
                         it.coverUrl,
                         it.accent,
                         it.id,
@@ -1941,12 +2007,12 @@ fun LibraryScreen(
             }
             if (dlRows.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No downloads yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.library_no_downloads), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 return@HorizontalPager
             }
             if (layout == LibraryLayout.LIST) {
-                LazyColumn(Modifier.fillMaxWidth().padding(horizontal = 8.dp), contentPadding = PaddingValues(bottom = bottom)) {
+                LazyColumn(Modifier.fillMaxSize().padding(horizontal = 8.dp), contentPadding = PaddingValues(bottom = bottom)) {
                     items(
                         count = dlRows.size,
                         key = { i -> "${dlRows[i].kind}:${dlRows[i].id}" },
@@ -1958,7 +2024,7 @@ fun LibraryScreen(
                     }
                 }
             } else {
-                LazyVerticalGrid(columns = GridCells.Fixed(libColumns), modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp), contentPadding = PaddingValues(bottom = bottom), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                LazyVerticalGrid(columns = GridCells.Fixed(libColumns), modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp), contentPadding = PaddingValues(bottom = bottom), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(
                         count = dlRows.size,
                         key = { i -> "${dlRows[i].kind}:${dlRows[i].id}" },
@@ -1985,8 +2051,9 @@ fun LibraryScreen(
                 filter,
                 sort,
                 pins,
+                            localeKey,
             ) {
-                buildRows(state, filter, sort, pins)
+                buildRows(state, filter, sort, pins, resources)
             }
 
             LibraryFilter.PLAYLISTS -> remember(
@@ -1997,8 +2064,9 @@ fun LibraryScreen(
                 filter,
                 sort,
                 pins,
+                            localeKey,
             ) {
-                buildRows(state, filter, sort, pins)
+                buildRows(state, filter, sort, pins, resources)
             }
 
             LibraryFilter.ALBUMS -> remember(
@@ -2006,8 +2074,9 @@ fun LibraryScreen(
                 filter,
                 sort,
                 pins,
+                            localeKey,
             ) {
-                buildRows(state, filter, sort, pins)
+                buildRows(state, filter, sort, pins, resources)
             }
 
             LibraryFilter.ARTISTS -> remember(
@@ -2015,24 +2084,27 @@ fun LibraryScreen(
                 filter,
                 sort,
                 pins,
+                            localeKey,
             ) {
-                buildRows(state, filter, sort, pins)
+                buildRows(state, filter, sort, pins, resources)
             }
 
             LibraryFilter.GENRES -> remember(
                 state.genres,
                 filter,
                 sort,
+                            localeKey,
             ) {
-                buildRows(state, filter, sort, pins)
+                buildRows(state, filter, sort, pins, resources)
             }
 
             LibraryFilter.TAGS -> remember(
                 state.customTags,
                 filter,
                 sort,
+                            localeKey,
             ) {
-                buildRows(state, filter, sort, pins)
+                buildRows(state, filter, sort, pins, resources)
             }
 
             else -> emptyList()
@@ -2047,7 +2119,7 @@ fun LibraryScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    "No custom tags yet",
+                    stringResource(R.string.library_no_custom_tags),
                     color =
                         MaterialTheme.colorScheme
                             .onSurfaceVariant,
@@ -2072,7 +2144,7 @@ fun LibraryScreen(
             }
         }
         if (layout == LibraryLayout.LIST) {
-            LazyColumn(Modifier.fillMaxWidth().padding(horizontal = 8.dp), contentPadding = PaddingValues(bottom = bottom)) {
+            LazyColumn(Modifier.fillMaxSize().padding(horizontal = 8.dp), contentPadding = PaddingValues(bottom = bottom)) {
                 items(
                     count = rows.size,
                     key = { i ->
@@ -2088,7 +2160,7 @@ fun LibraryScreen(
         } else {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(libColumns),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
                 contentPadding = PaddingValues(bottom = bottom),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -2113,6 +2185,124 @@ fun LibraryScreen(
 }
 }
 
+@Composable
+private fun libraryFilterLabel(
+    filter: LibraryFilter,
+): String =
+    stringResource(
+        when (filter) {
+            LibraryFilter.ALL ->
+                R.string.library_filter_all
+            LibraryFilter.PLAYLISTS ->
+                R.string.library_filter_playlists
+            LibraryFilter.ALBUMS ->
+                R.string.library_filter_albums
+            LibraryFilter.ARTISTS ->
+                R.string.library_filter_artists
+            LibraryFilter.GENRES ->
+                R.string.library_filter_genres
+            LibraryFilter.TAGS ->
+                R.string.library_filter_tags
+            LibraryFilter.VERSIONS ->
+                R.string.library_filter_versions
+            LibraryFilter.HIDDEN ->
+                R.string.library_filter_hidden
+            LibraryFilter.SONGS ->
+                R.string.library_filter_songs
+            LibraryFilter.DOWNLOADED ->
+                R.string.library_filter_downloaded
+        }
+    )
+
+@Composable
+private fun librarySortLabel(
+    sort: LibrarySort,
+): String =
+    stringResource(
+        when (sort) {
+            LibrarySort.RECENT ->
+                R.string.library_sort_recent
+            LibrarySort.ALPHABETICAL ->
+                R.string.library_sort_alphabetical
+            LibrarySort.CREATOR ->
+                R.string.library_sort_creator
+            LibrarySort.MOST_PLAYED ->
+                R.string.library_sort_most_played
+        }
+    )
+
+private fun librarySongCount(
+    resources: Resources,
+    count: Int,
+): String =
+    resources.getQuantityString(
+        R.plurals.library_song_count,
+        count,
+        count,
+    )
+
+private fun libraryPlaylistCount(
+    resources: Resources,
+    count: Int,
+): String =
+    resources.getQuantityString(
+        R.plurals.library_playlist_count,
+        count,
+        count,
+    )
+
+private fun libraryFolderCount(
+    resources: Resources,
+    count: Int,
+): String =
+    resources.getQuantityString(
+        R.plurals.library_folder_count,
+        count,
+        count,
+    )
+
+private fun libraryRuleCount(
+    resources: Resources,
+    count: Int,
+): String =
+    resources.getQuantityString(
+        R.plurals.library_rule_count,
+        count,
+        count,
+    )
+
+private fun libraryVersionCount(
+    resources: Resources,
+    count: Int,
+): String =
+    resources.getQuantityString(
+        R.plurals.library_version_count,
+        count,
+        count,
+    )
+
+private fun librarySongGroupCount(
+    resources: Resources,
+    count: Int,
+): String =
+    resources.getQuantityString(
+        R.plurals.library_song_group_count,
+        count,
+        count,
+    )
+
+private fun libraryPlaylistSubtitle(
+    resources: Resources,
+    songCount: Int,
+): String =
+    resources.getString(
+        R.string.library_playlist_with_count,
+        librarySongCount(
+            resources,
+            songCount,
+        ),
+    )
+
 private fun sortedSongs(songs: List<Song>, sort: LibrarySort): List<Song> = when (sort) {
     LibrarySort.ALPHABETICAL -> songs.sortedBy { it.title }
     LibrarySort.CREATOR -> songs.sortedBy { it.artist }
@@ -2124,6 +2314,7 @@ private fun buildRows(
     filter: LibraryFilter,
     sort: LibrarySort,
     pins: List<com.mentality.sonethyst.data.Pin>,
+    resources: Resources,
 ): List<LibRow> {
     val base: List<LibRow> = when (filter) {
         LibraryFilter.ALL -> buildList<LibRow>(
@@ -2136,8 +2327,13 @@ private fun buildRows(
                 val n = it.rules.orEmpty().size
                 add(
                     LibRow(
-                        it.name ?: "Smart playlist",
-                        "Smart playlist • $n rule${if (n == 1) "" else "s"}",
+                        it.name ?: resources.getString(
+                            R.string.library_smart_playlist_default
+                        ),
+                        resources.getString(
+                            R.string.library_smart_playlist_with_rules,
+                            libraryRuleCount(resources, n),
+                        ),
                         state.smartPlaylistCovers[
                             it.id.orEmpty()
                         ].orEmpty(),
@@ -2152,7 +2348,10 @@ private fun buildRows(
                 add(
                     LibRow(
                         it.title,
-                        "Playlist • ${it.songCount} songs",
+                        libraryPlaylistSubtitle(
+                            resources,
+                            it.songCount,
+                        ),
                         it.coverUrl,
                         it.accent,
                         it.id,
@@ -2165,7 +2364,10 @@ private fun buildRows(
                 add(
                     LibRow(
                         it.title,
-                        "Album • ${it.artist}",
+                        resources.getString(
+                            R.string.library_album_with_artist,
+                            it.artist,
+                        ),
                         it.artworkUrl,
                         accentFor(it.id),
                         it.id,
@@ -2179,7 +2381,9 @@ private fun buildRows(
                 add(
                     LibRow(
                         it.name,
-                        "Artist",
+                        resources.getString(
+                            R.string.library_artist
+                        ),
                         it.imageUrl,
                         accentFor(it.id),
                         it.id,
@@ -2197,8 +2401,13 @@ private fun buildRows(
                 val n = it.rules.orEmpty().size
                 add(
                     LibRow(
-                        it.name ?: "Smart playlist",
-                        "Smart playlist • $n rule${if (n == 1) "" else "s"}",
+                        it.name ?: resources.getString(
+                            R.string.library_smart_playlist_default
+                        ),
+                        resources.getString(
+                            R.string.library_smart_playlist_with_rules,
+                            libraryRuleCount(resources, n),
+                        ),
                         state.smartPlaylistCovers[
                             it.id.orEmpty()
                         ].orEmpty(),
@@ -2213,7 +2422,10 @@ private fun buildRows(
                 add(
                     LibRow(
                         it.title,
-                        "Playlist • ${it.songCount} songs",
+                        libraryPlaylistSubtitle(
+                            resources,
+                            it.songCount,
+                        ),
                         it.coverUrl,
                         it.accent,
                         it.id,
@@ -2226,7 +2438,10 @@ private fun buildRows(
         LibraryFilter.ALBUMS -> state.albums.map {
             LibRow(
                 it.title,
-                "Album • ${it.artist}",
+                resources.getString(
+                            R.string.library_album_with_artist,
+                            it.artist,
+                        ),
                 it.artworkUrl,
                 accentFor(it.id),
                 it.id,
@@ -2238,7 +2453,9 @@ private fun buildRows(
         LibraryFilter.ARTISTS -> state.artists.map {
             LibRow(
                 it.name,
-                "Artist",
+                resources.getString(
+                            R.string.library_artist
+                        ),
                 it.imageUrl,
                 accentFor(it.id),
                 it.id,
@@ -2251,9 +2468,17 @@ private fun buildRows(
             LibRow(
                 it.name,
                 if (it.songCount > 0) {
-                    "Genre • ${it.songCount} song${if (it.songCount == 1) "" else "s"}"
+                    resources.getString(
+                        R.string.library_genre_with_count,
+                        librarySongCount(
+                            resources,
+                            it.songCount,
+                        ),
+                    )
                 } else {
-                    "Genre"
+                    resources.getString(
+                        R.string.library_genre
+                    )
                 },
                 "",
                 accentFor("genre:${it.name}"),
@@ -2266,7 +2491,13 @@ private fun buildRows(
         LibraryFilter.TAGS -> state.customTags.map {
             LibRow(
                 it.name,
-                "Tag • ${it.songCount} song${if (it.songCount == 1) "" else "s"}",
+                resources.getString(
+                    R.string.library_tag_with_count,
+                    librarySongCount(
+                        resources,
+                        it.songCount,
+                    ),
+                ),
                 "",
                 accentFor("tag:${it.name}"),
                 it.name,
@@ -2310,8 +2541,13 @@ private fun buildRows(
                                 title =
                                     playlist.title,
                                 subtitle =
-                                    "Pinned • Playlist • " +
-                                        "${playlist.songCount} songs",
+                                    resources.getString(
+                                        R.string.library_pinned_playlist_with_count,
+                                        librarySongCount(
+                                            resources,
+                                            playlist.songCount,
+                                        ),
+                                    ),
                                 art =
                                     playlist.coverUrl,
                                 accent =
@@ -2337,17 +2573,17 @@ private fun buildRows(
                             LibRow(
                                 title =
                                     playlist.name
-                                        ?: "Smart playlist",
+                                        ?: resources.getString(
+                                      R.string.library_smart_playlist_fallback
+                                  ),
                                 subtitle =
-                                    "Pinned • Smart playlist • " +
-                                        "$ruleCount rule" +
-                                        if (
-                                            ruleCount == 1
-                                        ) {
-                                            ""
-                                        } else {
-                                            "s"
-                                        },
+                                    resources.getString(
+                                        R.string.library_pinned_smart_playlist_with_rules,
+                                        libraryRuleCount(
+                                            resources,
+                                            ruleCount,
+                                        ),
+                                    ),
                                 art =
                                     state.smartPlaylistCovers[
                                         playlist.id
@@ -2375,8 +2611,10 @@ private fun buildRows(
                             LibRow(
                                 title = album.title,
                                 subtitle =
-                                    "Pinned • Album • " +
-                                        album.artist,
+                                    resources.getString(
+                                        R.string.library_pinned_album_with_artist,
+                                        resources.displayArtist(album.artist),
+                                    ),
                                 art =
                                     album.artworkUrl,
                                 accent =
@@ -2398,7 +2636,9 @@ private fun buildRows(
                             LibRow(
                                 title = artist.name,
                                 subtitle =
-                                    "Pinned • Artist",
+                                    resources.getString(
+                                    R.string.library_pinned_artist
+                                ),
                                 art =
                                     artist.imageUrl,
                                 accent =
@@ -2501,8 +2741,13 @@ private fun buildRows(
 
         add(
             LibRow(
-                "Liked Songs",
-                "Playlist • ${state.likedSongCount} songs",
+                resources.getString(
+                    R.string.library_liked_songs
+                ),
+                libraryPlaylistSubtitle(
+                    resources,
+                    state.likedSongCount,
+                ),
                 state.likedCover,
                 accentFor("liked"),
                 "liked",
@@ -2513,8 +2758,12 @@ private fun buildRows(
         if (filter == LibraryFilter.ALL && state.supportsFolders) {
             add(
                 LibRow(
-                    "Folders",
-                    "Browse by folder",
+                    resources.getString(
+                        R.string.library_folders
+                    ),
+                    resources.getString(
+                        R.string.library_browse_by_folder
+                    ),
                     "",
                     accentFor("folders"),
                     "",
@@ -2527,8 +2776,12 @@ private fun buildRows(
         if (filter == LibraryFilter.ALL) {
             add(
                 LibRow(
-                    "Radio",
-                    "Live internet stations",
+                    resources.getString(
+                        R.string.library_radio
+                    ),
+                    resources.getString(
+                        R.string.library_live_internet_stations
+                    ),
                     "",
                     accentFor("radio"),
                     "",
@@ -2538,8 +2791,12 @@ private fun buildRows(
             )
             add(
                 LibRow(
-                    "Podcasts",
-                    "Shows & episodes",
+                    resources.getString(
+                        R.string.library_podcasts
+                    ),
+                    resources.getString(
+                        R.string.library_shows_episodes
+                    ),
                     "",
                     accentFor("podcasts"),
                     "",
@@ -2620,6 +2877,9 @@ private fun SongVersionGroupCard(
     isPlaying: Boolean,
     onPlay: (Song) -> Unit,
 ) {
+    val resources =
+        LocalContext.current.resources
+
     Column(
         modifier =
             Modifier
@@ -2647,9 +2907,14 @@ private fun SongVersionGroupCard(
 
         Text(
             text =
-                "${group.artist} • " +
-                    "${group.versions.size} " +
-                    "version${if (group.versions.size == 1) "" else "s"}",
+                stringResource(
+                    R.string.library_version_artist_summary,
+                    group.artist,
+                    libraryVersionCount(
+                        resources,
+                        group.versions.size,
+                    ),
+                ),
             style =
                 MaterialTheme.typography
                     .bodySmall,
@@ -2696,7 +2961,23 @@ private fun SongVersionGroupCard(
                     Modifier.weight(1f)
                 ) {
                     Text(
-                        text = version.label,
+                        text =
+                            when (
+                                version.kind
+                            ) {
+                                "original" ->
+                                    stringResource(
+                                        R.string.library_version_original
+                                    )
+
+                                "alternate_length" ->
+                                    stringResource(
+                                        R.string.library_version_alternate_length
+                                    )
+
+                                else ->
+                                    version.label
+                            },
                         style =
                             MaterialTheme.typography
                                 .bodySmall,
@@ -2718,7 +2999,13 @@ private fun SongVersionGroupCard(
                     )
 
                     Text(
-                        text = songVersionSpec(song),
+                        text =
+                            songVersionSpec(
+                                song.copy(album = displayAlbum(song.album)),
+                                stringResource(
+                                    R.string.library_version_info_unavailable
+                                ),
+                            ),
                         style =
                             MaterialTheme.typography
                                 .labelSmall,
@@ -2739,7 +3026,7 @@ private fun SongVersionGroupCard(
                         imageVector =
                             Icons.Filled.PlayArrow,
                         contentDescription =
-                            "Playing",
+                            stringResource(R.string.library_playing),
                         tint =
                             MaterialTheme.colorScheme
                                 .primary,
@@ -2754,6 +3041,7 @@ private fun SongVersionGroupCard(
 
 private fun songVersionSpec(
     song: Song,
+    unavailable: String,
 ): String {
     val parts =
         mutableListOf<String>()
@@ -2786,7 +3074,7 @@ private fun songVersionSpec(
     return parts
         .joinToString(" • ")
         .ifBlank {
-            "Version information unavailable"
+            unavailable
         }
 }
 
@@ -2865,7 +3153,7 @@ private fun PlaylistFolderGridItem(
                 )
 
                 Text(
-                    "Folder",
+                    stringResource(R.string.library_folder),
                     style =
                         MaterialTheme.typography
                             .bodySmall,
@@ -2878,7 +3166,7 @@ private fun PlaylistFolderGridItem(
             Box {
                 Icon(
                     Icons.Filled.MoreVert,
-                    "More",
+                    stringResource(R.string.action_more),
                     modifier =
                         Modifier
                             .size(32.dp)
@@ -2897,7 +3185,7 @@ private fun PlaylistFolderGridItem(
                 ) {
                     DropdownMenuItem(
                         text = {
-                            Text("Rename")
+                            Text(stringResource(R.string.action_rename))
                         },
                         onClick = {
                             menuOpen = false
@@ -2907,7 +3195,7 @@ private fun PlaylistFolderGridItem(
 
                     DropdownMenuItem(
                         text = {
-                            Text("Move folder")
+                            Text(stringResource(R.string.library_move_folder))
                         },
                         onClick = {
                             menuOpen = false
@@ -2917,7 +3205,7 @@ private fun PlaylistFolderGridItem(
 
                     DropdownMenuItem(
                         text = {
-                            Text("Delete folder")
+                            Text(stringResource(R.string.library_delete_folder))
                         },
                         onClick = {
                             menuOpen = false
@@ -2942,6 +3230,9 @@ private fun PlaylistGridItem(
     onMove: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val resources =
+        LocalContext.current.resources
+
     var menuOpen by remember {
         mutableStateOf(false)
     }
@@ -2992,9 +3283,18 @@ private fun PlaylistGridItem(
 
                 Text(
                     if (isPinned) {
-                        "Pinned • ${playlist.songCount} songs"
+                        stringResource(
+                            R.string.library_pinned_with_count,
+                            librarySongCount(
+                                resources,
+                                playlist.songCount,
+                            ),
+                        )
                     } else {
-                        "${playlist.songCount} songs"
+                        librarySongCount(
+                            resources,
+                            playlist.songCount,
+                        )
                     },
                     style =
                         MaterialTheme.typography
@@ -3008,7 +3308,7 @@ private fun PlaylistGridItem(
             Box {
                 Icon(
                     Icons.Filled.MoreVert,
-                    "More",
+                    stringResource(R.string.action_more),
                     modifier =
                         Modifier
                             .size(32.dp)
@@ -3029,9 +3329,9 @@ private fun PlaylistGridItem(
                         text = {
                             Text(
                                 if (isPinned) {
-                                    "Unpin from Library"
+                                    stringResource(R.string.library_unpin)
                                 } else {
-                                    "Pin to Library"
+                                    stringResource(R.string.library_pin)
                                 }
                             )
                         },
@@ -3091,7 +3391,7 @@ private fun PlaylistGridItem(
 
                     DropdownMenuItem(
                         text = {
-                            Text("Move to folder")
+                            Text(stringResource(R.string.library_move_to_folder))
                         },
                         onClick = {
                             menuOpen = false
@@ -3101,7 +3401,7 @@ private fun PlaylistGridItem(
 
                     DropdownMenuItem(
                         text = {
-                            Text("Delete playlist")
+                            Text(stringResource(R.string.library_delete_playlist))
                         },
                         onClick = {
                             menuOpen = false
@@ -3196,7 +3496,7 @@ private fun PlaylistFolderRow(
             )
 
             Text(
-                text = "Playlist folder",
+                text = stringResource(R.string.library_playlist_folder),
                 style =
                     MaterialTheme.typography
                         .bodySmall,
@@ -3210,7 +3510,7 @@ private fun PlaylistFolderRow(
             Icon(
                 imageVector =
                     Icons.Filled.MoreVert,
-                contentDescription = "More",
+                contentDescription = stringResource(R.string.action_more),
                 tint =
                     MaterialTheme.colorScheme
                         .onSurfaceVariant,
@@ -3232,7 +3532,7 @@ private fun PlaylistFolderRow(
             ) {
                 DropdownMenuItem(
                     text = {
-                        Text("Rename")
+                        Text(stringResource(R.string.action_rename))
                     },
                     onClick = {
                         menuOpen = false
@@ -3248,7 +3548,7 @@ private fun PlaylistFolderRow(
 
                 DropdownMenuItem(
                     text = {
-                        Text("Move folder")
+                        Text(stringResource(R.string.library_move_folder))
                     },
                     onClick = {
                         menuOpen = false
@@ -3264,7 +3564,7 @@ private fun PlaylistFolderRow(
 
                 DropdownMenuItem(
                     text = {
-                        Text("Delete folder")
+                        Text(stringResource(R.string.library_delete_folder))
                     },
                     onClick = {
                         menuOpen = false
@@ -3294,6 +3594,9 @@ private fun PlaylistFolderPlaylistRow(
     onMove: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val resources =
+        LocalContext.current.resources
+
     var menuOpen by
         remember {
             mutableStateOf(false)
@@ -3350,21 +3653,20 @@ private fun PlaylistFolderPlaylistRow(
 
             Text(
                 text =
-                    (
-                        if (isPinned) {
-                            "Pinned • "
-                        } else {
-                            ""
-                        }
-                    ) +
-                        "${playlist.songCount} song" +
-                        if (
-                            playlist.songCount == 1
-                        ) {
-                            ""
-                        } else {
-                            "s"
-                        },
+                    if (isPinned) {
+                        stringResource(
+                            R.string.library_pinned_with_count,
+                            librarySongCount(
+                                resources,
+                                playlist.songCount,
+                            ),
+                        )
+                    } else {
+                        librarySongCount(
+                            resources,
+                            playlist.songCount,
+                        )
+                    },
                 style =
                     MaterialTheme.typography
                         .bodySmall,
@@ -3378,7 +3680,7 @@ private fun PlaylistFolderPlaylistRow(
             Icon(
                 imageVector =
                     Icons.Filled.MoreVert,
-                contentDescription = "More",
+                contentDescription = stringResource(R.string.action_more),
                 tint =
                     MaterialTheme.colorScheme
                         .onSurfaceVariant,
@@ -3464,7 +3766,7 @@ private fun PlaylistFolderPlaylistRow(
 
                 DropdownMenuItem(
                     text = {
-                        Text("Move to folder")
+                        Text(stringResource(R.string.library_move_to_folder))
                     },
                     onClick = {
                         menuOpen = false
@@ -3480,7 +3782,7 @@ private fun PlaylistFolderPlaylistRow(
 
                 DropdownMenuItem(
                     text = {
-                        Text("Delete playlist")
+                        Text(stringResource(R.string.library_delete_playlist))
                     },
                     onClick = {
                         menuOpen = false
@@ -3546,7 +3848,7 @@ private fun PlaylistFolderNameDialog(
                     name = it
                 },
                 label = {
-                    Text("Folder name")
+                    Text(stringResource(R.string.library_folder_name))
                 },
                 singleLine = true,
                 isError = duplicate,
@@ -3554,7 +3856,7 @@ private fun PlaylistFolderNameDialog(
                     if (duplicate) {
                         {
                             Text(
-                                "A playlist or folder with this name already exists here"
+                                stringResource(R.string.library_duplicate_name)
                             )
                         }
                     } else {
@@ -3584,7 +3886,7 @@ private fun PlaylistFolderNameDialog(
             TextButton(
                 onClick = onDismiss,
             ) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         },
     )
@@ -3617,7 +3919,10 @@ private fun MovePlaylistFolderTreeDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                "Move ${folder.name}"
+                stringResource(
+                    R.string.library_move_named,
+                    folder.name,
+                )
             )
         },
         text = {
@@ -3626,7 +3931,7 @@ private fun MovePlaylistFolderTreeDialog(
                     key = "move-folder-root"
                 ) {
                     Text(
-                        text = "Playlists",
+                        text = stringResource(R.string.library_playlists),
                         modifier =
                             Modifier
                                 .fillMaxWidth()
@@ -3684,7 +3989,7 @@ private fun MovePlaylistFolderTreeDialog(
             TextButton(
                 onClick = onDismiss,
             ) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         },
     )
@@ -3731,7 +4036,10 @@ private fun MovePlaylistFolderDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                "Move ${playlist.title}"
+                stringResource(
+                    R.string.library_move_named,
+                    playlist.title,
+                )
             )
         },
         text = {
@@ -3740,7 +4048,7 @@ private fun MovePlaylistFolderDialog(
                     key = "playlist-folder-root"
                 ) {
                     Text(
-                        text = "Playlists",
+                        text = stringResource(R.string.library_playlists),
                         modifier =
                             Modifier
                                 .fillMaxWidth()
@@ -3797,7 +4105,7 @@ private fun MovePlaylistFolderDialog(
             TextButton(
                 onClick = onDismiss,
             ) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         },
     )
@@ -3856,10 +4164,17 @@ private fun HiddenLibraryRow(
 ) {
     val subtitle =
         if (item.kind == "album") {
-            "Album • " +
-                item.subtitle.removePrefix("Album • ")
+            stringResource(
+                R.string.library_hidden_album,
+                item.subtitle
+                    .substringAfter("•", item.subtitle)
+                    .trim(),
+            )
         } else {
-            "Track • ${item.subtitle}"
+            stringResource(
+                R.string.library_hidden_track,
+                item.subtitle,
+            )
         }
 
     Row(
@@ -3920,7 +4235,7 @@ private fun HiddenLibraryRow(
         TextButton(
             onClick = onRestore,
         ) {
-            Text("Restore")
+            Text(stringResource(R.string.action_restore))
         }
     }
 }
@@ -3957,7 +4272,7 @@ private fun CreatePlaylistDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                "New playlist",
+                stringResource(R.string.library_new_playlist_title),
                 fontWeight = FontWeight.Bold,
             )
         },
@@ -3968,7 +4283,7 @@ private fun CreatePlaylistDialog(
                     name = it
                 },
                 label = {
-                    Text("Playlist name")
+                    Text(stringResource(R.string.library_playlist_name))
                 },
                 singleLine = true,
                 isError = duplicate,
@@ -3976,7 +4291,7 @@ private fun CreatePlaylistDialog(
                     if (duplicate) {
                         {
                             Text(
-                                "A playlist or folder with this name already exists here"
+                                stringResource(R.string.library_duplicate_name)
                             )
                         }
                     } else {
@@ -3999,14 +4314,14 @@ private fun CreatePlaylistDialog(
                     }
                 },
             ) {
-                Text("Create")
+                Text(stringResource(R.string.action_create))
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
             ) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         },
     )
@@ -4032,11 +4347,12 @@ private fun FilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
 
 @Composable
 private fun LibListItem(row: LibRow, actions: LibActions, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
     Row(
         Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.45f))
             .clickable(onClick = onClick)
             .padding(8.dp),
@@ -4056,7 +4372,7 @@ private fun LibListItem(row: LibRow, actions: LibActions, onClick: () -> Unit) {
             var menuOpen by remember { mutableStateOf(false) }
             Box {
                 Icon(
-                    Icons.Filled.MoreVert, "More",
+                    Icons.Filled.MoreVert, stringResource(R.string.action_more),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(34.dp).clip(CircleShape).clickable { menuOpen = true }.padding(6.dp),
                 )
@@ -4068,7 +4384,8 @@ private fun LibListItem(row: LibRow, actions: LibActions, onClick: () -> Unit) {
 
 @Composable
 private fun LibGridItem(row: LibRow, actions: LibActions, onClick: () -> Unit) {
-    Column(Modifier.clip(RoundedCornerShape(14.dp)).clickable(onClick = onClick).padding(6.dp)) {
+    val shape = RoundedCornerShape(14.dp)
+    Column(Modifier.clip(shape).clickable(onClick = onClick).padding(6.dp)) {
         LibraryCollectionArtwork(
             row = row,
             modifier =
@@ -4086,7 +4403,7 @@ private fun LibGridItem(row: LibRow, actions: LibActions, onClick: () -> Unit) {
                 var menuOpen by remember { mutableStateOf(false) }
                 Box {
                     Icon(
-                        Icons.Filled.MoreVert, "More",
+                        Icons.Filled.MoreVert, stringResource(R.string.action_more),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(28.dp).clip(CircleShape).clickable { menuOpen = true }.padding(4.dp),
                     )
@@ -4115,18 +4432,18 @@ private fun CollectionMenu(row: LibRow, actions: LibActions, expanded: Boolean, 
         )
     val liked = actions.isLiked(row.id)
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
-        DropdownMenuItem(text = { Text("Play") }, onClick = { onDismiss(); actions.onPlay(row) }, leadingIcon = { Icon(Icons.Filled.PlayArrow, null) })
-        DropdownMenuItem(text = { Text("Shuffle") }, onClick = { onDismiss(); actions.onShuffle(row) }, leadingIcon = { Icon(Icons.Filled.Shuffle, null) })
-        DropdownMenuItem(text = { Text("Add to queue") }, onClick = { onDismiss(); actions.onQueue(row) }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.QueueMusic, null) })
+        DropdownMenuItem(text = { Text(stringResource(R.string.action_play)) }, onClick = { onDismiss(); actions.onPlay(row) }, leadingIcon = { Icon(Icons.Filled.PlayArrow, null) })
+        DropdownMenuItem(text = { Text(stringResource(R.string.action_shuffle)) }, onClick = { onDismiss(); actions.onShuffle(row) }, leadingIcon = { Icon(Icons.Filled.Shuffle, null) })
+        DropdownMenuItem(text = { Text(stringResource(R.string.action_add_to_queue)) }, onClick = { onDismiss(); actions.onQueue(row) }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.QueueMusic, null) })
 
         if (pinnable) {
             DropdownMenuItem(
                 text = {
                     Text(
                         if (pinned) {
-                            "Unpin from Library"
+                            stringResource(R.string.library_unpin)
                         } else {
-                            "Pin to Library"
+                            stringResource(R.string.library_pin)
                         }
                     )
                 },
@@ -4146,7 +4463,7 @@ private fun CollectionMenu(row: LibRow, actions: LibActions, expanded: Boolean, 
         if (row.pinned) {
             DropdownMenuItem(
                 text = {
-                    Text("Move pin up")
+                    Text(stringResource(R.string.library_move_pin_up))
                 },
                 enabled =
                     row.canMovePinUp,
@@ -4168,7 +4485,7 @@ private fun CollectionMenu(row: LibRow, actions: LibActions, expanded: Boolean, 
 
             DropdownMenuItem(
                 text = {
-                    Text("Move pin down")
+                    Text(stringResource(R.string.library_move_pin_down))
                 },
                 enabled =
                     row.canMovePinDown,
@@ -4191,19 +4508,19 @@ private fun CollectionMenu(row: LibRow, actions: LibActions, expanded: Boolean, 
 
         if (isPlaylist || isSmart || isVirtual) {
             DropdownMenuItem(
-                text = { Text("Export as M3U") },
+                text = { Text(stringResource(R.string.library_export_m3u)) },
                 onClick = { onDismiss(); actions.onExport(row) },
                 leadingIcon = { Icon(Icons.Filled.IosShare, null) },
             )
         }
         if (isSmart) {
             DropdownMenuItem(
-                text = { Text("Edit rules") },
+                text = { Text(stringResource(R.string.library_edit_rules)) },
                 onClick = { onDismiss(); actions.onEditSmart(row) },
                 leadingIcon = { Icon(Icons.Filled.Edit, null) },
             )
             DropdownMenuItem(
-                text = { Text("Delete") },
+                text = { Text(stringResource(R.string.action_delete)) },
                 onClick = { onDismiss(); actions.onDeleteSmart(row) },
                 leadingIcon = { Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error) },
             )
@@ -4213,7 +4530,7 @@ private fun CollectionMenu(row: LibRow, actions: LibActions, expanded: Boolean, 
             row.kind == "album"
         ) {
             DropdownMenuItem(
-                text = { Text("Hide album") },
+                text = { Text(stringResource(R.string.library_hide_album)) },
                 onClick = {
                     onDismiss()
                     actions.onHide(row)
@@ -4229,13 +4546,13 @@ private fun CollectionMenu(row: LibRow, actions: LibActions, expanded: Boolean, 
 
         if (!isVirtual && !isSmart) {
             DropdownMenuItem(
-                text = { Text(if (liked) "Unlike" else "Like") },
+                text = { Text(stringResource(if (liked) R.string.action_unlike else R.string.action_like)) },
                 onClick = { onDismiss(); actions.onToggleLike(row) },
                 leadingIcon = { Icon(if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder, null) },
             )
             if (isPlaylist) {
                 DropdownMenuItem(
-                    text = { Text("Delete playlist") },
+                    text = { Text(stringResource(R.string.library_delete_playlist)) },
                     onClick = { onDismiss(); actions.onDelete(row) },
                     leadingIcon = { Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error) },
                 )

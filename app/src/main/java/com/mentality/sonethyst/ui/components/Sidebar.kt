@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 fun SidebarContent(
     username: String,
     server: String,
+    isLocal: Boolean = false,
     avatarUrl: String = "",
     onProfile: () -> Unit,
     onSettings: () -> Unit,
@@ -57,8 +58,21 @@ fun SidebarContent(
     onClose: () -> Unit,
     onLogout: () -> Unit,
 ) {
-    val initials = username.take(2).uppercase().ifBlank { "ME" }
-    val host = server.removePrefix("http://").removePrefix("https://").ifBlank { "View profile" }
+    val initials =
+        username.take(2).uppercase().ifBlank {
+            androidx.compose.ui.res.stringResource(
+                com.mentality.sonethyst.R.string.sidebar_initials_fallback
+            )
+        }
+    val host =
+        server
+            .removePrefix("http://")
+            .removePrefix("https://")
+            .ifBlank {
+                androidx.compose.ui.res.stringResource(
+                    com.mentality.sonethyst.R.string.sidebar_view_profile
+                )
+            }
     Column(
         Modifier
             .fillMaxHeight()
@@ -86,8 +100,25 @@ fun SidebarContent(
             }
             Spacer(Modifier.width(12.dp))
             Column {
-                Text(username.ifBlank { "Listener" }, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(host, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    if (isLocal) {
+                        androidx.compose.ui.res.stringResource(
+                            com.mentality.sonethyst.R.string.accounts_local_library
+                        )
+                    } else username.ifBlank {
+                        androidx.compose.ui.res.stringResource(
+                            com.mentality.sonethyst.R.string.sidebar_listener
+                        )
+                    }, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    if (isLocal) {
+                        androidx.compose.ui.res.stringResource(
+                            com.mentality.sonethyst.R.string.server_local
+                        )
+                    } else host,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
 
@@ -95,18 +126,62 @@ fun SidebarContent(
         Box(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outline))
         Spacer(Modifier.height(8.dp))
 
-        DrawerItem(Icons.Filled.Person, "Profile") { onClose(); onProfile() }
-        DrawerItem(Icons.AutoMirrored.Filled.QueueMusic, "Your Library") { onClose(); onLibrary() }
-        DrawerItem(Icons.Filled.Radio, "Radio") { onClose(); onRadio() }
-        DrawerItem(Icons.Filled.Podcasts, "Podcasts") { onClose(); onPodcasts() }
-        DrawerItem(Icons.Filled.History, "Listening history") { onClose(); onHistory() }
-        DrawerItem(Icons.Filled.Workspaces, "Listening stats") { onClose(); onStats() }
-        DrawerItem(Icons.Filled.ContentCopy, "Find duplicates") { onClose(); onDuplicates() }
-        DrawerItem(Icons.Filled.Settings, "Settings") { onClose(); onSettings() }
+        DrawerItem(
+            Icons.Filled.Person,
+            androidx.compose.ui.res.stringResource(
+                com.mentality.sonethyst.R.string.sidebar_profile
+            ),
+        ) { onClose(); onProfile() }
+        DrawerItem(
+            Icons.AutoMirrored.Filled.QueueMusic,
+            androidx.compose.ui.res.stringResource(
+                com.mentality.sonethyst.R.string.sidebar_library
+            ),
+        ) { onClose(); onLibrary() }
+        DrawerItem(
+            Icons.Filled.Radio,
+            androidx.compose.ui.res.stringResource(
+                com.mentality.sonethyst.R.string.sidebar_radio
+            ),
+        ) { onClose(); onRadio() }
+        DrawerItem(
+            Icons.Filled.Podcasts,
+            androidx.compose.ui.res.stringResource(
+                com.mentality.sonethyst.R.string.sidebar_podcasts
+            ),
+        ) { onClose(); onPodcasts() }
+        DrawerItem(
+            Icons.Filled.History,
+            androidx.compose.ui.res.stringResource(
+                com.mentality.sonethyst.R.string.sidebar_history
+            ),
+        ) { onClose(); onHistory() }
+        DrawerItem(
+            Icons.Filled.Workspaces,
+            androidx.compose.ui.res.stringResource(
+                com.mentality.sonethyst.R.string.sidebar_stats
+            ),
+        ) { onClose(); onStats() }
+        DrawerItem(
+            Icons.Filled.ContentCopy,
+            androidx.compose.ui.res.stringResource(
+                com.mentality.sonethyst.R.string.sidebar_duplicates
+            ),
+        ) { onClose(); onDuplicates() }
+        DrawerItem(
+            Icons.Filled.Settings,
+            androidx.compose.ui.res.stringResource(
+                com.mentality.sonethyst.R.string.sidebar_settings
+            ),
+        ) { onClose(); onSettings() }
 
         Spacer(Modifier.weight(1f))
 
-        DrawerItem(Icons.AutoMirrored.Filled.Logout, "Log out", tint = MaterialTheme.colorScheme.error) { onClose(); onLogout() }
+        DrawerItem(
+            Icons.AutoMirrored.Filled.Logout,
+            androidx.compose.ui.res.stringResource(
+                com.mentality.sonethyst.R.string.sidebar_logout
+            ), tint = MaterialTheme.colorScheme.error) { onClose(); onLogout() }
         Spacer(Modifier.height(16.dp))
     }
 }

@@ -1,10 +1,12 @@
 package com.mentality.sonethyst.viewmodel
 
+import com.mentality.sonethyst.R
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.AudioTags
+import com.mentality.sonethyst.data.TagEditor
 import com.mentality.sonethyst.data.remote.MetadataMatch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +27,7 @@ data class TagEditState(
     val identifying: Boolean = false,
     val durationSec: Int = 0,
     val localFile: Boolean = false,
+    val localContentUri: String = "",
 )
 
 class TagEditViewModel(app: Application) : AndroidViewModel(app) {
@@ -40,7 +43,11 @@ class TagEditViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val song = container.repository.songFor(songId)
             val path = song?.path.orEmpty()
-            val localFile = song?.streamUrl?.startsWith("content://") == true
+            val streamUrl = song?.streamUrl.orEmpty()
+            // Keep malformed content URIs classified as local so Save reports
+            // a localized local-write failure instead of calling the server.
+            val localFile = streamUrl.startsWith("content://", ignoreCase = true)
+            val localContentUri = TagEditor.localContentUriFor(streamUrl)
             // server item reads full current metadata so unsurfaced fields aren't wiped on save
             val sourceTags = if (localFile) {
                 if (path.isNotBlank()) container.tagEditor.read(path) else null
@@ -55,7 +62,7 @@ class TagEditViewModel(app: Application) : AndroidViewModel(app) {
                     song?.albumArtist.orEmpty(),
             )
             _state.update {
-                it.copy(loading = false, songId = songId, path = path, artUrl = song?.artworkUrl.orEmpty(), tags = tags, durationSec = song?.durationSec ?: 0, localFile = localFile)
+                it.copy(loading = false, songId = songId, path = path, artUrl = song?.artworkUrl.orEmpty(), tags = tags, durationSec = song?.durationSec ?: 0, localFile = localFile, localContentUri = localContentUri?.toString().orEmpty())
             }
         }
     }
@@ -68,7 +75,10 @@ class TagEditViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val results = runCatching { container.musicBrainz.search(t.title, t.artist, t.album) }.getOrDefault(emptyList())
             _state.update {
-                it.copy(matching = false, matches = results, matchError = if (results.isEmpty()) "No matches found" else null)
+                it.copy(matching = false, matches = results, matchError = if (results.isEmpty()) getApplication<Application>()
+                            .getString(
+                                R.string.tag_no_matches
+                            ) else null)
             }
         }
     }
@@ -106,7 +116,10 @@ class TagEditViewModel(app: Application) : AndroidViewModel(app) {
                         if (
                             results.isEmpty()
                         ) {
-                            "No artwork matches found"
+                            getApplication<Application>()
+                                .getString(
+                                    R.string.tag_no_artwork_matches
+                                )
                         } else {
                             null
                         },
@@ -124,17 +137,26 @@ class TagEditViewModel(app: Application) : AndroidViewModel(app) {
             val fingerprint = runCatching { container.acoustId.fingerprint(path) }.getOrNull()
             android.util.Log.i("SonethystFp", "fingerprint(${path.substringAfterLast('/')}) len=${fingerprint?.length ?: -1}")
             when {
-                fingerprint == null -> _state.update { it.copy(identifying = false, matchError = "Couldn't fingerprint this file") }
+                fingerprint == null -> _state.update { it.copy(identifying = false, matchError = getApplication<Application>()
+                            .getString(
+                                R.string.tag_fingerprint_failed
+                            )) }
                 !container.acoustId.configured -> _state.update {
                     it.copy(
                         identifying = false,
-                        matchError = "Auto-identify unavailable: AcoustID client is not configured.",
+                        matchError = getApplication<Application>()
+                            .getString(
+                                R.string.tag_acoustid_unavailable
+                            ),
                     )
                 }
                 else -> {
                     val results = runCatching { container.acoustId.lookup(fingerprint, durationSec) }.getOrDefault(emptyList())
                     _state.update {
-                        it.copy(identifying = false, matches = results, matchError = if (results.isEmpty()) "No AcoustID match" else null)
+                        it.copy(identifying = false, matches = results, matchError = if (results.isEmpty()) getApplication<Application>()
+                                .getString(
+                                    R.string.tag_no_acoustid_match
+                                ) else null)
                     }
                 }
             }

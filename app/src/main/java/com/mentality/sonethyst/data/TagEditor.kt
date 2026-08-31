@@ -41,6 +41,26 @@ class TagEditor(private val context: Context) {
     fun contentUriFor(songId: String): Uri? =
         songId.toLongOrNull()?.let { ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, it) }
 
+    /**
+     * Resolves the URI supplied by the local library, without relying on the
+     * externally visible song ID (which may be namespaced by MergedBackend).
+     */
+    companion object {
+        fun localContentUriStringFor(streamUrl: String): String? =
+            streamUrl.trim().let { value ->
+                val authority = value.substringAfter("//", "").substringBefore('/').substringBefore('?')
+                val path = value.substringAfter("//", "").substringAfter('/', "").substringBefore('?')
+                value.takeIf {
+                    it.startsWith("content://", ignoreCase = true) && authority.isNotBlank() && path.isNotBlank()
+                }
+            }
+
+        fun localContentUriFor(streamUrl: String): Uri? =
+            localContentUriStringFor(streamUrl)?.let { value ->
+                runCatching { Uri.parse(value) }.getOrNull()
+            }
+    }
+
     suspend fun read(path: String): AudioTags? = withContext(Dispatchers.IO) {
         runCatching {
             val f = File(path)

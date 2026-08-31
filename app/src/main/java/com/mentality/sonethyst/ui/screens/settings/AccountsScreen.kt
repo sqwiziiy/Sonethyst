@@ -29,10 +29,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.ServerType
 import com.mentality.sonethyst.data.Session
@@ -66,9 +68,9 @@ fun AccountsScreen(
     val rows = remember(saved) { saved + (if (saved.none { it.type == ServerType.LOCAL }) listOf(localSession) else emptyList()) }
 
     Column(Modifier.fillMaxWidth()) {
-        SettingsTopBar("Accounts", onBack)
+        SettingsTopBar(stringResource(R.string.accounts_title), onBack)
         LazyColumn(Modifier.fillMaxWidth(), contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding() + 24.dp)) {
-            item { SettingsSectionTitle("Switch account") }
+            item { SettingsSectionTitle(stringResource(R.string.accounts_switch)) }
             item {
                 SettingsGroup {
                     rows.forEachIndexed { i, s ->
@@ -97,13 +99,13 @@ fun AccountsScreen(
                     ) {
                         Icon(Icons.Filled.Add, null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(14.dp))
-                        Text("Add another account", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary)
+                        Text(stringResource(R.string.accounts_add), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
             item {
                 Text(
-                    "Switching servers stops playback from the previous one.",
+                    stringResource(R.string.accounts_switch_warning),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                 )
@@ -111,6 +113,21 @@ fun AccountsScreen(
         }
     }
 }
+
+private fun serverTypeLabelRes(
+    type: ServerType,
+): Int =
+    when (type) {
+        ServerType.SPOTIFY ->
+            R.string.server_spotify
+        ServerType.JELLYFIN ->
+            R.string.server_jellyfin
+        ServerType.SUBSONIC ->
+            R.string.server_navidrome
+        ServerType.LOCAL ->
+            R.string.server_local
+    }
+
 
 @Composable
 private fun AccountRow(session: Session, isActive: Boolean, canForget: Boolean, onClick: () -> Unit, onForget: () -> Unit) {
@@ -132,8 +149,36 @@ private fun AccountRow(session: Session, isActive: Boolean, canForget: Boolean, 
         ) { Text(badge, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onPrimary) }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
-            Text(session.username, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text("${session.typeLabel}${if (session.type != ServerType.LOCAL) " · $host" else ""}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                if (session.type == ServerType.LOCAL) {
+                    stringResource(
+                        R.string.accounts_local_library
+                    )
+                } else {
+                    session.username
+                },
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+
+            val typeLabel =
+                stringResource(
+                    serverTypeLabelRes(session.type)
+                )
+
+            Text(
+                if (session.type != ServerType.LOCAL) {
+                    "$typeLabel · $host"
+                } else {
+                    typeLabel
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
         if (isActive) {
             Row(
@@ -142,11 +187,12 @@ private fun AccountRow(session: Session, isActive: Boolean, canForget: Boolean, 
             ) {
                 Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Active", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.accounts_active), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             }
         } else if (canForget) {
             Icon(
-                Icons.Filled.Delete, "Forget",
+                Icons.Filled.Delete,
+                stringResource(R.string.accounts_forget),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(34.dp).clip(CircleShape).clickable(onClick = onForget).padding(6.dp),
             )

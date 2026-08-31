@@ -458,9 +458,11 @@ class LocalStore(context: Context) {
         persist()
     }
 
-    fun exportJson(): String = gson.toJson(state)
+    fun exportJson(): String = PortableBackupSanitizer.preferenceString(gson.toJson(state))
     fun importJson(json: String) = synchronized(lock) {
-        runCatching { gson.fromJson(json, object : TypeToken<LocalState>() {}.type) as? LocalState }.getOrNull()?.let {
+        runCatching {
+            gson.fromJson(PortableBackupSanitizer.preferenceString(json), object : TypeToken<LocalState>() {}.type) as? LocalState
+        }.getOrNull()?.let {
             state = it; persist()
         }
     }

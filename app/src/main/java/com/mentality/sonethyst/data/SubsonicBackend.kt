@@ -1,5 +1,7 @@
 package com.mentality.sonethyst.data
 
+import android.content.Context
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.data.remote.AlbumDto
 import com.mentality.sonethyst.data.remote.ArtistDto
 import com.mentality.sonethyst.data.remote.PlaylistDto
@@ -15,6 +17,7 @@ import com.mentality.sonethyst.model.Song
 import com.mentality.sonethyst.util.accentFor
 
 class SubsonicBackend(
+    private val context: Context,
     private val client: SubsonicClient,
     private val maxBitrateProvider: () -> Int,
     private val localize: (Song) -> Song,
@@ -23,6 +26,38 @@ class SubsonicBackend(
     override val session: Session get() = client.session
 
     private val c: SubsonicClient get() = client
+
+    private fun songCountText(count: Int): String =
+        context.resources.getQuantityString(
+            R.plurals.backend_song_count,
+            count,
+            count,
+        )
+
+    private fun songsYouLoveText(count: Int): String =
+        context.resources.getQuantityString(
+            R.plurals.backend_songs_you_love,
+            count,
+            count,
+        )
+
+    private fun albumTrackSummary(
+        albums: Int,
+        tracks: Int,
+    ): String =
+        context.getString(
+            R.string.backend_album_track_summary,
+            context.resources.getQuantityString(
+                R.plurals.backend_album_count,
+                albums,
+                albums,
+            ),
+            context.resources.getQuantityString(
+                R.plurals.backend_track_count,
+                tracks,
+                tracks,
+            ),
+        )
 
     private fun SongDto.toModel(): Song {
         val bitrate = maxBitrateProvider()
@@ -89,7 +124,12 @@ class SubsonicBackend(
     private fun PlaylistDto.toModel(): Playlist = Playlist(
         id = id,
         title = name,
-        subtitle = comment?.takeIf { it.isNotBlank() } ?: "$songCount songs",
+        subtitle =
+            comment?.takeIf {
+                it.isNotBlank()
+            } ?: songCountText(
+                songCount
+            ),
         coverUrl = c.coverArtUrl(coverArt ?: id),
         songCount = songCount,
         accent = accentFor(id),
@@ -265,14 +305,30 @@ class SubsonicBackend(
     override suspend fun deletePlaylist(id: String): Boolean =
         runCatching { c.api.deletePlaylist(id).response.isOk }.getOrDefault(false)
 
-    override suspend fun setStarred(id: String, starred: Boolean, kind: String): Boolean = runCatching {
-        val resp = when (kind) {
-            "album" -> if (starred) c.api.star(albumId = id) else c.api.unstar(albumId = id)
-            "artist" -> if (starred) c.api.star(artistId = id) else c.api.unstar(artistId = id)
-            else -> if (starred) c.api.star(id = id) else c.api.unstar(id = id)
+    override suspend fun setStarred(id: String, starred: Boolean, kind: String): Boolean =
+        try {
+            val resp = when (kind) {
+                "album" -> if (starred) c.api.star(albumId = id) else c.api.unstar(albumId = id)
+                "artist" -> if (starred) c.api.star(artistId = id) else c.api.unstar(artistId = id)
+                else -> if (starred) c.api.star(id = id) else c.api.unstar(id = id)
+            }
+            val response = resp.response
+            if (!response.isOk) {
+                android.util.Log.w(
+                    "SubsonicLike",
+                    "setStarred failed kind=$kind starred=$starred status=${response.status} errorCode=${response.error?.code ?: 0} errorMessage=${response.error?.message.orEmpty()}",
+                )
+            } else {
+                android.util.Log.i("SubsonicLike", "setStarred request accepted kind=$kind starred=$starred")
+            }
+            response.isOk
+        } catch (t: Throwable) {
+            android.util.Log.e(
+                "SubsonicLike",
+                "setStarred transport failure kind=$kind starred=$starred exception=${t::class.simpleName}",
+            )
+            false
         }
-        resp.response.isOk
-    }.getOrDefault(false)
 
     override suspend fun detail(kind: String, id: String): DetailData? = runCatching {
         when (kind) {
@@ -290,7 +346,14 @@ class SubsonicBackend(
                     runCatching { c.api.getAlbum(alb.id).response.album?.song.orEmpty() }.getOrDefault(emptyList())
                 }.map { it.toModel() }
                 DetailData(
-                    DetailInfo(ar.name, "${ar.albumCount} albums · ${ar.album.sumOf { it.songCount }} tracks", c.coverArtUrl(ar.coverArt ?: ar.id), accentFor(ar.id), true, tracks.size, "Artist"),
+                    DetailInfo(
+                        ar.name,
+                        albumTrackSummary(
+                            ar.albumCount,
+                            ar.album.sumOf {
+                                it.songCount
+                            },
+                        ), c.coverArtUrl(ar.coverArt ?: ar.id), accentFor(ar.id), true, tracks.size, "Artist"),
                     tracks,
                     albumModels,
                 )
@@ -298,14 +361,27 @@ class SubsonicBackend(
             "playlist" -> {
                 val p = c.api.getPlaylist(id).response.playlist ?: return null
                 DetailData(
-                    DetailInfo(p.name, p.comment?.takeIf { it.isNotBlank() } ?: "${p.songCount} songs", c.coverArtUrl(p.coverArt ?: p.id), accentFor(p.id), false, p.songCount, "Playlist"),
+                    DetailInfo(
+                        p.name,
+                        p.comment?.takeIf {
+                            it.isNotBlank()
+                        } ?: songCountText(
+                            p.songCount
+                        ), c.coverArtUrl(p.coverArt ?: p.id), accentFor(p.id), false, p.songCount, "Playlist"),
                     p.entry.map { it.toModel() },
                 )
             }
             "liked" -> {
                 val songs = c.api.getStarred2().response.starred2?.song?.map { it.toModel() }.orEmpty()
                 DetailData(
-                    DetailInfo("Liked Songs", "${songs.size} songs you love", songs.firstOrNull()?.artworkUrl ?: "", accentFor("liked"), false, songs.size, "Liked"),
+                    DetailInfo(
+                        context.getString(
+                            R.string.backend_liked_songs
+                        ),
+                        songsYouLoveText(
+                            songs.size
+                        ),
+                        songs.firstOrNull()?.artworkUrl ?: "", accentFor("liked"), false, songs.size, "Liked"),
                     songs,
                 )
             }
@@ -320,11 +396,37 @@ class SubsonicBackend(
             folderId.isBlank() -> {
                 val mfs = c.api.getMusicFolders().response.musicFolders?.musicFolder.orEmpty()
                 when {
-                    mfs.size <= 1 -> indexLevel(mfs.firstOrNull()?.id, "Folders")
-                    else -> FolderContent("", "Folders", mfs.map { FolderNode("mf:${it.id}", it.name ?: "Folder") })
+                    mfs.size <= 1 ->
+                        indexLevel(
+                            mfs.firstOrNull()?.id,
+                            context.getString(
+                                R.string.backend_folders
+                            ),
+                        )
+                    else ->
+                        FolderContent(
+                            "",
+                            context.getString(
+                                R.string.backend_folders
+                            ),
+                            mfs.map {
+                                FolderNode(
+                                    "mf:${it.id}",
+                                    it.name ?: context.getString(
+                                        R.string.backend_fallback_folder
+                                    ),
+                                )
+                            },
+                        )
                 }
             }
-            folderId.startsWith("mf:") -> indexLevel(folderId.removePrefix("mf:"), "Folders")
+            folderId.startsWith("mf:") ->
+                indexLevel(
+                    folderId.removePrefix("mf:"),
+                    context.getString(
+                        R.string.backend_folders
+                    ),
+                )
             else -> {
                 val d = c.api.getMusicDirectory(folderId).response.directory ?: return@runCatching null
                 FolderContent(

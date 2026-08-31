@@ -23,8 +23,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.DiscordAccount
 import com.mentality.sonethyst.data.LastfmAccount
@@ -38,24 +40,30 @@ fun IntegrationsSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit
     val artistEnrichment by container.settingsStore.artistEnrichment.collectAsStateWithLifecycle(initialValue = true)
     val scope = rememberCoroutineScope()
     Column(Modifier.fillMaxWidth()) {
-        SettingsTopBar("Integrations", onBack)
+        SettingsTopBar(stringResource(R.string.integrations_title), onBack)
         LazyColumn(Modifier.fillMaxWidth(), contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding() + 24.dp)) {
-            item { SettingsSectionTitle("Lyrics") }
+            item { SettingsSectionTitle(stringResource(R.string.integrations_lyrics)) }
             item {
                 SettingsGroup {
-                    SettingsSwitchRow(Icons.Filled.Lyrics, "LRCLIB lyrics", "Fetch synced lyrics when your server has none", lrclib) { v ->
+                    SettingsSwitchRow(
+                        Icons.Filled.Lyrics,
+                        stringResource(R.string.integrations_lrclib),
+                        stringResource(R.string.integrations_lrclib_summary), lrclib) { v ->
                         scope.launch { container.settingsStore.setLrclibEnabled(v) }
                     }
                 }
             }
-            item { SettingsSectionTitle("Scrobbling & presence") }
+            item { SettingsSectionTitle(stringResource(R.string.integrations_scrobbling_presence)) }
             item { SettingsGroup { LastfmRow(scope) } }
             item { SettingsGroup { ListenBrainzRow(scope) } }
             item { SettingsGroup { DiscordRow(scope, onOpenDiscordLogin) } }
-            item { SettingsSectionTitle("Metadata") }
+            item { SettingsSectionTitle(stringResource(R.string.integrations_metadata)) }
             item {
                 SettingsGroup {
-                    SettingsSwitchRow(Icons.Filled.Person, "Artist info", "Show bios & images from MusicBrainz/Wikipedia on artist pages", artistEnrichment) { v ->
+                    SettingsSwitchRow(
+                        Icons.Filled.Person,
+                        stringResource(R.string.integrations_artist_info),
+                        stringResource(R.string.integrations_artist_info_summary), artistEnrichment) { v ->
                         scope.launch { container.settingsStore.setArtistEnrichment(v) }
                     }
                 }
@@ -75,26 +83,53 @@ private fun LastfmRow(scope: CoroutineScope) {
 
     when {
         acct.sessionKey.isNotBlank() -> {
-            SettingsSwitchRow(Icons.Filled.Headset, "Last.fm", "Scrobbling as ${acct.username}", acct.enabled) { v ->
+            SettingsSwitchRow(
+                Icons.Filled.Headset,
+                "Last.fm",
+                stringResource(
+                    R.string.integrations_scrobbling_as,
+                    acct.username,
+                ), acct.enabled) { v ->
                 scope.launch { container.settingsStore.setLastfmEnabled(v) }
             }
             SettingsRowDivider()
-            SettingsNavRow(Icons.Filled.LinkOff, "Disconnect Last.fm", value = "Remove") {
+            SettingsNavRow(
+                Icons.Filled.LinkOff,
+                stringResource(R.string.integrations_disconnect_lastfm),
+                value = stringResource(R.string.action_remove),
+            ) {
                 scope.launch { container.lastfm.disconnect() }
             }
         }
         pendingToken != null -> {
             SettingsNavRow(
-                Icons.Filled.Headset, "Finish linking Last.fm",
-                subtitle = status ?: "Tap once you've pressed “Allow access” in the browser",
-                value = if (busy) "…" else "Done",
+                Icons.Filled.Headset,
+                stringResource(R.string.integrations_finish_lastfm),
+                subtitle =
+                    status
+                        ?: stringResource(
+                            R.string.integrations_lastfm_finish_help
+                        ),
+                value =
+                    if (busy) {
+                        "…"
+                    } else {
+                        stringResource(R.string.integrations_done)
+                    },
             ) {
                 if (busy) return@SettingsNavRow
                 scope.launch {
                     busy = true; status = null
                     val ok = container.lastfm.finishLink(pendingToken!!)
                     busy = false
-                    if (ok) pendingToken = null else status = "Not authorized yet — allow access, then tap again"
+                    if (ok) {
+                        pendingToken = null
+                    } else {
+                        status =
+                            ctx.getString(
+                                R.string.integrations_lastfm_not_authorized
+                            )
+                    }
                 }
             }
         }
@@ -105,25 +140,57 @@ private fun LastfmRow(scope: CoroutineScope) {
             var secret by remember(keys.second) { mutableStateOf(keys.second) }
             OutlinedTextField(
                 value = apiKey, onValueChange = { apiKey = it; scope.launch { container.settingsStore.setLastfmKeys(it, secret) } },
-                label = { Text("Last.fm API key") }, singleLine = true,
+                label = {
+                    Text(
+                        stringResource(
+                            R.string.integrations_lastfm_api_key
+                        )
+                    )
+                }, singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
             )
             OutlinedTextField(
                 value = secret, onValueChange = { secret = it; scope.launch { container.settingsStore.setLastfmKeys(apiKey, it) } },
-                label = { Text("Last.fm shared secret") }, singleLine = true,
+                label = {
+                    Text(
+                        stringResource(
+                            R.string.integrations_lastfm_secret
+                        )
+                    )
+                }, singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
             )
             SettingsNavRow(
-                Icons.Filled.Headset, "Connect Last.fm",
-                subtitle = status ?: if (container.lastfm.configured) "Scrobble your plays to Last.fm" else "Create a free API account at last.fm/api, then paste the key + secret above",
-                value = if (busy) "…" else "Connect",
+                Icons.Filled.Headset,
+                stringResource(R.string.integrations_connect_lastfm),
+                subtitle = status ?: if (container.lastfm.configured) {
+                        stringResource(
+                            R.string.integrations_lastfm_scrobble
+                        )
+                    } else {
+                        stringResource(
+                            R.string.integrations_lastfm_setup
+                        )
+                    },
+                value =
+                    if (busy) {
+                        "…"
+                    } else {
+                        stringResource(R.string.auth_connect)
+                    },
             ) {
                 if (busy || !container.lastfm.configured) return@SettingsNavRow
                 scope.launch {
                     busy = true; status = null
                     val token = container.lastfm.beginLink()
                     busy = false
-                    if (token == null) { status = "Couldn't reach Last.fm"; return@launch }
+                    if (token == null) {
+                        status =
+                            ctx.getString(
+                                R.string.integrations_lastfm_unreachable
+                            )
+                        return@launch
+                    }
                     pendingToken = token
                     runCatching {
                         ctx.startActivity(
@@ -143,11 +210,23 @@ private fun ListenBrainzRow(scope: CoroutineScope) {
     val container = (ctx.applicationContext as SonethystApplication).container
     val acct by container.settingsStore.listenBrainz.collectAsStateWithLifecycle(initialValue = com.mentality.sonethyst.data.ListenBrainzAccount())
     if (acct.token.isNotBlank()) {
-        SettingsSwitchRow(Icons.Filled.Album, "ListenBrainz", "Scrobbling as ${acct.username}", acct.enabled) { v ->
+        SettingsSwitchRow(
+            Icons.Filled.Album,
+            "ListenBrainz",
+            stringResource(
+                R.string.integrations_scrobbling_as,
+                acct.username,
+            ), acct.enabled) { v ->
             scope.launch { container.settingsStore.setListenBrainzEnabled(v) }
         }
         SettingsRowDivider()
-        SettingsNavRow(Icons.Filled.LinkOff, "Disconnect ListenBrainz", value = "Remove") {
+        SettingsNavRow(
+            Icons.Filled.LinkOff,
+            stringResource(
+                R.string.integrations_disconnect_listenbrainz
+            ),
+            value = stringResource(R.string.action_remove),
+        ) {
             scope.launch { container.listenBrainz.disconnect() }
         }
     } else {
@@ -157,13 +236,24 @@ private fun ListenBrainzRow(scope: CoroutineScope) {
         OutlinedTextField(
             value = token,
             onValueChange = { token = it; status = null },
-            label = { Text("ListenBrainz user token") },
+            label = {
+                Text(
+                    stringResource(
+                        R.string.integrations_listenbrainz_token
+                    )
+                )
+            },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
         )
         SettingsNavRow(
-            Icons.Filled.Album, "Connect ListenBrainz",
-            subtitle = status ?: "Paste your token from listenbrainz.org/profile",
+            Icons.Filled.Album,
+            stringResource(R.string.integrations_connect_listenbrainz),
+            subtitle =
+                status
+                    ?: stringResource(
+                        R.string.integrations_listenbrainz_token_help
+                    ),
             value = if (busy) "…" else "Connect",
         ) {
             if (busy || token.isBlank()) return@SettingsNavRow
@@ -171,7 +261,14 @@ private fun ListenBrainzRow(scope: CoroutineScope) {
                 busy = true; status = null
                 val ok = container.listenBrainz.connect(token)
                 busy = false
-                status = if (ok) null else "Invalid token — check and try again"
+                status =
+                    if (ok) {
+                        null
+                    } else {
+                        ctx.getString(
+                            R.string.integrations_invalid_token
+                        )
+                    }
             }
         }
     }
@@ -185,15 +282,29 @@ private fun DiscordRow(scope: CoroutineScope, onConnect: () -> Unit) {
 
     if (acct.token.isNotBlank()) {
         SettingsSwitchRow(
-            Icons.Filled.Forum, "Discord presence",
-            if (acct.username.isNotBlank()) "Connected as ${acct.username}" else "Connected",
+            Icons.Filled.Forum,
+            stringResource(R.string.integrations_discord_presence),
+            if (acct.username.isNotBlank()) {
+                stringResource(
+                    R.string.integrations_connected_as,
+                    acct.username,
+                )
+            } else {
+                stringResource(R.string.integrations_connected)
+            },
             acct.enabled,
         ) { v -> scope.launch { container.settingsStore.setDiscordEnabled(v) } }
         var appId by remember { mutableStateOf(acct.appId) }
         OutlinedTextField(
             value = appId,
             onValueChange = { appId = it; scope.launch { container.settingsStore.setDiscordAppId(it.trim()) } },
-            label = { Text("Discord application ID — for album art (optional)") },
+            label = {
+                Text(
+                    stringResource(
+                        R.string.integrations_discord_app_id
+                    )
+                )
+            },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
         )
@@ -201,15 +312,31 @@ private fun DiscordRow(scope: CoroutineScope, onConnect: () -> Unit) {
         OutlinedTextField(
             value = imgur,
             onValueChange = { imgur = it; scope.launch { container.settingsStore.setDiscordImgur(it.trim()) } },
-            label = { Text("Imgur client ID — for album art (optional)") },
+            label = {
+                Text(
+                    stringResource(
+                        R.string.integrations_imgur_client_id
+                    )
+                )
+            },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
         )
         SettingsRowDivider()
-        SettingsNavRow(Icons.Filled.LinkOff, "Disconnect Discord", value = "Remove") {
+        SettingsNavRow(
+            Icons.Filled.LinkOff,
+            stringResource(R.string.integrations_disconnect_discord),
+            value = stringResource(R.string.action_remove),
+        ) {
             scope.launch { container.settingsStore.clearDiscord() }
         }
     } else {
-        SettingsNavRow(Icons.Filled.Forum, "Connect Discord", "Show your now playing in Discord (create a free app at discord.com/developers for album art)", value = "Connect", onClick = onConnect)
+        SettingsNavRow(
+            Icons.Filled.Forum,
+            stringResource(R.string.integrations_connect_discord),
+            stringResource(R.string.integrations_discord_summary),
+            value = stringResource(R.string.auth_connect),
+            onClick = onConnect,
+        )
     }
 }

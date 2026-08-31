@@ -32,9 +32,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.DEFAULT_SOURCE_PRIORITY
 import com.mentality.sonethyst.data.MERGE_NONE
@@ -42,18 +44,21 @@ import com.mentality.sonethyst.data.ServerType
 import com.mentality.sonethyst.data.accountKey
 import kotlinx.coroutines.launch
 
-private fun tierLabel(t: String) = when (t) {
-    "local" -> "On-device file"
-    "downloaded" -> "Downloaded"
-    "stream" -> "Stream from server"
-    else -> t
-}
-private fun tierSub(t: String) = when (t) {
-    "local" -> "A matching file in your device's music library"
-    "downloaded" -> "A track downloaded inside the app"
-    "stream" -> "Stream from Navidrome / Jellyfin"
-    else -> ""
-}
+private fun tierLabelRes(t: String): Int? =
+    when (t) {
+        "local" -> R.string.sources_tier_local
+        "downloaded" -> R.string.sources_tier_downloaded
+        "stream" -> R.string.sources_tier_stream
+        else -> null
+    }
+
+private fun tierSubRes(t: String): Int? =
+    when (t) {
+        "local" -> R.string.sources_tier_local_summary
+        "downloaded" -> R.string.sources_tier_downloaded_summary
+        "stream" -> R.string.sources_tier_stream_summary
+        else -> null
+    }
 
 @Composable
 fun SourcesSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
@@ -73,30 +78,43 @@ fun SourcesSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
     }
 
     Column(Modifier.fillMaxWidth()) {
-        SettingsTopBar("Library & sources", onBack)
+        SettingsTopBar(
+            stringResource(R.string.sources_title),
+            onBack,
+        )
         LazyColumn(Modifier.fillMaxWidth(), contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding() + 24.dp)) {
 
-            item { SettingsSectionTitle("Best-source playback") }
+            item { SettingsSectionTitle(
+                stringResource(R.string.sources_best_playback)
+            ) }
             item {
                 SettingsGroup {
                     SettingsSwitchRow(
-                        Icons.Filled.Smartphone, "Prefer local copies",
-                        "Play a matching on-device or downloaded file instead of streaming", preferLocal,
+                        Icons.Filled.Smartphone,
+                        stringResource(R.string.sources_prefer_local),
+                        stringResource(
+                            R.string.sources_prefer_local_summary
+                        ), preferLocal,
                     ) { v -> scope.launch { store.setPreferLocalSources(v) } }
                 }
             }
             item {
                 Text(
-                    "When a track is available from more than one place, Sonethyst plays it from the first " +
-                        "source below that has it. Reorder to taste.",
+                    stringResource(R.string.sources_priority_help),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
                 )
             }
             itemsIndexed(priority) { idx, tier ->
                 PriorityRow(
-                    label = tierLabel(tier),
-                    subtitle = tierSub(tier),
+                    label =
+                        tierLabelRes(tier)
+                            ?.let { stringResource(it) }
+                            ?: tier,
+                    subtitle =
+                        tierSubRes(tier)
+                            ?.let { stringResource(it) }
+                            .orEmpty(),
                     enabled = preferLocal,
                     canUp = idx > 0,
                     canDown = idx < priority.lastIndex,
@@ -106,30 +124,58 @@ fun SourcesSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
             }
 
             item { Spacer(Modifier.height(8.dp)) }
-            item { SettingsSectionTitle("Unified library") }
+            item { SettingsSectionTitle(
+                stringResource(R.string.sources_unified_library)
+            ) }
             item {
                 SettingsGroup {
                     SettingsSwitchRow(
-                        Icons.Filled.MergeType, "Merge all sources",
-                        "Show albums, artists & playlists from your local files and every included server as one library", unified,
+                        Icons.Filled.MergeType,
+                        stringResource(R.string.sources_merge_all),
+                        stringResource(
+                            R.string.sources_merge_all_summary
+                        ), unified,
                     ) { v -> scope.launch { store.setUnifiedLibrary(v) } }
                 }
             }
             if (unified) {
                 item {
                     Text(
-                        "Included in the unified library:",
+                        stringResource(R.string.sources_included),
                         style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(start = 20.dp, top = 10.dp, bottom = 4.dp),
                     )
                 }
-                item { SourceRow("On this device", "Local files", included = true, toggleable = false) {} }
+                item { SourceRow(
+                        stringResource(R.string.server_local),
+                        stringResource(R.string.sources_local_files),
+                        included = true,
+                        toggleable = false,
+                    ) {} }
                 items(servers.size) { i ->
                     val s = servers[i]
                     val key = s.accountKey()
                     val noneSelected = mergeKeys == setOf(MERGE_NONE)
                     val included = !noneSelected && (mergeKeys.isEmpty() || key in mergeKeys)
-                    SourceRow(s.typeLabel, s.server.removePrefix("http://").removePrefix("https://"), included = included, toggleable = true) {
+                    val typeLabel =
+                        stringResource(
+                            when (s.type) {
+                                ServerType.JELLYFIN ->
+                                    R.string.server_jellyfin
+
+                                else ->
+                                    R.string.server_navidrome
+                            }
+                        )
+
+                    SourceRow(
+                        typeLabel,
+                        s.server
+                            .removePrefix("http://")
+                            .removePrefix("https://"),
+                        included = included,
+                        toggleable = true,
+                    ) {
                         val current = when {
                             noneSelected -> emptySet()
                             mergeKeys.isEmpty() -> servers.map { it.accountKey() }.toSet()   // empty means all make explicit
@@ -143,7 +189,7 @@ fun SourcesSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
                 if (servers.isEmpty()) {
                     item {
                         Text(
-                            "Sign into Navidrome or Jellyfin (Settings → Accounts) to merge servers. Your local files are always included.",
+                            stringResource(R.string.sources_no_servers),
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                         )
@@ -151,7 +197,7 @@ fun SourcesSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
                 }
                 item {
                     Text(
-                        "Duplicates are shown once and played from the highest-quality source. Spotify isn't merged yet.",
+                        stringResource(R.string.sources_duplicates_note),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                     )
@@ -179,12 +225,14 @@ private fun PriorityRow(label: String, subtitle: String, enabled: Boolean, canUp
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha))
         }
         Icon(
-            Icons.Filled.KeyboardArrowUp, "Move up",
+            Icons.Filled.KeyboardArrowUp,
+            stringResource(R.string.sources_move_up),
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled && canUp) 1f else 0.25f),
             modifier = Modifier.size(40.dp).clip(RoundedCornerShape(50)).clickable(enabled = enabled && canUp, onClick = onUp).padding(8.dp),
         )
         Icon(
-            Icons.Filled.KeyboardArrowDown, "Move down",
+            Icons.Filled.KeyboardArrowDown,
+            stringResource(R.string.sources_move_down),
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled && canDown) 1f else 0.25f),
             modifier = Modifier.size(40.dp).clip(RoundedCornerShape(50)).clickable(enabled = enabled && canDown, onClick = onDown).padding(8.dp),
         )

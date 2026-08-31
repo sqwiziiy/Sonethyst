@@ -525,7 +525,9 @@ class LocalLibrary(
                         accent = accentFor(id.toString()),
                         streamUrl = uri,
                         albumId = sidAlbum,
-                        artistId = artistId.toString(),
+                        // MediaStore's numeric ARTIST_ID is not the ID used by
+                        // LocalBackend's logical artist index.
+                        artistId = localArtistId(displayArtist),
                         suffix = suffix,
                         bitrateKbps = bitrateKbps,
                         path = data,

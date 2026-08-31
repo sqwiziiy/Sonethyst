@@ -53,11 +53,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.data.RadioStation
 import com.mentality.sonethyst.data.toSong
 import com.mentality.sonethyst.model.Song
@@ -99,25 +101,48 @@ fun RadioScreen(
             )
         }
 
-    val playStation: (RadioStation) -> Unit = { st -> vm.registerPlay(st); onPlay(st.toSong()) }
+    val defaultStationName =
+        stringResource(
+            R.string.radio_default_station
+        )
+
+    val internetRadioName =
+        stringResource(
+            R.string.radio_internet_radio
+        )
+
+    val playStation: (RadioStation) -> Unit = { st ->
+        vm.registerPlay(st)
+        onPlay(
+            st.toSong(
+                defaultStationName,
+                internetRadioName,
+            )
+        )
+    }
+
     val browsing = state.query.isBlank() && state.activeTag.isBlank()
     val listed = if (browsing) state.popular else state.results
 
     Column(Modifier.fillMaxSize().padding(top = topInset)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                Icons.AutoMirrored.Filled.ArrowBack, "Back",
+                Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back),
                 modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onBack).padding(8.dp),
             )
             Spacer(Modifier.width(8.dp))
-            Text("Radio", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.radio_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             Icon(
-                Icons.Filled.Add, "Add custom stream",
+                Icons.Filled.Add, stringResource(R.string.radio_add_custom_stream),
                 modifier = Modifier.size(40.dp).clip(CircleShape).clickable { showAdd = true }.padding(8.dp),
             )
             Icon(
                 if (searchOpen) Icons.Filled.Close else Icons.Filled.Search,
-                if (searchOpen) "Close search" else "Search stations",
+                if (searchOpen) {
+                    stringResource(R.string.radio_close_search)
+                } else {
+                    stringResource(R.string.radio_search_stations)
+                },
                 modifier = Modifier.size(40.dp).clip(CircleShape).clickable {
                     searchOpen = !searchOpen
                     if (!searchOpen) { query = ""; vm.clearSearch() }
@@ -130,7 +155,7 @@ fun RadioScreen(
                 value = query,
                 onValueChange = { query = it; vm.search(it) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-                placeholder = { Text("Search radio stations") },
+                placeholder = { Text(stringResource(R.string.radio_search_placeholder)) },
                 leadingIcon = { Icon(Icons.Filled.Search, null, tint = MaterialTheme.colorScheme.primary) },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
@@ -158,7 +183,9 @@ fun RadioScreen(
                         val tag = GENRE_TAGS[i]
                         val selected = state.activeTag == tag
                         Text(
-                            tag.replaceFirstChar { it.uppercase() },
+                            stringResource(
+                                radioGenreLabelRes(tag)
+                            ),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold,
                             color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
@@ -172,7 +199,7 @@ fun RadioScreen(
             }
 
             if (favorites.isNotEmpty()) {
-                item { SectionLabel("Your stations") }
+                item { SectionLabel(stringResource(R.string.radio_your_stations)) }
                 items(
                     count = favorites.size,
                     key = { i -> "favorite:${favorites[i].uuid}" },
@@ -208,9 +235,14 @@ fun RadioScreen(
             item {
                 SectionLabel(
                     when {
-                        state.query.isNotBlank() -> "Results"
-                        state.activeTag.isNotBlank() -> state.activeTag.replaceFirstChar { it.uppercase() }
-                        else -> "Popular worldwide"
+                        state.query.isNotBlank() -> stringResource(R.string.radio_results)
+                        state.activeTag.isNotBlank() ->
+                            stringResource(
+                                radioGenreLabelRes(
+                                    state.activeTag
+                                )
+                            )
+                        else -> stringResource(R.string.radio_popular_worldwide)
                     }
                 )
             }
@@ -221,7 +253,11 @@ fun RadioScreen(
                 item {
                     Box(Modifier.fillMaxWidth().padding(vertical = 36.dp), contentAlignment = Alignment.Center) {
                         Text(
-                            if (state.failed) "Couldn't reach the radio directory" else "No stations found",
+                            if (state.failed) {
+                                stringResource(R.string.radio_directory_unavailable)
+                            } else {
+                                stringResource(R.string.radio_no_stations)
+                            },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -263,8 +299,8 @@ fun RadioScreen(
 
     if (showAdd) {
         StreamEditorDialog(
-            title = "Add radio stream",
-            confirmLabel = "Add",
+            title = stringResource(R.string.radio_add_stream),
+            confirmLabel = stringResource(R.string.action_create),
             initialName = "",
             initialUrl = "",
             onSave = { name, url ->
@@ -281,8 +317,8 @@ fun RadioScreen(
 
     editingStation?.let { station ->
         StreamEditorDialog(
-            title = "Edit radio stream",
-            confirmLabel = "Save",
+            title = stringResource(R.string.radio_edit_stream),
+            confirmLabel = stringResource(R.string.action_save),
             initialName =
                 station.name.orEmpty(),
             initialUrl =
@@ -307,14 +343,23 @@ fun RadioScreen(
             },
             title = {
                 Text(
-                    "Delete custom station?",
+                    stringResource(R.string.radio_delete_station_title),
                     fontWeight =
                         FontWeight.Bold,
                 )
             },
             text = {
                 Text(
-                    "“${station.displayName}” will be removed from Your stations."
+                    stringResource(
+                        R.string.radio_delete_station_message,
+                        if (
+                            station.displayName.isBlank()
+                        ) {
+                            defaultStationName
+                        } else {
+                            station.displayName
+                        },
+                    )
                 )
             },
             confirmButton = {
@@ -328,7 +373,7 @@ fun RadioScreen(
                             null
                     }
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.action_delete))
                 }
             },
             dismissButton = {
@@ -338,12 +383,35 @@ fun RadioScreen(
                             null
                     }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             },
         )
     }
 }
+
+private fun radioGenreLabelRes(
+    tag: String,
+): Int =
+    when (tag) {
+        "pop" -> R.string.radio_genre_pop
+        "rock" -> R.string.radio_genre_rock
+        "jazz" -> R.string.radio_genre_jazz
+        "classical" -> R.string.radio_genre_classical
+        "news" -> R.string.radio_genre_news
+        "electronic" -> R.string.radio_genre_electronic
+        "hip hop" -> R.string.radio_genre_hip_hop
+        "country" -> R.string.radio_genre_country
+        "metal" -> R.string.radio_genre_metal
+        "ambient" -> R.string.radio_genre_ambient
+        "lounge" -> R.string.radio_genre_lounge
+        "dance" -> R.string.radio_genre_dance
+        "reggae" -> R.string.radio_genre_reggae
+        "blues" -> R.string.radio_genre_blues
+        "talk" -> R.string.radio_genre_talk
+        else -> R.string.radio_title
+    }
+
 
 @Composable
 private fun SectionLabel(text: String) {
@@ -364,6 +432,24 @@ private fun StationRow(
     onEdit: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
 ) {
+    val stationName =
+        if (station.displayName.isBlank()) {
+            stringResource(
+                R.string.radio_default_station
+            )
+        } else {
+            station.displayName
+        }
+
+    val stationGenre =
+        if (station.genre.isBlank()) {
+            stringResource(
+                R.string.radio_internet_radio
+            )
+        } else {
+            station.genre
+        }
+
     var menuOpen by
         remember(station.uuid) {
             mutableStateOf(false)
@@ -381,9 +467,15 @@ private fun StationRow(
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(station.displayName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                stationName,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
             val meta = buildList {
-                if (station.genre.isNotBlank()) add(station.genre)
+                add(stationGenre)
                 station.codec?.takeIf { it.isNotBlank() }?.let { add(it.uppercase()) }
                 station.bitrate?.takeIf { it > 0 }?.let { add("${it}k") }
             }.joinToString(" • ")
@@ -396,7 +488,7 @@ private fun StationRow(
             Box {
                 Icon(
                     Icons.Filled.MoreVert,
-                    "Custom station settings",
+                    stringResource(R.string.radio_custom_station_settings),
                     tint =
                         MaterialTheme
                             .colorScheme
@@ -420,7 +512,7 @@ private fun StationRow(
                     if (onEdit != null) {
                         DropdownMenuItem(
                             text = {
-                                Text("Edit")
+                                Text(stringResource(R.string.action_edit))
                             },
                             onClick = {
                                 menuOpen = false
@@ -438,7 +530,7 @@ private fun StationRow(
                     if (onDelete != null) {
                         DropdownMenuItem(
                             text = {
-                                Text("Delete")
+                                Text(stringResource(R.string.action_delete))
                             },
                             onClick = {
                                 menuOpen = false
@@ -468,9 +560,9 @@ private fun StationRow(
                     Icons.Filled.FavoriteBorder
                 },
                 if (isFavorite) {
-                    "Unfavorite"
+                    stringResource(R.string.radio_unfavorite)
                 } else {
-                    "Favorite"
+                    stringResource(R.string.radio_favorite)
                 },
                 tint =
                     if (isFavorite) {
@@ -494,7 +586,7 @@ private fun StationRow(
             )
         }
         Icon(
-            Icons.Filled.PlayArrow, "Play",
+            Icons.Filled.PlayArrow, stringResource(R.string.action_play),
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onPlay).padding(8.dp),
         )
@@ -554,7 +646,7 @@ private fun StreamEditorDialog(
                     },
                     label = {
                         Text(
-                            "Name (optional)"
+                            stringResource(R.string.radio_name_optional)
                         )
                     },
                     singleLine = true,
@@ -571,7 +663,7 @@ private fun StreamEditorDialog(
                         error = null
                     },
                     label = {
-                        Text("Stream URL")
+                        Text(stringResource(R.string.radio_stream_url))
                     },
                     singleLine = true,
                     placeholder = {
@@ -630,7 +722,7 @@ private fun StreamEditorDialog(
                 onClick =
                     onDismiss
             ) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         },
     )

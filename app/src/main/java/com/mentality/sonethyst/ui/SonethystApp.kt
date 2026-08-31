@@ -68,6 +68,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.accountKey
 import com.mentality.sonethyst.navigation.Routes
@@ -77,6 +78,7 @@ import com.mentality.sonethyst.ui.components.AddSongsToPlaylistSheet
 import com.mentality.sonethyst.ui.components.MiniPlayer
 import com.mentality.sonethyst.ui.components.PlaylistPickerSheet
 import com.mentality.sonethyst.ui.components.SidebarContent
+import com.mentality.sonethyst.ui.components.displayTitle
 import com.mentality.sonethyst.ui.screens.auth.SignInScreen
 import com.mentality.sonethyst.ui.screens.detail.DetailScreen
 import com.mentality.sonethyst.ui.screens.home.HomeScreen
@@ -189,12 +191,12 @@ fun SonethystApp() {
                         confirm(
                             if (updated) {
                                 if (rating == 0) {
-                                    "Rating cleared"
+                                    context.getString(R.string.app_rating_cleared)
                                 } else {
-                                    "Rated ${rating}/5"
+                                    context.getString(R.string.app_rated, rating)
                                 }
                             } else {
-                                "Couldn't update rating"
+                                context.getString(R.string.app_rating_failed)
                             }
                         )
                     }
@@ -221,9 +223,9 @@ fun SonethystApp() {
 
                 confirm(
                     if (hidden) {
-                        "Hidden from library"
+                        context.getString(R.string.app_track_hidden)
                     } else {
-                        "Couldn't hide track"
+                        context.getString(R.string.app_hide_track_failed)
                     }
                 )
             }
@@ -235,8 +237,11 @@ fun SonethystApp() {
                 val already = container.downloadManager.isDownloaded(song.id)
                 container.downloadManager.downloadSong(song)
                 confirm(
-                    if (already) "Already downloaded"
-                    else "Downloading “${song.title}”"
+                    if (already) context.getString(R.string.app_already_downloaded)
+                    else context.getString(
+                        R.string.app_downloading_named,
+                        context.displayTitle(song.title),
+                    )
                 )
             }
         }
@@ -245,7 +250,7 @@ fun SonethystApp() {
         remember(container, confirm) {
             { id ->
                 container.downloadManager.removeDownload(id)
-                confirm("Removed download")
+                confirm(context.getString(R.string.app_removed_download))
             }
         }
 
@@ -298,7 +303,17 @@ fun SonethystApp() {
         } else if (hadActiveDownloads) {
             hadActiveDownloads = false
             snackbarHostState.showSnackbar(
-                if (failedDownloads > 0) "Download finished — $failedDownloads failed" else "Download complete",
+                if (failedDownloads > 0) {
+                    context.resources.getQuantityString(
+                        R.plurals.app_download_finished_failed,
+                        failedDownloads,
+                        failedDownloads,
+                    )
+                } else {
+                    context.getString(
+                        R.string.app_download_complete
+                    )
+                },
                 duration = androidx.compose.material3.SnackbarDuration.Short,
             )
         }
@@ -499,11 +514,15 @@ fun SonethystApp() {
                             addSongsCandidates = emptyList()
 
                             confirm(
-                                "Added ${songs.size} song${if (songs.size == 1) "" else "s"}"
+                                context.resources.getQuantityString(
+                                    R.plurals.app_added_songs,
+                                    songs.size,
+                                    songs.size,
+                                )
                             )
                         } else {
                             confirm(
-                                "Couldn't add songs to playlist"
+                                context.getString(R.string.app_add_songs_failed)
                             )
                         }
                     }
@@ -535,12 +554,20 @@ fun SonethystApp() {
                     confirm(
                         if (added) {
                             if (targets.size == 1) {
-                                "Added to ${playlist.title}"
+                                context.getString(
+                                    R.string.app_added_to_playlist,
+                                    playlist.title,
+                                )
                             } else {
-                                "Added ${targets.size} tracks to ${playlist.title}"
+                                context.resources.getQuantityString(
+                                    R.plurals.app_added_tracks_to_playlist,
+                                    targets.size,
+                                    targets.size,
+                                    playlist.title,
+                                )
                             }
                         } else {
-                            "Couldn't add to playlist"
+                            context.getString(R.string.app_add_to_playlist_failed)
                         }
                     )
                 }
@@ -556,13 +583,14 @@ fun SonethystApp() {
 
                     confirm(
                         if (created) {
-                            if (targets.size == 1) {
-                                "Created $name and added track"
-                            } else {
-                                "Created $name and added ${targets.size} tracks"
-                            }
+                            context.resources.getQuantityString(
+                                R.plurals.app_created_playlist_added,
+                                targets.size,
+                                targets.size,
+                                name,
+                            )
                         } else {
-                            "Couldn't create playlist"
+                            context.getString(R.string.app_create_playlist_failed)
                         }
                     )
                 }
@@ -593,13 +621,17 @@ fun SonethystApp() {
 
                         confirm(
                             if (tags.isEmpty()) {
-                                "Tags cleared"
+                                context.getString(R.string.app_tags_cleared)
                             } else {
-                                "Tags updated"
+                                context.getString(R.string.app_tags_updated)
                             }
                         )
                     } else {
-                        confirm("Couldn't update tags")
+                        confirm(
+                            context.getString(
+                                R.string.app_tags_failed
+                            )
+                        )
                     }
                 }
             },
@@ -623,6 +655,7 @@ fun SonethystApp() {
                 SidebarContent(
                     username = session?.username ?: "",
                     server = session?.server ?: "",
+                    isLocal = session?.type == com.mentality.sonethyst.data.ServerType.LOCAL,
                     avatarUrl = session?.imageUrl ?: "",
                     onProfile = { navController.navigate(Routes.PROFILE) },
                     onSettings = { navController.navigate(Routes.SETTINGS) },
@@ -663,7 +696,7 @@ fun SonethystApp() {
                                 ) {
                                     Icon(Icons.Filled.CloudOff, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                                     Spacer(Modifier.width(6.dp))
-                                    Text("Offline mode", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                    Text(context.getString(R.string.storage_offline_mode), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                 }
                                 Spacer(Modifier.height(8.dp))
                             }
@@ -740,6 +773,7 @@ fun SonethystApp() {
                             contentPadding = inner,
                             state = homeState,
                             username = session?.username ?: "",
+                            isLocal = session?.type == com.mentality.sonethyst.data.ServerType.LOCAL,
                             avatarUrl = session?.imageUrl ?: "",
                             onOpenDrawer = { openDrawer() },
                             onOpenSettings = { navController.navigate(Routes.SETTINGS) },
@@ -763,8 +797,8 @@ fun SonethystApp() {
                             isPlaying = playerState.isPlaying,
                             onQuery = searchVM::onQuery,
                             onPlayAll = { songs, index -> playerVM.playAll(songs, index) },
-                            onAddToQueue = { playerVM.addToQueue(it); confirm("Added to queue") },
-                            onPlayNext = { playerVM.playNext(it); confirm("Playing next") },
+                            onAddToQueue = { playerVM.addToQueue(it); confirm(context.getString(R.string.app_added_to_queue)) },
+                            onPlayNext = { playerVM.playNext(it); confirm(context.getString(R.string.app_playing_next)) },
 onAddToPlaylist = { openPlaylistPicker(it) },
                             onToggleLike = { playerVM.toggleLike(it) },
                             onOpenDetail = { kind, id -> openDetail(kind, id) },
@@ -878,7 +912,15 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                                             )
                                         } != null
                                     }.getOrDefault(false)
-                                    confirm(if (ok) "Playlist exported" else "Export failed")
+                                    confirm(
+                                        context.getString(
+                                            if (ok) {
+                                                R.string.app_playlist_exported
+                                            } else {
+                                                R.string.app_export_failed
+                                            }
+                                        )
+                                    )
                                 }
                             }
                         }
@@ -898,12 +940,24 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                                     t to n
                                 }
                                 val entries = text?.let { com.mentality.sonethyst.data.M3u.parse(it) }.orEmpty()
-                                if (entries.isEmpty()) { confirm("No tracks found in that file") } else {
-                                    val name = displayName?.substringBeforeLast('.')?.takeIf { it.isNotBlank() } ?: "Imported playlist"
-                                    confirm("Importing ${entries.size} tracks…")
+                                if (entries.isEmpty()) { confirm(context.getString(R.string.app_no_tracks_in_file)) } else {
+                                    val name = displayName?.substringBeforeLast('.')?.takeIf { it.isNotBlank() } ?: context.getString(R.string.app_imported_playlist)
+                                    confirm(
+                                        context.resources.getQuantityString(
+                                            R.plurals.app_importing_tracks,
+                                            entries.size,
+                                            entries.size,
+                                        )
+                                    )
                                     val result = container.repository.importPlaylist(name, entries)
-                                    if (result == null) confirm("Import failed") else {
-                                        confirm("Matched ${result.first} of ${result.second} tracks")
+                                    if (result == null) confirm(context.getString(R.string.app_import_failed)) else {
+                                        confirm(
+                                            context.getString(
+                                                R.string.app_matched_tracks,
+                                                result.first,
+                                                result.second,
+                                            )
+                                        )
                                         libraryVM.load()
                                     }
                                 }
@@ -922,8 +976,8 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             onToggleLayout = libraryVM::toggleLayout,
                             onOpenDrawer = { openDrawer() },
                             onPlayAll = { songs, index -> playerVM.playAll(songs, index) },
-                            onAddToQueue = { playerVM.addToQueue(it); confirm("Added to queue") },
-                            onPlayNext = { playerVM.playNext(it); confirm("Playing next") },
+                            onAddToQueue = { playerVM.addToQueue(it); confirm(context.getString(R.string.app_added_to_queue)) },
+                            onPlayNext = { playerVM.playNext(it); confirm(context.getString(R.string.app_playing_next)) },
                             onAddToPlaylist = { openPlaylistPicker(it) },
                             onToggleLike = { playerVM.toggleLike(it) },
                             onOpenDetail = { kind, id -> openDetail(kind, id) },
@@ -948,7 +1002,7 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             onImportM3u = { importM3uLauncher.launch(arrayOf("*/*")) },
                             onExportPlaylist = { id, kind, title -> scope.launch {
                                 val text = container.repository.exportPlaylist(kind, id)
-                                if (text == null) confirm("Nothing to export") else {
+                                if (text == null) confirm(context.getString(R.string.app_nothing_to_export)) else {
                                     pendingM3u = text
                                     exportM3uLauncher.launch("$title.m3u8")
                                 }
@@ -961,7 +1015,13 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             onQueueCollection = { id, kind -> scope.launch {
                                 val tracks = container.repository.detail(kind, id)?.tracks.orEmpty()
                                 tracks.forEach { playerVM.addToQueue(it) }
-                                if (tracks.isNotEmpty()) confirm("Added ${tracks.size} to queue")
+                                if (tracks.isNotEmpty()) confirm(
+                                    context.resources.getQuantityString(
+                                        R.plurals.app_added_tracks_queue,
+                                        tracks.size,
+                                        tracks.size,
+                                    )
+                                )
                             } },
                             onToggleLikeKind = { id, kind -> playerVM.toggleLike(id, kind) },
                             onDeletePlaylist = { id ->
@@ -1080,9 +1140,9 @@ onAddToPlaylist = { openPlaylistPicker(it) },
 
                                 confirm(
                                     if (hidden) {
-                                        "Album hidden from library"
+                                        context.getString(R.string.app_album_hidden)
                                     } else {
-                                        "Couldn't hide album"
+                                        context.getString(R.string.app_hide_album_failed)
                                     }
                                 )
                             },
@@ -1094,9 +1154,9 @@ onAddToPlaylist = { openPlaylistPicker(it) },
 
                                 confirm(
                                     if (restored) {
-                                        "Restored to library"
+                                        context.getString(R.string.app_restored_library)
                                     } else {
-                                        "Couldn't restore item"
+                                        context.getString(R.string.app_restore_failed)
                                     }
                                 )
                             },
@@ -1129,8 +1189,8 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             onOpenFolder = { id, name -> navController.navigate(Routes.folders(id, name)) },
                             onPlayAll = { songs, index -> playerVM.playAll(songs, index) },
                             onShufflePlay = { songs -> playerVM.shufflePlay(songs) },
-                            onAddToQueue = { playerVM.addToQueue(it); confirm("Added to queue") },
-                            onPlayNext = { playerVM.playNext(it); confirm("Playing next") },
+                            onAddToQueue = { playerVM.addToQueue(it); confirm(context.getString(R.string.app_added_to_queue)) },
+                            onPlayNext = { playerVM.playNext(it); confirm(context.getString(R.string.app_playing_next)) },
                             onToggleLike = { playerVM.toggleLike(it) },
                             onOpenDetail = { k, i -> openDetail(k, i) },
                             downloadedIds = downloadedIds,
@@ -1182,7 +1242,16 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             contentPadding = inner,
                             username = session?.username ?: "",
                             server = session?.server ?: "",
-                            serverLabel = session?.typeLabel ?: "",
+                            serverLabel =
+                                session
+                                    ?.let {
+                                        localizedServerTypeLabel(
+                                            context,
+                                            it.type,
+                                        )
+                                    }
+                                    .orEmpty(),
+                            isLocal = session?.type == com.mentality.sonethyst.data.ServerType.LOCAL,
                             avatarUrl = session?.imageUrl ?: "",
                             playlists = homeState.data.playlists,
                             artists = homeState.data.artists,
@@ -1210,7 +1279,7 @@ onAddToPlaylist = { openPlaylistPicker(it) },
                             onBack = { navController.popBackStack() },
                             onPlayAll = { songs, index -> playerVM.playCollection(kind, id, songs, index, detailState.data?.info?.songCount ?: songs.size) },
                             onShufflePlay = { songs -> playerVM.shuffleCollection(kind, id, songs, detailState.data?.info?.songCount ?: songs.size) },
-                            onAddToQueue = { playerVM.addToQueue(it); confirm("Added to queue") },
+                            onAddToQueue = { playerVM.addToQueue(it); confirm(context.getString(R.string.app_added_to_queue)) },
                             onAddSelectedToPlaylist = { songs ->
                                 openPlaylistPickerForSongs(
                                     songs,
@@ -1229,9 +1298,13 @@ onAddToPlaylist = { openPlaylistPicker(it) },
 
                                     confirm(
                                         if (pending.isEmpty()) {
-                                            "Selected tracks already downloaded"
+                                            context.getString(R.string.app_selected_downloaded)
                                         } else {
-                                            "Downloading ${pending.size} tracks"
+                                            context.resources.getQuantityString(
+                                                R.plurals.app_downloading_tracks,
+                                                pending.size,
+                                                pending.size,
+                                            )
                                         }
                                     )
                                 }) else null,
@@ -1247,17 +1320,31 @@ onAddToPlaylist = { openPlaylistPicker(it) },
 
                                 confirm(
                                     if (liked) {
-                                        "Added ${songs.size} tracks to liked"
+                                        context.resources.getQuantityString(
+                                            R.plurals.app_added_tracks_liked,
+                                            songs.size,
+                                            songs.size,
+                                        )
                                     } else {
-                                        "Removed ${songs.size} tracks from liked"
+                                        context.resources.getQuantityString(
+                                            R.plurals.app_removed_tracks_liked,
+                                            songs.size,
+                                            songs.size,
+                                        )
                                     }
                                 )
                             },
                             onAddSelectedToQueue = { songs ->
                                 songs.forEach { playerVM.addToQueue(it) }
-                                confirm("Added ${songs.size} tracks to queue")
+                                confirm(
+                                    context.resources.getQuantityString(
+                                        R.plurals.app_added_tracks_queue,
+                                        songs.size,
+                                        songs.size,
+                                    )
+                                )
                             },
-                            onPlayNext = { playerVM.playNext(it); confirm("Playing next") },
+                            onPlayNext = { playerVM.playNext(it); confirm(context.getString(R.string.app_playing_next)) },
 onAddToPlaylist = {
                                 openPlaylistPicker(
                                     it,
@@ -1277,7 +1364,13 @@ onAddToPlaylist = {
                                             id,
                                             ordered.map { it.id },
                                         )
-                                        if (!ok) confirm("Couldn't save playlist order")
+                                        if (!ok) {
+                                            confirm(
+                                                context.getString(
+                                                    R.string.app_playlist_order_failed
+                                                )
+                                            )
+                                        }
                                     }
                                 }) else null,
                             onRemoveSelectedFromPlaylist =
@@ -1291,9 +1384,13 @@ onAddToPlaylist = {
 
                                         confirm(
                                             if (removed) {
-                                                "Removed ${songs.size} tracks from playlist"
+                                                context.resources.getQuantityString(
+                                                    R.plurals.app_removed_tracks_playlist,
+                                                    songs.size,
+                                                    songs.size,
+                                                )
                                             } else {
-                                                "Couldn't remove selected tracks"
+                                                context.getString(R.string.app_remove_selected_failed)
                                             }
                                         )
                                     }
@@ -1306,9 +1403,12 @@ onAddToPlaylist = {
                                     )
                                     confirm(
                                         if (removed) {
-                                            "Removed ${song.title} from playlist"
+                                            context.getString(
+                                                R.string.app_removed_named_from_playlist,
+                                                context.displayTitle(song.title),
+                                            )
                                         } else {
-                                            "Couldn't remove track"
+                                            context.getString(R.string.app_remove_track_failed)
                                         }
                                     )
                                 }
@@ -1330,7 +1430,20 @@ onAddToPlaylist = {
                                         container.downloadManager.downloadAll(d.tracks)
                                     }
                                     val n = d.tracks.count { !container.downloadManager.isDownloaded(it.id) }
-                                    confirm(if (n > 0) "Downloading $n song${if (n == 1) "" else "s"}" else "Already downloaded")
+                                    confirm(
+                                        if (n > 0) {
+                                            context.resources
+                                                .getQuantityString(
+                                                    R.plurals.app_downloading_tracks,
+                                                    n,
+                                                    n,
+                                                )
+                                        } else {
+                                            context.getString(
+                                                R.string.app_already_downloaded
+                                            )
+                                        }
+                                    )
                                 }
                             },
                             onRemoveDownloads = {
@@ -1384,9 +1497,9 @@ onAddToPlaylist = {
 
                                         confirm(
                                             if (ok) {
-                                                "Smart playlist cover updated"
+                                                context.getString(R.string.app_smart_cover_updated)
                                             } else {
-                                                "Couldn't update smart playlist cover"
+                                                context.getString(R.string.app_smart_cover_failed)
                                             }
                                         )
                                     }
@@ -1414,9 +1527,9 @@ onAddToPlaylist = {
 
                                         confirm(
                                             if (ok) {
-                                                "Playlist cover updated"
+                                                context.getString(R.string.app_playlist_cover_updated)
                                             } else {
-                                                "Couldn't update playlist cover"
+                                                context.getString(R.string.app_playlist_cover_failed)
                                             }
                                         )
                                     }
@@ -1525,12 +1638,12 @@ onAddToPlaylist = {
 
                                             if (hidden) {
                                                 confirm(
-                                                    "Album hidden from library"
+                                                    context.getString(R.string.app_album_hidden)
                                                 )
                                                 navController.popBackStack()
                                             } else {
                                                 confirm(
-                                                    "Couldn't hide album"
+                                                    context.getString(R.string.app_hide_album_failed)
                                                 )
                                             }
                                         }
@@ -1593,13 +1706,25 @@ onAddToPlaylist = {
                                         confirm(
                                             when {
                                                 failed == 0 ->
-                                                    "$succeeded tracks updated"
+                                                    context.resources.getQuantityString(
+                                                    R.plurals.app_batch_tracks_updated,
+                                                    succeeded,
+                                                    succeeded,
+                                                )
 
                                                 succeeded == 0 ->
-                                                    "Update failed for all $failed tracks"
+                                                    context.resources.getQuantityString(
+                                                    R.plurals.app_batch_all_failed,
+                                                    failed,
+                                                    failed,
+                                                )
 
                                                 else ->
-                                                    "$succeeded updated, $failed failed"
+                                                    context.getString(
+                                                    R.string.app_batch_partial,
+                                                    succeeded,
+                                                    failed,
+                                                )
                                             }
                                         )
 
@@ -1694,9 +1819,9 @@ onAddToPlaylist = {
                                     vm.save { ok ->
                                         confirm(
                                             if (ok) {
-                                                "Lyrics saved"
+                                                context.getString(R.string.app_lyrics_saved)
                                             } else {
-                                                "Couldn't save lyrics"
+                                                context.getString(R.string.app_lyrics_save_failed)
                                             }
                                         )
                                     }
@@ -1705,9 +1830,9 @@ onAddToPlaylist = {
                                     vm.clear { ok ->
                                         confirm(
                                             if (ok) {
-                                                "Custom lyrics removed"
+                                                context.getString(R.string.app_custom_lyrics_removed)
                                             } else {
-                                                "Couldn't remove custom lyrics"
+                                                context.getString(R.string.app_custom_lyrics_remove_failed)
                                             }
                                         )
                                     }
@@ -1750,6 +1875,7 @@ onAddToPlaylist = {
                             contentPadding = inner,
                             username = session?.username ?: "",
                             server = session?.server ?: "",
+                            isLocal = session?.type == com.mentality.sonethyst.data.ServerType.LOCAL,
                             onBack = { navController.popBackStack() },
                             onOpenPlayback = { navController.navigate(Routes.SETTINGS_PLAYBACK) },
                             onOpenEq = { navController.navigate(Routes.SETTINGS_EQ) },
@@ -1779,7 +1905,15 @@ onAddToPlaylist = {
                             onBack = { navController.popBackStack() },
                             onSwitch = { s ->
                                 scope.launch { container.switchSession(s) }   // playback stop and reload via accountEpoch
-                                confirm("Switched to ${s.typeLabel}")
+                                confirm(
+                                    context.getString(
+                                        R.string.app_switched_server,
+                                        localizedServerTypeLabel(
+                                            context,
+                                            s.type,
+                                        ),
+                                    )
+                                )
                                 navController.popBackStack()
                             },
                             onForget = { s -> scope.launch { container.forgetSavedSession(s) } },
@@ -1871,7 +2005,7 @@ onAddToPlaylist = {
                                     dupVM.scan(
                                         refreshLocal = true
                                     )
-                                    confirm("File deleted")
+                                    confirm(context.getString(R.string.app_file_deleted))
                                 }
                             }
 
@@ -1894,7 +2028,7 @@ onAddToPlaylist = {
                                         )
                                 ) {
                                     confirm(
-                                        "Only local files can be deleted here"
+                                        context.getString(R.string.app_only_local_delete)
                                     )
                                 } else if (
                                     Build.VERSION.SDK_INT >= 30
@@ -1914,7 +2048,7 @@ onAddToPlaylist = {
                                         )
                                     }.onFailure {
                                         confirm(
-                                            "Couldn't request file deletion"
+                                            context.getString(R.string.app_delete_request_failed)
                                         )
                                     }
                                 } else {
@@ -1965,7 +2099,7 @@ onAddToPlaylist = {
                                                     refreshLocal = true
                                                 )
                                                 confirm(
-                                                    "File deleted"
+                                                    context.getString(R.string.app_file_deleted)
                                                 )
                                             }
 
@@ -1980,7 +2114,7 @@ onAddToPlaylist = {
 
                                             else -> {
                                                 confirm(
-                                                    "Couldn't delete file"
+                                                    context.getString(R.string.app_delete_file_failed)
                                                 )
                                             }
                                         }
@@ -2025,11 +2159,29 @@ onAddToPlaylist = {
                         )
                     }
                     composable(Routes.PODCASTS) {
+                        val podcastFallback =
+                            androidx.compose.ui.res.stringResource(
+                                R.string.podcasts_default_show
+                            )
+
                         com.mentality.sonethyst.ui.screens.podcasts.PodcastsScreen(
                             contentPadding = inner,
                             onBack = { navController.popBackStack() },
                             onOpenPodcast = { p ->
-                                navController.navigate(Routes.podcastDetail(p.feedUrl, p.displayTitle, p.imageUrl.orEmpty(), p.author.orEmpty()))
+                                navController.navigate(
+                                    Routes.podcastDetail(
+                                        p.feedUrl,
+                                        if (
+                                            p.displayTitle.isBlank()
+                                        ) {
+                                            podcastFallback
+                                        } else {
+                                            p.displayTitle
+                                        },
+                                        p.imageUrl.orEmpty(),
+                                        p.author.orEmpty(),
+                                    )
+                                )
                             },
                         )
                     }
@@ -2176,6 +2328,27 @@ onAddToPlaylist = {
     BackHandler(enabled = showVisualizer) { showVisualizer = false }
 }
 
+private fun localizedServerTypeLabel(
+    context: android.content.Context,
+    type: com.mentality.sonethyst.data.ServerType,
+): String =
+    context.getString(
+        when (type) {
+            com.mentality.sonethyst.data.ServerType.SPOTIFY ->
+                R.string.server_spotify
+
+            com.mentality.sonethyst.data.ServerType.JELLYFIN ->
+                R.string.server_jellyfin
+
+            com.mentality.sonethyst.data.ServerType.SUBSONIC ->
+                R.string.server_navidrome
+
+            com.mentality.sonethyst.data.ServerType.LOCAL ->
+                R.string.server_local
+        }
+    )
+
+
 @Composable
 private fun DownloadProgressBanner(count: Int, progress: Float) {
     val animated by androidx.compose.animation.core.animateFloatAsState(
@@ -2196,7 +2369,11 @@ private fun DownloadProgressBanner(count: Int, progress: Float) {
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                if (count == 1) "Downloading 1 song" else "Downloading $count songs",
+                androidx.compose.ui.res.pluralStringResource(
+                    R.plurals.app_downloading_tracks,
+                    count,
+                    count,
+                ),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -2232,6 +2409,11 @@ private fun FloatingNav(currentRoute: String?, onNavigate: (String) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         topLevelDestinations.forEach { dest ->
+            val destLabel =
+                androidx.compose.ui.res.stringResource(
+                    dest.labelRes
+                )
+
             val selected = currentRoute == dest.route
             val bg by animateColorAsState(
                 if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
@@ -2248,11 +2430,11 @@ private fun FloatingNav(currentRoute: String?, onNavigate: (String) -> Unit) {
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(if (selected) dest.selectedIcon else dest.unselectedIcon, dest.label, tint = content, modifier = Modifier.size(22.dp))
+                Icon(if (selected) dest.selectedIcon else dest.unselectedIcon, destLabel, tint = content, modifier = Modifier.size(22.dp))
                 AnimatedVisibility(visible = selected) {
                     Row {
                         Spacer(Modifier.width(8.dp))
-                        Text(dest.label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = content)
+                        Text(destLabel, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = content)
                     }
                 }
             }

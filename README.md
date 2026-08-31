@@ -1,6 +1,6 @@
 # Sonethyst
 
-Sonethyst is a fork of Aurora by nessli420, licensed under Apache 2.0, with its own branding and continued development.
+Sonethyst is licensed under GPL-3.0-only. It is based in part on Aurora by nessli420; third-party components remain under their respective licenses. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 A native Android music client for self-hosted libraries (**Navidrome/Subsonic** and **Jellyfin**) that also connects to **Green Music App** and plays **local files** on the device. Built with Jetpack Compose on Media3/ExoPlayer. Includes a switchable software DSP engine, ReplayGain, and an experimental USB DAC driver for bit-perfect output.
 
@@ -178,7 +178,12 @@ Sonethyst uses a number of other projects. The notable ones:
 - AndroidX **Media3/ExoPlayer**, **Jetpack Compose**, **Glance**, **DataStore**, **Palette**; **Retrofit** / **OkHttp** / **Gson**; **Coil**; **Lottie**; and the Google **Cast SDK**.
 - Metadata from **[MusicBrainz](https://musicbrainz.org)**; cover art from the **[Cover Art Archive](https://coverartarchive.org)**.
 
-Vendored `decent/` modules retain their MIT licensing; bundled xiph/flac and Chromaprint sources keep their original licenses (see the file headers). decent-player's AGPL proof-of-concept harness is not included, only its MIT libraries.
+Sonethyst is licensed under GPL-3.0-only. Third-party components retain their respective licenses; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) and the packaged `assets/licenses/` bundle. decent-player's AGPL proof-of-concept harness is not included, only its MIT libraries.
 
 Sonethyst isn't affiliated with or endorsed by Navidrome, Jellyfin, Green Music App, Last.fm, ListenBrainz, Discord, or any DAC manufacturer; brand and device names are used descriptively, for interoperability.
 
+## License
+
+Sonethyst is licensed under GPL-3.0-only. Third-party components remain under
+their respective licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Copyright (C) 2026 Sonethyst contributors.

@@ -14,6 +14,10 @@ class SonethystApplication : Application() {
         container = AppContainer(this)
     }
 
+    override fun attachBaseContext(base: android.content.Context) {
+        super.attachBaseContext(AppLocale.wrap(base))
+    }
+
     private fun migrateLegacySettings() {
         runCatching {
             val dataStoreDir = File(filesDir, "datastore")

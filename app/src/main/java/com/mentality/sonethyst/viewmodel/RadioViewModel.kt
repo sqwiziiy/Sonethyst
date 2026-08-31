@@ -1,5 +1,6 @@
 package com.mentality.sonethyst.viewmodel
 
+import com.mentality.sonethyst.R
 import android.app.Application
 import android.icu.text.Transliterator
 import android.net.Uri
@@ -362,7 +363,10 @@ class RadioViewModel(
         url: String,
     ): String? {
         if (station.custom != true) {
-            return "Only custom stations can be edited"
+            return getApplication<Application>()
+                .getString(
+                    R.string.radio_custom_edit_only
+                )
         }
 
         val error =
@@ -429,7 +433,10 @@ class RadioViewModel(
             url.trim()
 
         if (clean.isBlank()) {
-            return "Enter a stream URL"
+            return getApplication<Application>()
+                .getString(
+                    R.string.radio_stream_url_required
+                )
         }
 
         if (
@@ -437,14 +444,20 @@ class RadioViewModel(
                 it.isWhitespace()
             }
         ) {
-            return "The URL can't contain spaces"
+            return getApplication<Application>()
+                .getString(
+                    R.string.radio_url_no_spaces
+                )
         }
 
         val uri =
             runCatching {
                 Uri.parse(clean)
             }.getOrNull()
-                ?: return "Enter a valid stream URL"
+                ?: return getApplication<Application>()
+                    .getString(
+                        R.string.radio_url_invalid
+                    )
 
         val scheme =
             uri.scheme
@@ -454,14 +467,20 @@ class RadioViewModel(
             scheme != "http" &&
             scheme != "https"
         ) {
-            return "Use an http:// or https:// stream URL"
+            return getApplication<Application>()
+                .getString(
+                    R.string.radio_url_http_required
+                )
         }
 
         if (
             uri.host
                 .isNullOrBlank()
         ) {
-            return "Enter a valid stream URL"
+            return getApplication<Application>()
+                .getString(
+                    R.string.radio_url_invalid
+                )
         }
 
         val normalized =
@@ -470,7 +489,10 @@ class RadioViewModel(
             )
 
         if (normalized.isBlank()) {
-            return "Enter a valid stream URL"
+            return getApplication<Application>()
+                .getString(
+                    R.string.radio_url_invalid
+                )
         }
 
         val duplicate =
@@ -484,7 +506,20 @@ class RadioViewModel(
                 }
 
         if (duplicate != null) {
-            return "This stream is already saved as “${duplicate.displayName}”"
+            return getApplication<Application>()
+                .getString(
+                    R.string.radio_stream_duplicate,
+                    if (
+                        duplicate.displayName.isBlank()
+                    ) {
+                        getApplication<Application>()
+                            .getString(
+                                R.string.radio_default_station
+                            )
+                    } else {
+                        duplicate.displayName
+                    },
+                )
         }
 
         return null

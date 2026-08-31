@@ -1,5 +1,7 @@
 package com.mentality.sonethyst.ui.components
 
+import com.mentality.sonethyst.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -86,14 +88,14 @@ fun MiniPlayer(
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    song.title,
+                    displayTitle(song.title),
                     style = if (ui.miniStyle == MiniStyle.PROMINENT) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    song.artist,
+                    displayArtist(song.artist),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -103,20 +105,29 @@ fun MiniPlayer(
             if (showLike) {
                 Icon(
                     imageVector = if (state.isCurrentLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = "Like",
+                    contentDescription =
+                        stringResource(
+                            R.string.mini_like
+                        ),
                     tint = likeTint,
                     modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onToggleLike).padding(8.dp),
                 )
             }
             Icon(
                 imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = "Play/pause",
+                contentDescription =
+                    stringResource(
+                        R.string.mini_play_pause
+                    ),
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onTogglePlay).padding(6.dp),
             )
             Icon(
                 imageVector = Icons.Filled.SkipNext,
-                contentDescription = "Next",
+                contentDescription =
+                    stringResource(
+                        R.string.mini_next
+                    ),
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onNext).padding(6.dp),
             )

@@ -21,8 +21,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.GesturePrefs
 import com.mentality.sonethyst.data.PlaybackPrefs
@@ -40,36 +42,63 @@ fun GesturesSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     Column(Modifier.fillMaxWidth()) {
-        SettingsTopBar("Gestures & behaviour", onBack)
+        SettingsTopBar(
+            stringResource(R.string.gestures_title),
+            onBack,
+        )
         LazyColumn(Modifier.fillMaxWidth(), contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding() + 24.dp)) {
-            item { SettingsSectionTitle("Player gestures") }
+            item { SettingsSectionTitle(stringResource(R.string.gestures_player)) }
             item {
                 SettingsGroup {
-                    SettingsSwitchRow(Icons.Filled.Swipe, "Swipe artwork to change track", "Swipe the player artwork left / right", gestures.swipeArtwork) { v -> scope.launch { store.setGestureSwipeArtwork(v) } }
+                    SettingsSwitchRow(
+                        Icons.Filled.Swipe,
+                        stringResource(R.string.gestures_swipe_artwork),
+                        stringResource(R.string.gestures_swipe_artwork_summary), gestures.swipeArtwork) { v -> scope.launch { store.setGestureSwipeArtwork(v) } }
                     SettingsRowDivider()
-                    SettingsSwitchRow(Icons.Filled.SwipeDown, "Swipe down to dismiss", "Pull down on the player & sheets to close them", gestures.swipeDownDismiss) { v -> scope.launch { store.setGestureSwipeDismiss(v) } }
+                    SettingsSwitchRow(
+                        Icons.Filled.SwipeDown,
+                        stringResource(R.string.gestures_swipe_down),
+                        stringResource(R.string.gestures_swipe_down_summary), gestures.swipeDownDismiss) { v -> scope.launch { store.setGestureSwipeDismiss(v) } }
                     SettingsRowDivider()
-                    SettingsSwitchRow(Icons.Filled.TouchApp, "Double-tap to play / pause", "Double-tap the player artwork", gestures.doubleTapPause) { v -> scope.launch { store.setGestureDoubleTap(v) } }
+                    SettingsSwitchRow(
+                        Icons.Filled.TouchApp,
+                        stringResource(R.string.gestures_double_tap),
+                        stringResource(R.string.gestures_double_tap_summary), gestures.doubleTapPause) { v -> scope.launch { store.setGestureDoubleTap(v) } }
                 }
             }
 
-            item { SettingsSectionTitle("Feedback") }
+            item { SettingsSectionTitle(stringResource(R.string.gestures_feedback)) }
             item {
                 SettingsGroup {
-                    SettingsSwitchRow(Icons.Filled.Vibration, "Haptic feedback", "Subtle vibration on play, skip & navigation", haptics) { v -> scope.launch { store.setHaptics(v) } }
+                    SettingsSwitchRow(
+                        Icons.Filled.Vibration,
+                        stringResource(R.string.gestures_haptics),
+                        stringResource(R.string.gestures_haptics_summary), haptics) { v -> scope.launch { store.setHaptics(v) } }
                 }
             }
 
-            item { SettingsSectionTitle("Behaviour") }
+            item { SettingsSectionTitle(stringResource(R.string.gestures_behaviour)) }
             item {
                 SettingsGroup {
-                    SettingsSwitchRow(Icons.Filled.Notifications, "Push notifications", "New releases & recommendations", notifications) { notifications = it }
+                    SettingsSwitchRow(
+                        Icons.Filled.Notifications,
+                        stringResource(R.string.gestures_notifications),
+                        stringResource(R.string.gestures_notifications_summary), notifications) { notifications = it }
                     SettingsRowDivider()
-                    SettingsSwitchRow(Icons.Filled.Radio, "Autoplay radio", "Keep playing similar tracks when the queue ends", playback.autoplayRadio) { v -> scope.launch { store.setAutoplayRadio(v) } }
+                    SettingsSwitchRow(
+                        Icons.Filled.Radio,
+                        stringResource(R.string.gestures_autoplay_radio),
+                        stringResource(R.string.gestures_autoplay_radio_summary), playback.autoplayRadio) { v -> scope.launch { store.setAutoplayRadio(v) } }
                     SettingsRowDivider()
-                    SettingsSwitchRow(Icons.Filled.History, "Scrobble", "Report plays to your server", playback.scrobble) { v -> scope.launch { store.setScrobble(v) } }
+                    SettingsSwitchRow(
+                        Icons.Filled.History,
+                        stringResource(R.string.gestures_scrobble),
+                        stringResource(R.string.gestures_scrobble_summary), playback.scrobble) { v -> scope.launch { store.setScrobble(v) } }
                     SettingsRowDivider()
-                    SettingsSwitchRow(Icons.Filled.Lock, "Private session", "Don't report plays to your server or Last.fm", privateSession) { v -> scope.launch { store.setPrivateSession(v) } }
+                    SettingsSwitchRow(
+                        Icons.Filled.Lock,
+                        stringResource(R.string.gestures_private_session),
+                        stringResource(R.string.gestures_private_session_summary), privateSession) { v -> scope.launch { store.setPrivateSession(v) } }
                 }
             }
         }

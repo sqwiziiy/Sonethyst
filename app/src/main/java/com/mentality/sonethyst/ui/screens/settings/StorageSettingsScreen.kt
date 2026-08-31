@@ -28,9 +28,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.SonethystApplication
 import kotlinx.coroutines.launch
 
@@ -44,10 +47,23 @@ fun StorageSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val bytes = remember(downloads) { container.downloadManager.totalBytes() }
     val rates = listOf(0, 128, 192, 256, 320)
-    val rateLabels = listOf("Lossless", "128", "192", "256", "320")
+
+    val rateLabels =
+        listOf(
+            stringResource(R.string.playback_lossless),
+            "128",
+            "192",
+            "256",
+            "320",
+        )
+
+    val context = LocalContext.current
 
     Column(Modifier.fillMaxWidth()) {
-        SettingsTopBar("Downloads & storage", onBack)
+        SettingsTopBar(
+            stringResource(R.string.settings_downloads_storage),
+            onBack,
+        )
         Column(Modifier.fillMaxWidth().padding(bottom = contentPadding.calculateBottomPadding() + 24.dp)) {
             Row(
                 Modifier.fillMaxWidth().padding(16.dp).clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(18.dp),
@@ -56,21 +72,39 @@ fun StorageSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
                 Icon(Icons.Filled.DownloadDone, null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("${downloads.size} downloaded tracks", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(formatBytes(bytes) + " used", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        pluralStringResource(
+                            R.plurals.storage_downloaded_tracks,
+                            downloads.size,
+                            downloads.size,
+                        ), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        stringResource(
+                            R.string.storage_used,
+                            formatBytes(context, bytes),
+                        ), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
             if (!isLocal) {
-                SettingsSectionTitle("Download quality")
-                SegmentedRow("Bitrate", rateLabels, rates.indexOf(prefs.downloadBitrate).coerceAtLeast(0)) { i ->
+                SettingsSectionTitle(
+                    stringResource(R.string.storage_download_quality)
+                )
+                SegmentedRow(
+                    stringResource(R.string.storage_bitrate),
+                    rateLabels, rates.indexOf(prefs.downloadBitrate).coerceAtLeast(0)) { i ->
                     scope.launch { container.settingsStore.setDownloadBitrate(rates[i]) }
                 }
             }
 
-            SettingsSectionTitle("Offline")
+            SettingsSectionTitle(
+                stringResource(R.string.storage_offline)
+            )
             SettingsGroup {
-                SettingsSwitchRow(Icons.Filled.CloudOff, "Offline mode", "Only show & play downloaded music", offline) { v ->
+                SettingsSwitchRow(
+                    Icons.Filled.CloudOff,
+                    stringResource(R.string.storage_offline_mode),
+                    stringResource(R.string.storage_offline_summary), offline) { v ->
                     scope.launch { container.settingsStore.setOfflineMode(v) }
                 }
             }
@@ -78,7 +112,9 @@ fun StorageSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
             // ReplayGain scan only meaningful for on-device files (servers ship their own gains).
             if (isLocal) {
                 val rg by container.replayGainScanner.progress.collectAsStateWithLifecycle()
-                SettingsSectionTitle("Volume leveling")
+                SettingsSectionTitle(
+                    stringResource(R.string.eq_volume_leveling)
+                )
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
                         .clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)
@@ -96,32 +132,50 @@ fun StorageSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(
-                            if (rg.running) "Scanning ReplayGain…" else "Scan ReplayGain",
+                            if (rg.running) {
+                                stringResource(
+                                    R.string.storage_scanning_replaygain
+                                )
+                            } else {
+                                stringResource(
+                                    R.string.storage_scan_replaygain
+                                )
+                            },
                             style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium,
                         )
                         Text(
                             when {
                                 rg.running -> "${rg.done} / ${rg.total} • ${rg.current}"
-                                container.replayGainStore.size > 0 -> "${container.replayGainStore.size} tracks analysed — tap to rescan"
-                                else -> "Measure loudness (EBU R128) to level playback volume"
+                                container.replayGainStore.size > 0 ->
+                                    pluralStringResource(
+                                        R.plurals.storage_tracks_analysed,
+                                        container.replayGainStore.size,
+                                        container.replayGainStore.size,
+                                    )
+                                else ->
+                                    stringResource(
+                                        R.string.storage_measure_loudness
+                                    )
                             },
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                         )
                     }
                     if (rg.running) {
-                        Text("Cancel", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
+                        Text(stringResource(R.string.action_cancel), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.clip(RoundedCornerShape(50)).clickable { container.replayGainScanner.cancel() }.padding(horizontal = 10.dp, vertical = 6.dp))
                     }
                 }
                 Text(
-                    "Applies when ReplayGain is set to Track or Album in Equalizer → Volume leveling.",
+                    stringResource(R.string.storage_replaygain_note),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
                 )
             }
 
-            SettingsSectionTitle("Manage")
+            SettingsSectionTitle(
+                stringResource(R.string.storage_manage)
+            )
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
                     .clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)
@@ -131,11 +185,11 @@ fun StorageSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
             ) {
                 Icon(Icons.Filled.DeleteSweep, null, tint = MaterialTheme.colorScheme.error)
                 Spacer(Modifier.width(12.dp))
-                Text("Remove all downloads", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)
+                Text(stringResource(R.string.storage_remove_all), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)
             }
             Spacer(Modifier.height(8.dp))
             Text(
-                "Downloads are stored privately inside the app and removed when you uninstall.",
+                stringResource(R.string.storage_private_note),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
@@ -148,8 +202,11 @@ fun StorageSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
 private fun LocalContextApp() =
     (LocalContext.current.applicationContext as SonethystApplication).container
 
-private fun formatBytes(bytes: Long): String {
-    if (bytes <= 0) return "0 MB"
-    val mb = bytes / (1024.0 * 1024.0)
-    return if (mb >= 1024) "%.2f GB".format(mb / 1024.0) else "%.1f MB".format(mb)
-}
+private fun formatBytes(
+    context: android.content.Context,
+    bytes: Long,
+): String =
+    android.text.format.Formatter.formatShortFileSize(
+        context,
+        bytes.coerceAtLeast(0L),
+    )

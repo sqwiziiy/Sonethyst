@@ -32,8 +32,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.model.Playlist
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,12 +54,12 @@ fun PlaylistPickerSheet(
     if (showCreate) {
         AlertDialog(
             onDismissRequest = { showCreate = false },
-            title = { Text("Create playlist") },
+            title = { Text(stringResource(R.string.playlist_create)) },
             text = {
                 OutlinedTextField(
                     value = playlistName,
                     onValueChange = { playlistName = it },
-                    label = { Text("Playlist name") },
+                    label = { Text(stringResource(R.string.library_playlist_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -71,7 +74,7 @@ fun PlaylistPickerSheet(
                         onCreate(name)
                     },
                 ) {
-                    Text("Create")
+                    Text(stringResource(R.string.action_create))
                 }
             },
             dismissButton = {
@@ -81,7 +84,7 @@ fun PlaylistPickerSheet(
                         playlistName = ""
                     },
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             },
         )
@@ -91,7 +94,7 @@ fun PlaylistPickerSheet(
         onDismissRequest = onDismiss,
     ) {
         Text(
-            text = "Add to playlist",
+            text = stringResource(R.string.playlist_add_to),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 24.dp),
@@ -105,7 +108,7 @@ fun PlaylistPickerSheet(
             ),
             headlineContent = {
                 Text(
-                    "Create playlist",
+                    stringResource(R.string.playlist_create),
                     fontWeight = FontWeight.Medium,
                 )
             },
@@ -144,7 +147,7 @@ fun PlaylistPickerSheet(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        "No playlists yet",
+                        stringResource(R.string.playlist_none_yet),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -172,8 +175,14 @@ fun PlaylistPickerSheet(
                             },
                             supportingContent = {
                                 Text(
-                                    "${playlist.songCount} song${if (playlist.songCount == 1) "" else "s"}",
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    pluralStringResource(
+                                        R.plurals.library_song_count,
+                                        playlist.songCount,
+                                        playlist.songCount,
+                                    ),
+                                    color =
+                                        MaterialTheme.colorScheme
+                                            .onSurfaceVariant,
                                 )
                             },
                             leadingContent = {

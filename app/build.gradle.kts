@@ -1,8 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
+
+val keystorePropertiesFile =
+    rootProject.file("keystore.properties")
+
+val keystoreProperties =
+    Properties().apply {
+        if (keystorePropertiesFile.exists()) {
+            keystorePropertiesFile
+                .inputStream()
+                .use(::load)
+        }
+    }
 
 android {
     namespace = "com.mentality.sonethyst"
@@ -14,7 +28,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1.0-dev"
+        versionName = "0.1.0"
         vectorDrawables { useSupportLibrary = true }
         // Native AcoustID/Chromaprint fingerprinter.
         // ARMv7 is required for 32-bit ARM devices such as
@@ -37,8 +51,40 @@ android {
     }
 
 
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                storeFile =
+                    file(
+                        keystoreProperties.getProperty(
+                            "storeFile"
+                        )
+                    )
+                storePassword =
+                    keystoreProperties.getProperty(
+                        "storePassword"
+                    )
+                keyAlias =
+                    keystoreProperties.getProperty(
+                        "keyAlias"
+                    )
+                keyPassword =
+                    keystoreProperties.getProperty(
+                        "keyPassword"
+                    )
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (keystorePropertiesFile.exists()) {
+                signingConfig =
+                    signingConfigs.getByName(
+                        "release"
+                    )
+            }
+
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -65,6 +111,7 @@ android {
 }
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

@@ -28,10 +28,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.BuildConfig
 import com.mentality.sonethyst.data.ServerType
@@ -44,7 +46,10 @@ fun AboutSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
     val session by container.settingsStore.session.collectAsStateWithLifecycle(initialValue = null)
 
     Column(Modifier.fillMaxWidth()) {
-        SettingsTopBar("About Sonethyst", onBack)
+        SettingsTopBar(
+            stringResource(R.string.settings_about),
+            onBack,
+        )
         Column(
             Modifier.fillMaxWidth().padding(bottom = contentPadding.calculateBottomPadding() + 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -60,26 +65,64 @@ fun AboutSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
                 ServerType.JELLYFIN -> "Jellyfin"
                 ServerType.SUBSONIC -> "Navidrome"
                 ServerType.SPOTIFY -> "Spotify"
-                ServerType.LOCAL -> "Local"
-                null -> "Local"
+                ServerType.LOCAL ->
+                    stringResource(R.string.about_local_client)
+                null ->
+                    stringResource(R.string.about_local_client)
             }
             val protocol = when (session?.type) {
                 ServerType.JELLYFIN -> "Jellyfin"
                 ServerType.SUBSONIC -> "Subsonic / OpenSubsonic"
                 ServerType.SPOTIFY -> "Spotify Web API"
-                ServerType.LOCAL -> "Local files"
+                ServerType.LOCAL ->
+                    stringResource(
+                        R.string.about_protocol_local_files
+                    )
                 null -> "—"
             }
 
             Text("Sonethyst", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
-            Text("Version ${BuildConfig.VERSION_NAME}  •  $clientType client", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                stringResource(
+                    R.string.about_version_client,
+                    BuildConfig.VERSION_NAME,
+                    clientType,
+                ), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                stringResource(R.string.about_license),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(Modifier.height(24.dp))
 
-            InfoRow("Connected server", session?.server?.removePrefix("http://")?.removePrefix("https://") ?: "—")
-            InfoRow("Signed in as", session?.username ?: "—")
-            InfoRow("Protocol", protocol)
-            InfoRow("Client name", "Sonethyst")
-            InfoRow("Playback engine", "AndroidX Media3 (ExoPlayer)")
+            InfoRow(
+                stringResource(R.string.about_connected_server),
+                if (session?.type == ServerType.LOCAL) {
+                    stringResource(R.string.server_local)
+                } else {
+                    session?.server?.removePrefix("http://")?.removePrefix("https://") ?: "—"
+                },
+            )
+            InfoRow(
+                stringResource(R.string.about_signed_in_as),
+                if (session?.type == ServerType.LOCAL) {
+                    stringResource(R.string.accounts_local_library)
+                } else {
+                    session?.username ?: "—"
+                },
+            )
+            InfoRow(
+                stringResource(R.string.about_protocol),
+                protocol,
+            )
+            InfoRow(
+                stringResource(R.string.about_client_name),
+                "Sonethyst",
+            )
+            InfoRow(
+                stringResource(R.string.about_playback_engine),
+                "AndroidX Media3 (ExoPlayer)",
+            )
 
             Spacer(Modifier.height(20.dp))
 
@@ -106,7 +149,15 @@ fun AboutSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
             Spacer(Modifier.height(20.dp))
 
             Text(
-                "Built with Jetpack Compose & Material 3.\nBased in part on Aurora by nessli420 (Apache 2.0).",
+                stringResource(R.string.about_credits),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.about_third_party_notices),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

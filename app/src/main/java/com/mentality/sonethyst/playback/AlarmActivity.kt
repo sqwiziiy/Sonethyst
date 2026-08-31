@@ -1,5 +1,7 @@
 package com.mentality.sonethyst.playback
 
+import com.mentality.sonethyst.R
+import androidx.compose.ui.res.stringResource
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -92,10 +94,10 @@ private fun AlarmDismissScreen(onDismiss: () -> Unit, onTurnOff: () -> Unit) {
         ) {
             Icon(Icons.Filled.Alarm, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(72.dp))
             Spacer(Modifier.height(20.dp))
-            Text("Alarm", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+            Text(stringResource(R.string.alarm_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
             Spacer(Modifier.height(6.dp))
             Text(
-                "Time to wake up",
+                stringResource(R.string.alarm_wakeup),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -106,11 +108,14 @@ private fun AlarmDismissScreen(onDismiss: () -> Unit, onTurnOff: () -> Unit) {
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 modifier = Modifier.size(width = 220.dp, height = 56.dp),
             ) {
-                Text("Dismiss", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.alarm_dismiss), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(10.dp))
             TextButton(onClick = onTurnOff) {
-                Text("Turn off daily alarm", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    stringResource(
+                        R.string.alarm_disable_daily
+                    ), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

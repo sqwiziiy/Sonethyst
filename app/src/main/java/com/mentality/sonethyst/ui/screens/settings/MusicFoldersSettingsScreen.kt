@@ -36,10 +36,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.SonethystApplication
 import kotlinx.coroutines.launch
 
@@ -111,7 +113,10 @@ fun MusicFoldersSettingsScreen(
         Modifier.fillMaxWidth(),
     ) {
         SettingsTopBar(
-            title = "Music folders",
+            title =
+                stringResource(
+                    R.string.settings_music_folders
+                ),
             onBack = onBack,
         )
 
@@ -136,15 +141,19 @@ fun MusicFoldersSettingsScreen(
                         ),
                 ) {
                     Text(
-                        "Choose which folders appear in Sonethyst.",
+                        stringResource(R.string.folders_choose),
                         style = MaterialTheme.typography.bodyMedium,
                     )
 
                     Text(
                         if (includeOnly) {
-                            "Only selected folders and their subfolders are shown. Your exclusion list is preserved for normal mode."
+                            stringResource(
+                                R.string.folders_include_only_description
+                            )
                         } else {
-                            "Excluded folders and their subfolders are hidden only from Sonethyst. Your actual music files are never deleted or modified."
+                            stringResource(
+                                R.string.folders_exclude_description
+                            )
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color =
@@ -163,7 +172,7 @@ fun MusicFoldersSettingsScreen(
                 ListItem(
                     headlineContent = {
                         Text(
-                            "Include only selected folders",
+                            stringResource(R.string.folders_include_only),
                             fontWeight = FontWeight.Medium,
                         )
                     },
@@ -173,9 +182,13 @@ fun MusicFoldersSettingsScreen(
                                 includeOnly &&
                                 normalizedIncluded.isEmpty()
                             ) {
-                                "No folders selected — the local library is empty until you select at least one folder below."
+                                stringResource(
+                                    R.string.folders_none_selected_warning
+                                )
                             } else {
-                                "When enabled, only selected folders and their subfolders appear in the local library."
+                                stringResource(
+                                    R.string.folders_include_only_summary
+                                )
                             },
                         )
                     },
@@ -259,9 +272,9 @@ fun MusicFoldersSettingsScreen(
 
                         Text(
                             if (rescanning) {
-                                "Scanning…"
+                                stringResource(R.string.folders_scanning)
                             } else {
-                                "Rescan"
+                                stringResource(R.string.folders_rescan)
                             },
                             modifier =
                                 Modifier.padding(start = 8.dp),
@@ -281,7 +294,11 @@ fun MusicFoldersSettingsScreen(
                                 }
                             },
                         ) {
-                            Text("Clear selection")
+                            Text(
+                                stringResource(
+                                    R.string.folders_clear_selection
+                                )
+                            )
                         }
                     } else if (
                         !includeOnly &&
@@ -296,7 +313,11 @@ fun MusicFoldersSettingsScreen(
                                 }
                             },
                         ) {
-                            Text("Include all")
+                            Text(
+                                stringResource(
+                                    R.string.folders_include_all
+                                )
+                            )
                         }
                     }
                 }
@@ -307,7 +328,7 @@ fun MusicFoldersSettingsScreen(
                 contentType = "section-title",
             ) {
                 SettingsSectionTitle(
-                    "Detected folders"
+                    stringResource(R.string.folders_detected)
                 )
             }
 
@@ -324,7 +345,7 @@ fun MusicFoldersSettingsScreen(
                             Alignment.Center,
                     ) {
                         Text(
-                            "No local music folders detected",
+                            stringResource(R.string.folders_none_detected),
                             color =
                                 MaterialTheme.colorScheme
                                     .onSurfaceVariant,
@@ -405,24 +426,36 @@ fun MusicFoldersSettingsScreen(
                                     if (includeOnly) {
                                         when {
                                             includedByParent != null ->
-                                                "Included by selected parent"
+                                                stringResource(
+                                                    R.string.folders_included_by_parent
+                                                )
 
                                             directlyIncluded ->
-                                                "Selected"
+                                                stringResource(
+                                                    R.string.song_selected
+                                                )
 
                                             else ->
-                                                "Not selected"
+                                                stringResource(
+                                                    R.string.folders_not_selected
+                                                )
                                         }
                                     } else {
                                         when {
                                             excludedByParent != null ->
-                                                "Excluded by parent folder"
+                                                stringResource(
+                                                    R.string.folders_excluded_by_parent
+                                                )
 
                                             directlyExcluded ->
-                                                "Excluded"
+                                                stringResource(
+                                                    R.string.folders_excluded
+                                                )
 
                                             else ->
-                                                "Included"
+                                                stringResource(
+                                                    R.string.folders_included
+                                                )
                                         }
                                     },
                                     color =

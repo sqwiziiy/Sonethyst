@@ -1,5 +1,6 @@
 package com.mentality.sonethyst.navigation
 
+import com.mentality.sonethyst.R
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LibraryMusic
@@ -98,13 +99,28 @@ object Routes {
 
 data class TopLevelDestination(
     val route: String,
-    val label: String,
+    val labelRes: Int,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector,
 )
 
 val topLevelDestinations = listOf(
-    TopLevelDestination(Routes.HOME, "Home", Icons.Filled.Home, Icons.Outlined.Home),
-    TopLevelDestination(Routes.SEARCH, "Search", Icons.Filled.Search, Icons.Outlined.Search),
-    TopLevelDestination(Routes.LIBRARY, "Library", Icons.Filled.LibraryMusic, Icons.Outlined.LibraryMusic),
+    TopLevelDestination(
+        Routes.HOME,
+        R.string.nav_home,
+        Icons.Filled.Home,
+        Icons.Outlined.Home,
+    ),
+    TopLevelDestination(
+        Routes.SEARCH,
+        R.string.nav_search,
+        Icons.Filled.Search,
+        Icons.Outlined.Search,
+    ),
+    TopLevelDestination(
+        Routes.LIBRARY,
+        R.string.nav_library,
+        Icons.Filled.LibraryMusic,
+        Icons.Outlined.LibraryMusic,
+    ),
 )

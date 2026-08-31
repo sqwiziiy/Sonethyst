@@ -357,6 +357,7 @@ class SettingsStore(private val context: Context) {
         val DSP_GRAPHIC = stringPreferencesKey("dsp_graphic")        // "0.0,1.5,-2.0,..."
         val DSP_PARAMETRIC = stringPreferencesKey("dsp_parametric")  // "f:g:q;f:g:q"
         val DSP_PREAMP = floatPreferencesKey("dsp_preamp")
+        val APP_LANGUAGE = stringPreferencesKey("app_language")
         val DSP_BALANCE = floatPreferencesKey("dsp_balance")
         val DSP_WIDTH = floatPreferencesKey("dsp_width")
         val DSP_CROSSFEED = floatPreferencesKey("dsp_crossfeed")
@@ -405,6 +406,62 @@ class SettingsStore(private val context: Context) {
         val DISCORD_IMGUR = stringPreferencesKey("discord_imgur")
         val DISCORD_APP_ID = stringPreferencesKey("discord_app_id")
     }
+
+    /*
+     * Manual backups are intentionally portable data backups,
+     * not credential backups.
+     *
+     * Keep complete account groups out instead of filtering only
+     * tokens. Restoring server/username metadata while retaining
+     * credentials from another account could create a mismatched
+     * or invalid authenticated session.
+     *
+     * importPrefs() applies the same filter so an older Sonethyst
+     * backup cannot restore credentials that previous versions
+     * exported.
+     */
+    private val nonBackupPreferenceNames: Set<String> =
+        setOf(
+            // Active server / Spotify session.
+            Keys.SERVER.name,
+            Keys.USERNAME.name,
+            Keys.SALT.name,
+            Keys.TOKEN.name,
+            Keys.SERVER_TYPE.name,
+            Keys.USER_ID.name,
+            Keys.USER_IMAGE.name,
+            Keys.CLIENT_TOKEN.name,
+            Keys.CLIENT_VERSION.name,
+
+            // Contains serialized Session objects, including tokens.
+            Keys.SAVED_SESSIONS.name,
+
+            // OAuth configuration belongs with the Spotify session.
+            Keys.SPOTIFY_CLIENT_ID.name,
+
+            // Last.fm account + credentials.
+            Keys.LASTFM_SK.name,
+            Keys.LASTFM_USER.name,
+            Keys.LASTFM_IMAGE.name,
+            Keys.LASTFM_ENABLED.name,
+            Keys.LASTFM_API_KEY.name,
+            Keys.LASTFM_SECRET.name,
+
+            // ListenBrainz account.
+            Keys.LISTENBRAINZ_TOKEN.name,
+            Keys.LISTENBRAINZ_USER.name,
+            Keys.LISTENBRAINZ_ENABLED.name,
+
+            // Discord integration account/configuration.
+            Keys.DISCORD_TOKEN.name,
+            Keys.DISCORD_USER.name,
+            Keys.DISCORD_ENABLED.name,
+            Keys.DISCORD_IMGUR.name,
+            Keys.DISCORD_APP_ID.name,
+        )
+
+    private fun isBackupSafePreference(name: String): Boolean =
+        name !in nonBackupPreferenceNames
 
     val discord: Flow<DiscordAccount> = context.dataStore.data.map { p ->
         DiscordAccount(
@@ -456,6 +513,10 @@ class SettingsStore(private val context: Context) {
             hiddenHomeSections = p[Keys.UI_HIDDEN_HOME] ?: emptySet(),
         )
     }
+
+    val appLanguage: Flow<String> = context.dataStore.data.map {
+        com.mentality.sonethyst.AppLocale.normalize(it[Keys.APP_LANGUAGE])
+    }.distinctUntilChanged()
 
     val audioPrefs: Flow<AudioPrefs> = context.dataStore.data.map { p ->
         AudioPrefs(
@@ -1204,6 +1265,9 @@ class SettingsStore(private val context: Context) {
     suspend fun setDspTrimRight(v: Float) = context.dataStore.edit { it[Keys.DSP_TRIM_R] = v }
 
     suspend fun setThemeMode(v: Int) = context.dataStore.edit { it[Keys.UI_THEME_MODE] = v }
+    suspend fun setAppLanguage(v: String) = context.dataStore.edit {
+        it[Keys.APP_LANGUAGE] = com.mentality.sonethyst.AppLocale.normalize(v)
+    }
     suspend fun setAccentMode(v: Int) = context.dataStore.edit { it[Keys.UI_ACCENT_MODE] = v }
     suspend fun setAccentPreset(v: Int) = context.dataStore.edit { it[Keys.UI_ACCENT_PRESET] = v }
     suspend fun setAccentColor(v: Long) = context.dataStore.edit { it[Keys.UI_ACCENT_COLOR] = v }
@@ -1270,23 +1334,51 @@ class SettingsStore(private val context: Context) {
         val p = context.dataStore.data.first()
         val strings = HashMap<String, String>(); val ints = HashMap<String, Int>(); val longs = HashMap<String, Long>()
         val booleans = HashMap<String, Boolean>(); val floats = HashMap<String, Float>(); val sets = HashMap<String, List<String>>()
-        for ((k, v) in p.asMap()) when (v) {
-            is String -> strings[k.name] = v
-            is Int -> ints[k.name] = v
-            is Long -> longs[k.name] = v
-            is Boolean -> booleans[k.name] = v
-            is Float -> floats[k.name] = v
-            is Set<*> -> sets[k.name] = v.filterIsInstance<String>()
+        for ((k, v) in p.asMap()) {
+            if (!isBackupSafePreference(k.name)) continue
+
+            when (v) {
+                is String -> strings[k.name] = PortableBackupSanitizer.preferenceString(v)
+                is Int -> ints[k.name] = v
+                is Long -> longs[k.name] = v
+                is Boolean -> booleans[k.name] = v
+                is Float -> floats[k.name] = v
+                is Set<*> -> sets[k.name] = v.filterIsInstance<String>().map(PortableBackupSanitizer::preferenceString)
+            }
         }
         return PrefsBackup(strings, ints, longs, booleans, floats, sets)
     }
 
     suspend fun importPrefs(b: PrefsBackup) = context.dataStore.edit { p ->
-        b.strings.forEach { (k, v) -> p[stringPreferencesKey(k)] = v }
-        b.ints.forEach { (k, v) -> p[intPreferencesKey(k)] = v }
-        b.longs.forEach { (k, v) -> p[longPreferencesKey(k)] = v }
-        b.booleans.forEach { (k, v) -> p[booleanPreferencesKey(k)] = v }
-        b.floats.forEach { (k, v) -> p[floatPreferencesKey(k)] = v }
-        b.stringSets.forEach { (k, v) -> p[stringSetPreferencesKey(k)] = v.toSet() }
+        b.strings.forEach { (k, v) ->
+            if (isBackupSafePreference(k)) {
+                p[stringPreferencesKey(k)] = PortableBackupSanitizer.preferenceString(v)
+            }
+        }
+        b.ints.forEach { (k, v) ->
+            if (isBackupSafePreference(k)) {
+                p[intPreferencesKey(k)] = v
+            }
+        }
+        b.longs.forEach { (k, v) ->
+            if (isBackupSafePreference(k)) {
+                p[longPreferencesKey(k)] = v
+            }
+        }
+        b.booleans.forEach { (k, v) ->
+            if (isBackupSafePreference(k)) {
+                p[booleanPreferencesKey(k)] = v
+            }
+        }
+        b.floats.forEach { (k, v) ->
+            if (isBackupSafePreference(k)) {
+                p[floatPreferencesKey(k)] = v
+            }
+        }
+        b.stringSets.forEach { (k, v) ->
+            if (isBackupSafePreference(k)) {
+                p[stringSetPreferencesKey(k)] = v.map(PortableBackupSanitizer::preferenceString).toSet()
+            }
+        }
     }
 }

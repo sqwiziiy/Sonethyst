@@ -1,5 +1,7 @@
 package com.mentality.sonethyst.data
 
+import android.content.Context
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.data.remote.BaseItemDto
 import com.mentality.sonethyst.data.remote.CreatePlaylistRequest
 import com.mentality.sonethyst.data.remote.JellyfinClient
@@ -10,9 +12,11 @@ import com.mentality.sonethyst.model.Genre
 import com.mentality.sonethyst.model.LyricLine
 import com.mentality.sonethyst.model.Playlist
 import com.mentality.sonethyst.model.Song
+import com.mentality.sonethyst.model.UNKNOWN_TITLE_SENTINEL
 import com.mentality.sonethyst.util.accentFor
 
 class JellyfinBackend(
+    private val context: Context,
     private val client: JellyfinClient,
     private val maxBitrateProvider: () -> Int,
     private val localize: (Song) -> Song,
@@ -24,6 +28,38 @@ class JellyfinBackend(
     private companion object {
         const val TICKS_PER_SEC = 10_000_000L
     }
+
+    private fun songCountText(count: Int): String =
+        context.resources.getQuantityString(
+            R.plurals.backend_song_count,
+            count,
+            count,
+        )
+
+    private fun songsYouLoveText(count: Int): String =
+        context.resources.getQuantityString(
+            R.plurals.backend_songs_you_love,
+            count,
+            count,
+        )
+
+    private fun albumTrackSummary(
+        albums: Int,
+        tracks: Int,
+    ): String =
+        context.getString(
+            R.string.backend_album_track_summary,
+            context.resources.getQuantityString(
+                R.plurals.backend_album_count,
+                albums,
+                albums,
+            ),
+            context.resources.getQuantityString(
+                R.plurals.backend_track_count,
+                tracks,
+                tracks,
+            ),
+        )
 
     private fun BaseItemDto.imageId(): String? = when {
         ImageTags?.containsKey("Primary") == true -> Id
@@ -62,7 +98,7 @@ class JellyfinBackend(
         val audioStream = source?.MediaStreams?.firstOrNull { it.Type == "Audio" }
         val base = Song(
             id = Id,
-            title = Name ?: "Unknown",
+            title = Name ?: UNKNOWN_TITLE_SENTINEL,
             artist = displayArtist,
             album = Album ?: "",
             artworkUrl = client.coverArtUrl(imageId()),
@@ -97,7 +133,10 @@ class JellyfinBackend(
 
     private fun BaseItemDto.toAlbum(): Album = Album(
         id = Id,
-        title = Name ?: "Album",
+        title =
+            Name ?: context.getString(
+                R.string.backend_fallback_album
+            ),
         artist = AlbumArtist ?: Artists?.firstOrNull() ?: "Unknown artist",
         artworkUrl = client.coverArtUrl(Id),
         year = ProductionYear ?: 0,
@@ -106,15 +145,24 @@ class JellyfinBackend(
 
     private fun BaseItemDto.toArtist(): Artist = Artist(
         id = Id,
-        name = Name ?: "Artist",
+        name =
+            Name ?: context.getString(
+                R.string.backend_fallback_artist
+            ),
         imageUrl = client.coverArtUrl(Id),
         monthlyListeners = 0L,
     )
 
     private fun BaseItemDto.toPlaylist(): Playlist = Playlist(
         id = Id,
-        title = Name ?: "Playlist",
-        subtitle = "${ChildCount ?: 0} songs",
+        title =
+            Name ?: context.getString(
+                R.string.backend_fallback_playlist
+            ),
+        subtitle =
+            songCountText(
+                ChildCount ?: 0
+            ),
         coverUrl = client.coverArtUrl(Id),
         songCount = ChildCount ?: 0,
         accent = accentFor(Id),
@@ -305,7 +353,11 @@ class JellyfinBackend(
                 val a = client.api.item(uid, id)
                 val tracks = items(mapOf("ParentId" to id, "IncludeItemTypes" to "Audio", "SortBy" to "ParentIndexNumber,IndexNumber,SortName", "Fields" to "MediaSources")).map { it.toSong() }
                 DetailData(
-                    DetailInfo(a.Name ?: "Album", "${a.AlbumArtist ?: a.Artists?.firstOrNull() ?: ""} • ${a.ProductionYear ?: ""}", client.coverArtUrl(a.Id), accentFor(a.Id), false, tracks.size, "Album"),
+                    DetailInfo(
+                        a.Name ?: context.getString(
+                            R.string.backend_fallback_album
+                        ),
+                        "${a.AlbumArtist ?: a.Artists?.firstOrNull() ?: ""} • ${a.ProductionYear ?: ""}", client.coverArtUrl(a.Id), accentFor(a.Id), false, tracks.size, "Album"),
                     tracks,
                 )
             }
@@ -314,7 +366,15 @@ class JellyfinBackend(
                 val albums = items(mapOf("IncludeItemTypes" to "MusicAlbum", "ArtistIds" to id, "Recursive" to "true", "SortBy" to "ProductionYear,SortName", "SortOrder" to "Descending")).map { it.toAlbum() }
                 val tracks = items(mapOf("IncludeItemTypes" to "Audio", "ArtistIds" to id, "Recursive" to "true", "Limit" to "60", "Fields" to "MediaSources")).map { it.toSong() }
                 DetailData(
-                    DetailInfo(ar.Name ?: "Artist", "${albums.size} albums · ${tracks.size} tracks", client.coverArtUrl(ar.Id), accentFor(ar.Id), true, tracks.size, "Artist"),
+                    DetailInfo(
+                        ar.Name ?: context.getString(
+                            R.string.backend_fallback_artist
+                        ),
+                        albumTrackSummary(
+                            albums.size,
+                            tracks.size,
+                        ),
+                        client.coverArtUrl(ar.Id), accentFor(ar.Id), true, tracks.size, "Artist"),
                     tracks,
                     albums,
                 )
@@ -325,14 +385,28 @@ class JellyfinBackend(
                     client.api.playlistItems(id, mapOf("userId" to uid, "Fields" to "MediaSources")).Items
                 }.getOrDefault(emptyList()).map { it.toSong() }
                 DetailData(
-                    DetailInfo(p.Name ?: "Playlist", "${tracks.size} songs", client.coverArtUrl(p.Id), accentFor(p.Id), false, tracks.size, "Playlist"),
+                    DetailInfo(
+                        p.Name ?: context.getString(
+                            R.string.backend_fallback_playlist
+                        ),
+                        songCountText(
+                            tracks.size
+                        ),
+                        client.coverArtUrl(p.Id), accentFor(p.Id), false, tracks.size, "Playlist"),
                     tracks,
                 )
             }
             "liked" -> {
                 val songs = starredSongs()
                 DetailData(
-                    DetailInfo("Liked Songs", "${songs.size} songs you love", songs.firstOrNull()?.artworkUrl ?: "", accentFor("liked"), false, songs.size, "Liked"),
+                    DetailInfo(
+                        context.getString(
+                            R.string.backend_liked_songs
+                        ),
+                        songsYouLoveText(
+                            songs.size
+                        ),
+                        songs.firstOrNull()?.artworkUrl ?: "", accentFor("liked"), false, songs.size, "Liked"),
                     songs,
                 )
             }
@@ -348,14 +422,50 @@ class JellyfinBackend(
             val views = items(mapOf("SortBy" to "SortName"))
             val music = views.filter { it.CollectionType == "music" }
             val roots = music.ifEmpty { views.filter { it.IsFolder == true } }
-            FolderContent("", "Folders", roots.map { FolderNode(it.Id, it.Name ?: "Folder") })
+            FolderContent(
+                "",
+                context.getString(
+                    R.string.backend_folders
+                ),
+                roots.map {
+                    FolderNode(
+                        it.Id,
+                        it.Name ?: context.getString(
+                            R.string.backend_fallback_folder
+                        )
+                    )
+                },
+            )
         } else {
             val children = items(mapOf("ParentId" to folderId, "SortBy" to "IsFolder,SortName", "Fields" to "MediaSources,Path,Genres"))
-            val name = runCatching { client.api.item(uid, folderId).Name }.getOrNull() ?: "Folder"
+            val name =
+                runCatching {
+                    client.api.item(
+                        uid,
+                        folderId,
+                    ).Name
+                }.getOrNull()
+                    ?: context.getString(
+                        R.string.backend_fallback_folder
+                    )
             FolderContent(
                 id = folderId,
                 title = name,
-                folders = children.filter { it.IsFolder == true && it.Type != "Audio" }.map { FolderNode(it.Id, it.Name ?: "Folder") },
+                folders =
+                    children
+                        .filter {
+                            it.IsFolder == true &&
+                                it.Type != "Audio"
+                        }
+                        .map {
+                            FolderNode(
+                                it.Id,
+                                it.Name
+                                    ?: context.getString(
+                                        R.string.backend_fallback_folder
+                                    )
+                            )
+                        },
                 songs = children.filter { it.Type == "Audio" }.map { it.toSong() },
             )
         }

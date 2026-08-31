@@ -1,5 +1,8 @@
 package com.mentality.sonethyst.ui.screens.podcasts
 
+import com.mentality.sonethyst.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -46,9 +49,7 @@ import com.mentality.sonethyst.ui.components.Artwork
 import com.mentality.sonethyst.ui.components.LottieLoader
 import com.mentality.sonethyst.util.accentFor
 import com.mentality.sonethyst.viewmodel.PodcastViewModel
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 @Composable
 fun PodcastDetailScreen(
@@ -63,11 +64,27 @@ fun PodcastDetailScreen(
     val vm: PodcastViewModel = viewModel()
     val episodesState by vm.episodes.collectAsStateWithLifecycle()
     val subs by vm.subscriptions.collectAsStateWithLifecycle()
-    val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val topInset =
+        WindowInsets.statusBars
+            .asPaddingValues()
+            .calculateTopPadding()
+
+    val podcastFallback =
+        stringResource(
+            R.string.podcasts_default_show
+        )
+
+    val episodeFallback =
+        stringResource(
+            R.string.podcasts_default_episode
+        )
 
     LaunchedEffect(feedUrl) { vm.loadEpisodes(feedUrl, title, imageUrl) }
 
-    val showTitle = episodesState.channelTitle.ifBlank { title }.ifBlank { "Podcast" }
+    val showTitle =
+        episodesState.channelTitle
+            .ifBlank { title }
+            .ifBlank { podcastFallback }
     val showImage = episodesState.channelImage.ifBlank { imageUrl }
     val subscribed = subs.any { it.feedUrl == feedUrl }
     val accent = accentFor(feedUrl)
@@ -75,7 +92,8 @@ fun PodcastDetailScreen(
     Column(Modifier.fillMaxSize().padding(top = topInset)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                Icons.AutoMirrored.Filled.ArrowBack, "Back",
+                Icons.AutoMirrored.Filled.ArrowBack,
+                stringResource(R.string.action_back),
                 modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onBack).padding(8.dp),
             )
             Spacer(Modifier.width(8.dp))
@@ -110,7 +128,13 @@ fun PodcastDetailScreen(
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(
-                                if (subscribed) "Subscribed" else "Subscribe",
+                                stringResource(
+                                    if (subscribed) {
+                                        R.string.podcasts_subscribed
+                                    } else {
+                                        R.string.podcasts_subscribe
+                                    }
+                                ),
                                 style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
                                 color = if (subscribed) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimary,
                             )
@@ -121,7 +145,9 @@ fun PodcastDetailScreen(
 
             item {
                 Text(
-                    "Episodes",
+                    stringResource(
+                        R.string.podcasts_episodes
+                    ),
                     style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(start = 20.dp, top = 12.dp, bottom = 4.dp),
                 )
@@ -132,13 +158,23 @@ fun PodcastDetailScreen(
             } else if (episodesState.episodes.isEmpty()) {
                 item {
                     Box(Modifier.fillMaxWidth().padding(vertical = 36.dp), contentAlignment = Alignment.Center) {
-                        Text(if (episodesState.failed) "Couldn't load this feed" else "No episodes", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            stringResource(
+                                if (episodesState.failed) {
+                                    R.string.podcasts_feed_unavailable
+                                } else {
+                                    R.string.podcasts_no_episodes
+                                }
+                            ), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             } else {
                 items(episodesState.episodes.size) { i ->
                     val ep = episodesState.episodes[i]
-                    EpisodeRow(ep, onPlay = { onPlay(ep.toSong(showImage)) })
+                    EpisodeRow(ep, onPlay = { onPlay(ep.toSong(
+                            showImage,
+                            episodeFallback,
+                        )) })
                 }
             }
         }
@@ -146,39 +182,112 @@ fun PodcastDetailScreen(
 }
 
 @Composable
-private fun EpisodeRow(episode: PodcastEpisode, onPlay: () -> Unit) {
+private fun EpisodeRow(
+    episode: PodcastEpisode,
+    onPlay: () -> Unit,
+) {
+    val context =
+        LocalContext.current
+
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
             .clip(RoundedCornerShape(16.dp)).clickable(onClick = onPlay).padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(episode.title.ifBlank { "Episode" }, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(
+                episode.title.ifBlank {
+                    stringResource(
+                        R.string.podcasts_default_episode
+                    )
+                }, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
             val meta = listOfNotNull(
-                episode.pubDateMs.takeIf { it > 0 }?.let { formatDate(it) },
-                episode.durationSec.takeIf { it > 0 }?.let { formatDuration(it) },
+                episode.pubDateMs
+                    .takeIf { it > 0 }
+                    ?.let {
+                        formatDate(
+                            context,
+                            it,
+                        )
+                    },
+                episode.durationSec
+                    .takeIf { it > 0 }
+                    ?.let {
+                        formatDuration(
+                            context.resources,
+                            it,
+                        )
+                    },
             ).joinToString(" • ")
             if (meta.isNotBlank()) Text(meta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Spacer(Modifier.width(8.dp))
         Icon(
-            Icons.Filled.PlayArrow, "Play",
+            Icons.Filled.PlayArrow,
+            stringResource(R.string.action_play),
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onPlay).padding(9.dp),
         )
     }
 }
 
-private fun formatDate(ms: Long): String = runCatching {
-    SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(ms))
-}.getOrDefault("")
+private fun formatDate(
+    context: android.content.Context,
+    ms: Long,
+): String =
+    runCatching {
+        android.text.format.DateFormat
+            .getMediumDateFormat(context)
+            .format(
+                Date(ms)
+            )
+    }.getOrDefault("")
 
-private fun formatDuration(sec: Int): String {
-    val h = sec / 3600
-    val m = (sec % 3600) / 60
+private fun formatDuration(
+    resources: android.content.res.Resources,
+    sec: Int,
+): String {
+    val h =
+        sec / 3600
+
+    val m =
+        (sec % 3600) / 60
+
     return when {
-        h > 0 -> "${h}h ${m}m"
-        m > 0 -> "${m} min"
-        else -> "${sec}s"
+        h > 0 -> {
+            val hours =
+                resources.getQuantityString(
+                    R.plurals.podcast_hours,
+                    h,
+                    h,
+                )
+
+            val minutes =
+                resources.getQuantityString(
+                    R.plurals.podcast_minutes,
+                    m,
+                    m,
+                )
+
+            resources.getString(
+                R.string.podcast_hours_minutes,
+                hours,
+                minutes,
+            )
+        }
+
+        m > 0 ->
+            resources.getQuantityString(
+                R.plurals.podcast_minutes,
+                m,
+                m,
+            )
+
+        else ->
+            resources.getQuantityString(
+                R.plurals.podcast_seconds,
+                sec,
+                sec,
+            )
     }
 }

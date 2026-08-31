@@ -6,6 +6,7 @@ import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
+import com.mentality.sonethyst.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -36,7 +37,14 @@ class AutoEqController(
         }
     }
 
-    fun currentOutputLabel(): String = currentOutput()?.let { label(it) } ?: "Speaker"
+    fun currentOutputLabel(): String =
+        currentOutput()
+            ?.let {
+                label(it)
+            }
+            ?: appContext.getString(
+                R.string.autoeq_output_speaker
+            )
     fun currentOutputKey(): String = currentOutput()?.let { keyOf(it) } ?: "speaker"
 
     private fun currentOutput(): AudioDeviceInfo? =
@@ -55,12 +63,29 @@ class AutoEqController(
     private fun label(d: AudioDeviceInfo): String =
         d.productName?.toString()?.trim()?.ifBlank { null } ?: typeName(d.type)
 
-    private fun typeName(type: Int) = when (type) {
-        AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, AudioDeviceInfo.TYPE_BLE_HEADSET, AudioDeviceInfo.TYPE_BLE_SPEAKER -> "Bluetooth"
-        AudioDeviceInfo.TYPE_USB_HEADSET, AudioDeviceInfo.TYPE_USB_DEVICE, AudioDeviceInfo.TYPE_USB_ACCESSORY -> "USB DAC"
-        AudioDeviceInfo.TYPE_WIRED_HEADSET, AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> "Wired headphones"
-        else -> "Speaker"
-    }
+    private fun typeName(
+        type: Int,
+    ): String =
+        appContext.getString(
+            when (type) {
+                AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+                AudioDeviceInfo.TYPE_BLE_HEADSET,
+                AudioDeviceInfo.TYPE_BLE_SPEAKER ->
+                    R.string.autoeq_output_bluetooth
+
+                AudioDeviceInfo.TYPE_USB_HEADSET,
+                AudioDeviceInfo.TYPE_USB_DEVICE,
+                AudioDeviceInfo.TYPE_USB_ACCESSORY ->
+                    R.string.autoeq_output_usb_dac
+
+                AudioDeviceInfo.TYPE_WIRED_HEADSET,
+                AudioDeviceInfo.TYPE_WIRED_HEADPHONES ->
+                    R.string.autoeq_output_wired
+
+                else ->
+                    R.string.autoeq_output_speaker
+            }
+        )
 
     private fun applyForCurrent() {
         if (!enabled) return
@@ -75,7 +100,13 @@ class AutoEqController(
             settingsStore.setDspPreamp(b.preampDb)
             settingsStore.setDspMode(DspMode.CUSTOM)
             settingsStore.setActiveEqProfile(b.profileName)
-            if (notify) toast("AutoEQ: ${b.profileName} → ${b.deviceLabel}")
+            if (notify) toast(
+                appContext.getString(
+                    R.string.autoeq_applied_profile,
+                    b.profileName,
+                    b.deviceLabel,
+                )
+            )
         }
     }
 }

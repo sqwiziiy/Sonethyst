@@ -1,9 +1,13 @@
 package com.mentality.sonethyst.data
 
+import android.content.Context
 import android.util.Log
 import com.mentality.sonethyst.data.remote.DiscordGateway
 import com.mentality.sonethyst.data.remote.ImgurUploader
 import com.mentality.sonethyst.model.Song
+import com.mentality.sonethyst.ui.components.displayAlbum
+import com.mentality.sonethyst.ui.components.displayArtist
+import com.mentality.sonethyst.ui.components.displayTitle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
@@ -15,9 +19,11 @@ import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
 
 class DiscordRpc(
+    context: Context,
     private val store: SettingsStore,
     private val scope: CoroutineScope,
 ) {
+    private val appContext = context.applicationContext
     private val imgur = ImgurUploader()
     private val http = OkHttpClient()
     private val gateway = DiscordGateway(
@@ -74,8 +80,8 @@ class DiscordRpc(
         val a = JSONObject()
             .put("name", "Sonethyst")
             .put("type", 2)
-            .put("details", song.title)
-            .put("state", song.artist.ifBlank { "Unknown artist" })
+            .put("details", appContext.displayTitle(song.title))
+            .put("state", appContext.displayArtist(song.artist))
         if (isPlaying && song.durationSec > 0) {
             val start = System.currentTimeMillis() - (positionSec * 1000).toLong()
             a.put("timestamps", JSONObject().put("start", start).put("end", start + song.durationSec * 1000L))
@@ -84,8 +90,8 @@ class DiscordRpc(
         val canHost = imgurId().isNotBlank() || isLikelyPublic(song.artworkUrl)
         if (imagesPossible && song.artworkUrl.isNotBlank() && canHost) {
             val mp = imageCache[song.artworkUrl]
-            Log.i(TAG, "art: appId=${appId.isNotBlank()} imgur=${imgurId().isNotBlank()} public=${isLikelyPublic(song.artworkUrl)} cached=${mp != null} url=${song.artworkUrl.take(60)}")
-            val assets = JSONObject().put("large_text", song.album.ifBlank { song.title })
+            Log.i(TAG, "art: appId=${appId.isNotBlank()} imgur=${imgurId().isNotBlank()} public=${isLikelyPublic(song.artworkUrl)} cached=${mp != null}")
+            val assets = JSONObject().put("large_text", appContext.displayAlbum(song.album).ifBlank { appContext.displayTitle(song.title) })
             if (mp != null) assets.put("large_image", mp)
             a.put("assets", assets)
             a.put("application_id", appId)
@@ -99,9 +105,9 @@ class DiscordRpc(
         scope.launch {
             val link = if (imgurId().isNotBlank()) imgur.uploadFromUrl(artUrl, imgurId()) else artUrl
             if (link == null) { Log.w(TAG, "resolveImage: imgur upload failed (clientId set=${imgurId().isNotBlank()})"); return@launch }
-            Log.i(TAG, "resolveImage: via=${if (imgurId().isNotBlank()) "imgur" else "direct"} link=${link.take(80)}")
+            Log.i(TAG, "resolveImage: via=${if (imgurId().isNotBlank()) "imgur" else "direct"}")
             val mp = externalAsset(link)
-            if (mp == null) { Log.w(TAG, "resolveImage: external-assets failed (appId=$appId) for $link"); return@launch }
+            if (mp == null) { Log.w(TAG, "resolveImage: external-assets failed"); return@launch }
             Log.i(TAG, "resolveImage: art ready -> $mp")
             imageCache[artUrl] = mp
             lastSong?.let { if (it.artworkUrl == artUrl) gateway.updateActivity(buildActivity(it, lastPlaying, lastPositionSec)) }
@@ -118,10 +124,10 @@ class DiscordRpc(
             .build()
         http.newCall(req).execute().use { resp ->
             val bodyStr = resp.body?.string()
-            if (!resp.isSuccessful) { Log.w(TAG, "external-assets HTTP ${resp.code}: ${bodyStr?.take(300)}"); return@use null }
+            if (!resp.isSuccessful) { Log.w(TAG, "external-assets HTTP ${resp.code}"); return@use null }
             val arr = JSONArray(bodyStr ?: return@use null)
             val path = arr.optJSONObject(0)?.optString("external_asset_path").orEmpty()
-            if (path.isBlank()) { Log.w(TAG, "external-assets no path: ${bodyStr?.take(300)}"); null } else "mp:$path"
+            if (path.isBlank()) { Log.w(TAG, "external-assets returned no path"); null } else "mp:$path"
         }
     }.getOrNull()
 

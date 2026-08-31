@@ -1,6 +1,7 @@
 package com.mentality.sonethyst.data
 
 import android.content.Context
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.model.Song
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -29,7 +30,14 @@ data class RankedItem(val id: String, val name: String, val subtitle: String, va
 
 class PlayHistoryStore(context: Context) {
 
-    private val file = File(context.filesDir, "play_history.json")
+    private val context =
+        context.applicationContext
+
+    private val file =
+        File(
+            this.context.filesDir,
+            "play_history.json",
+        )
     private val gson = Gson()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -51,9 +59,9 @@ class PlayHistoryStore(context: Context) {
         scope.launch { runCatching { file.delete() } }
     }
 
-    fun snapshot(): List<PlayEvent> = _history.value
+    fun snapshot(): List<PlayEvent> = PortableBackupSanitizer.playEvents(_history.value)
     fun restore(events: List<PlayEvent>) {
-        _history.value = events.take(MAX)
+        _history.value = PortableBackupSanitizer.playEvents(events).take(MAX)
         scope.launch { save() }
     }
 
@@ -62,21 +70,62 @@ class PlayHistoryStore(context: Context) {
 
     fun since(millis: Long): List<PlayEvent> = _history.value.filter { it.timestamp >= millis }
 
+    private fun playCountText(count: Int): String =
+        context.resources.getQuantityString(
+            R.plurals.history_play_count,
+            count,
+            count,
+        )
+
+    private fun artistPlayCountText(
+        artist: String,
+        count: Int,
+    ): String =
+        context.getString(
+            R.string.history_artist_play_count,
+            artist,
+            playCountText(count),
+        )
+
     fun topArtists(events: List<PlayEvent>, limit: Int = 20): List<RankedItem> =
         events.filter { it.artistId.isNotBlank() || it.artist.isNotBlank() }
             .groupBy { it.artistId.ifBlank { it.artist } }
-            .map { (key, list) -> RankedItem(list.first().artistId, list.first().artist, "${list.size} plays", list.first().artworkUrl, list.size) }
+            .map { (key, list) -> RankedItem(
+                list.first().artistId,
+                list.first().artist,
+                playCountText(list.size),
+                list.first().artworkUrl,
+                list.size,
+            ) }
             .sortedByDescending { it.count }.take(limit)
 
     fun topSongs(events: List<PlayEvent>, limit: Int = 30): List<RankedItem> =
         events.groupBy { it.songId }
-            .map { (_, list) -> RankedItem(list.first().songId, list.first().title, "${list.first().artist} · ${list.size} plays", list.first().artworkUrl, list.size) }
+            .map { (_, list) -> RankedItem(
+                list.first().songId,
+                list.first().title,
+                artistPlayCountText(
+                    list.first().artist,
+                    list.size,
+                ),
+                list.first().artworkUrl,
+                list.size,
+            ) }
             .sortedByDescending { it.count }.take(limit)
 
     fun topAlbums(events: List<PlayEvent>, limit: Int = 20): List<RankedItem> =
         events.filter { it.albumId.isNotBlank() || it.album.isNotBlank() }
             .groupBy { it.albumId.ifBlank { it.album } }
-            .map { (_, list) -> RankedItem(list.first().albumId, list.first().album, "${list.first().artist} · ${list.size} plays", list.first().artworkUrl, list.size) }
+            .map { (_, list) -> RankedItem(
+                list.first().albumId,
+                list.first().album,
+                artistPlayCountText(
+                    list.first().artist,
+                    list.size,
+                ),
+                list.first().artworkUrl,
+                list.size,
+            ) }
             .sortedByDescending { it.count }.take(limit)
 
     fun playsByHour(events: List<PlayEvent>): IntArray {

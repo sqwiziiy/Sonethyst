@@ -44,11 +44,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.AudioTags
+import com.mentality.sonethyst.data.TagEditor
 import com.mentality.sonethyst.data.remote.MetadataMatch
 import com.mentality.sonethyst.ui.components.Artwork
 import com.mentality.sonethyst.ui.screens.settings.SettingsTopBar
@@ -103,8 +106,12 @@ fun TagEditScreen(
 
     val doWrite: () -> Unit = {
         scope.launch {
-            val uri = container.tagEditor.contentUriFor(state.songId)
-            if (uri == null) { confirm("Can't write this file"); saving = false } else {
+            val uri = TagEditor.localContentUriFor(state.localContentUri)
+            if (uri == null) { android.util.Log.w("TagEdit", "No valid local content URI for write"); confirm(
+                    context.getString(
+                        R.string.tag_cant_write_file
+                    )
+                ); saving = false } else {
                 val pickedArtwork =
                     state.pickedCoverUrl
 
@@ -139,9 +146,12 @@ fun TagEditScreen(
                     pickedArtwork.isNotBlank() &&
                     art == null
                 ) {
+                    android.util.Log.w("TagEdit", "Artwork read failed")
                     saving = false
                     confirm(
-                        "Couldn't read selected artwork"
+                        context.getString(
+                            R.string.tag_couldnt_read_artwork
+                        )
                     )
                     return@launch
                 }
@@ -155,19 +165,33 @@ fun TagEditScreen(
                     )
                 saving = false
                 if (ok) {
-                    confirm("Tags saved")
+                    confirm(
+                        context.getString(
+                            R.string.tag_saved
+                        )
+                    )
                     runCatching {
                         container.refreshLocalLibrary(
                             state.path
                         )
                     }
                     onBack()
-                } else confirm("Save failed")
+                } else {
+                    confirm(
+                        context.getString(
+                            R.string.tag_save_failed
+                        )
+                    )
+                }
             }
         }
     }
     val consentLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) doWrite() else { saving = false; confirm("Write permission denied") }
+        if (result.resultCode == Activity.RESULT_OK) doWrite() else { android.util.Log.i("TagEdit", "MediaStore write consent denied"); saving = false; confirm(
+                context.getString(
+                    R.string.tag_write_permission_denied
+                )
+            ) }
     }
     val onSave: () -> Unit = {
         saving = true
@@ -178,17 +202,27 @@ fun TagEditScreen(
                 saving = false
                 if (ok) {
                     container.notifyLibraryMetadataChanged()
-                    confirm("Metadata updated")
+                    confirm(
+                        context.getString(
+                            R.string.tag_metadata_updated
+                        )
+                    )
                     onBack()
                 } else {
                     confirm(
-                        "Update failed — needs edit permission"
+                        context.getString(
+                            R.string.tag_update_permission_failed
+                        )
                     )
                 }
             }
         } else {
-            val uri = container.tagEditor.contentUriFor(state.songId)
-            if (uri == null) { confirm("Can't write this file"); saving = false } else {
+            val uri = TagEditor.localContentUriFor(state.localContentUri)
+            if (uri == null) { android.util.Log.w("TagEdit", "No valid local content URI for consent"); confirm(
+                    context.getString(
+                        R.string.tag_cant_write_file
+                    )
+                ); saving = false } else {
                 val consent = container.tagEditor.writeConsentIntent(uri)
                 if (consent != null) consentLauncher.launch(IntentSenderRequest.Builder(consent).build()) else doWrite()
             }
@@ -196,7 +230,10 @@ fun TagEditScreen(
     }
 
     Column(Modifier.fillMaxSize()) {
-        SettingsTopBar("Edit tags", onBack)
+        SettingsTopBar(
+            stringResource(R.string.tag_edit_title),
+            onBack,
+        )
         if (state.loading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             return
@@ -209,9 +246,11 @@ fun TagEditScreen(
                 Artwork(state.pickedCoverUrl.ifBlank { state.artUrl }, MaterialTheme.colorScheme.primary, Modifier.size(72.dp), corner = 12.dp)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(state.tags.title.ifBlank { "Untitled" }, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(state.tags.title.ifBlank {
+                        stringResource(R.string.tag_untitled)
+                    }, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(state.path.substringAfterLast('/'), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    if (state.pickedCoverUrl.isNotBlank()) Text("New cover staged", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    if (state.pickedCoverUrl.isNotBlank()) Text(stringResource(R.string.tag_new_cover_staged), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -244,7 +283,7 @@ fun TagEditScreen(
                         }
 
                         Spacer(Modifier.width(6.dp))
-                        Text("Match metadata")
+                        Text(stringResource(R.string.tag_match_metadata))
                     }
 
                     if (state.localFile) {
@@ -261,7 +300,7 @@ fun TagEditScreen(
                             Spacer(
                                 Modifier.width(6.dp)
                             )
-                            Text("Find artwork")
+                            Text(stringResource(R.string.tag_find_artwork))
                         }
                     }
                 }
@@ -295,7 +334,7 @@ fun TagEditScreen(
                                 Spacer(
                                     Modifier.width(6.dp)
                                 )
-                                Text("Choose image")
+                                Text(stringResource(R.string.tag_choose_image))
                             }
                         }
 
@@ -325,9 +364,9 @@ fun TagEditScreen(
 
                                 Text(
                                     if (identifying) {
-                                        "Identifying…"
+                                        stringResource(R.string.tag_identifying)
                                     } else {
-                                        "Auto-identify"
+                                        stringResource(R.string.tag_auto_identify)
                                     }
                                 )
                             }
@@ -356,23 +395,35 @@ fun TagEditScreen(
             }
 
             Spacer(Modifier.height(8.dp))
-            TagField("Title", state.tags.title) { v -> onEdit { it.copy(title = v) } }
-            TagField("Artist", state.tags.artist) { v -> onEdit { it.copy(artist = v) } }
-            TagField("Album", state.tags.album) { v -> onEdit { it.copy(album = v) } }
-            TagField("Album artist", state.tags.albumArtist) { v -> onEdit { it.copy(albumArtist = v) } }
-            TagField("Genre", state.tags.genre) { v -> onEdit { it.copy(genre = v) } }
+            TagField(stringResource(R.string.smart_field_title), state.tags.title) { v -> onEdit { it.copy(title = v) } }
+            TagField(stringResource(R.string.smart_field_artist), state.tags.artist) { v -> onEdit { it.copy(artist = v) } }
+            TagField(stringResource(R.string.smart_field_album), state.tags.album) { v -> onEdit { it.copy(album = v) } }
+            TagField(stringResource(R.string.tag_album_artist), state.tags.albumArtist) { v -> onEdit { it.copy(albumArtist = v) } }
+            TagField(stringResource(R.string.tag_genre), state.tags.genre) { v -> onEdit { it.copy(genre = v) } }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f)) { TagField("Year", state.tags.year) { v -> onEdit { it.copy(year = v.filter { c -> c.isDigit() }) } } }
-                Box(Modifier.weight(1f)) { TagField("Track #", state.tags.trackNumber) { v -> onEdit { it.copy(trackNumber = v.filter { c -> c.isDigit() }) } } }
+                Box(Modifier.weight(1f)) { TagField(stringResource(R.string.tag_year), state.tags.year) { v -> onEdit { it.copy(year = v.filter { c -> c.isDigit() }) } } }
+                Box(Modifier.weight(1f)) { TagField(stringResource(R.string.tag_track_number), state.tags.trackNumber) { v -> onEdit { it.copy(trackNumber = v.filter { c -> c.isDigit() }) } } }
             }
             Spacer(Modifier.height(16.dp))
             Button(onClick = onSave, enabled = !saving, modifier = Modifier.fillMaxWidth()) {
                 if (saving) { CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp); Spacer(Modifier.width(8.dp)) }
-                Text(if (saving) "Saving…" else "Save tags", fontWeight = FontWeight.Bold)
+                Text(
+                    if (saving) {
+                        stringResource(R.string.lyrics_edit_saving)
+                    } else {
+                        stringResource(R.string.tag_save)
+                    }, fontWeight = FontWeight.Bold)
             }
             Text(
-                if (state.localFile) "Writing tags edits the file on your device. Android may ask you to allow the change."
-                else "Updates this track's metadata on the server (requires an account with edit permission). Cover art isn't changed.",
+                if (state.localFile) {
+                    stringResource(
+                        R.string.tag_local_write_description
+                    )
+                } else {
+                    stringResource(
+                        R.string.tag_server_write_description
+                    )
+                },
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 8.dp),
             )
@@ -421,7 +472,7 @@ private fun MatchRow(
         }
         if (onPickCover != null) {
             Text(
-                "Use cover",
+                stringResource(R.string.tag_use_cover),
                 style =
                     MaterialTheme.typography.labelLarge,
                 color =
@@ -438,7 +489,7 @@ private fun MatchRow(
         }
 
         Text(
-            "Apply",
+            stringResource(R.string.action_apply),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
             modifier =

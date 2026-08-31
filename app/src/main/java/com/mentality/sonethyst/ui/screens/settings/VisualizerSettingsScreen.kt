@@ -27,11 +27,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.VisualizerPrefs
 import com.mentality.sonethyst.data.VisualizerStyle
@@ -54,7 +56,26 @@ fun VisualizerSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) 
     val controller = container.visualizer
     val prefs by store.visualizerPrefs.collectAsStateWithLifecycle(initialValue = VisualizerPrefs())
     val scope = rememberCoroutineScope()
-    fun save(p: VisualizerPrefs) { scope.launch { store.setVisualizer(p) } }
+    fun save(p: VisualizerPrefs) {
+        scope.launch {
+            store.setVisualizer(p)
+        }
+    }
+
+    val colourSources =
+        listOf(
+            stringResource(R.string.visualizer_colour_accent),
+            stringResource(R.string.visualizer_colour_custom),
+            stringResource(R.string.visualizer_colour_gradient),
+            stringResource(R.string.visualizer_colour_album),
+        )
+
+    val backdrops =
+        listOf(
+            stringResource(R.string.visualizer_black),
+            stringResource(R.string.visualizer_colour_gradient),
+            stringResource(R.string.visualizer_album_blur),
+        )
 
     // Drive the analyser so the preview reacts to whatever is playing.
     DisposableEffect(Unit) { controller.start(); onDispose { controller.stop() } }
@@ -63,14 +84,17 @@ fun VisualizerSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) 
     }
 
     Column(Modifier.fillMaxWidth()) {
-        SettingsTopBar("Visualizer", onBack)
+        SettingsTopBar(
+            stringResource(R.string.visualizer_title),
+            onBack,
+        )
         LazyColumn(
             Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding() + 24.dp),
         ) {
             item { VisualizerPreview(prefs) }
 
-            item { SettingsSectionTitle("Style") }
+            item { SettingsSectionTitle(stringResource(R.string.visualizer_style)) }
             item {
                 LazyRow(
                     Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -86,7 +110,9 @@ fun VisualizerSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) 
                                 .padding(horizontal = 14.dp, vertical = 9.dp),
                         ) {
                             Text(
-                                VisualizerStyle.label(s),
+                                stringResource(
+                                    visualizerStyleLabelRes(s)
+                                ),
                                 color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                                 style = MaterialTheme.typography.labelMedium,
@@ -96,80 +122,184 @@ fun VisualizerSettingsScreen(contentPadding: PaddingValues, onBack: () -> Unit) 
                 }
             }
 
-            item { SettingsSectionTitle("Colour") }
+            item { SettingsSectionTitle(stringResource(R.string.visualizer_colour)) }
             item {
                 SettingsGroup {
-                    SegmentedRow("Colour source", listOf("Accent", "Custom", "Gradient", "Album"), prefs.colorSource) { save(prefs.copy(colorSource = it)) }
+                    SegmentedRow(
+                        stringResource(R.string.visualizer_colour_source),
+                        colourSources,
+                        prefs.colorSource,
+                    ) { save(prefs.copy(colorSource = it)) }
                 }
             }
             if (prefs.colorSource == VizColor.CUSTOM || prefs.colorSource == VizColor.GRADIENT) {
-                item { Swatches("Primary", prefs.primaryColor) { save(prefs.copy(primaryColor = it)) } }
+                item { Swatches(
+                    stringResource(R.string.visualizer_primary),
+                    prefs.primaryColor,
+                ) { save(prefs.copy(primaryColor = it)) } }
             }
             if (prefs.colorSource == VizColor.GRADIENT) {
-                item { Swatches("Secondary", prefs.secondaryColor) { save(prefs.copy(secondaryColor = it)) } }
+                item { Swatches(
+                    stringResource(R.string.visualizer_secondary),
+                    prefs.secondaryColor,
+                ) { save(prefs.copy(secondaryColor = it)) } }
             }
 
-            item { SettingsSectionTitle("Background") }
+            item { SettingsSectionTitle(stringResource(R.string.visualizer_background)) }
             item {
                 SettingsGroup {
-                    SegmentedRow("Backdrop", listOf("Black", "Gradient", "Album blur"), prefs.background) { save(prefs.copy(background = it)) }
+                    SegmentedRow(
+                        stringResource(R.string.visualizer_backdrop),
+                        backdrops,
+                        prefs.background,
+                    ) { save(prefs.copy(background = it)) }
                 }
             }
 
-            item { SettingsSectionTitle("Spectrum") }
+            item { SettingsSectionTitle(stringResource(R.string.visualizer_spectrum)) }
             item {
                 SettingsGroup {
-                    SettingsSliderRow("Bar count", "${prefs.barCount}", prefs.barCount.toFloat(), 16f..160f, steps = 0) { save(prefs.copy(barCount = it.toInt())) }
+                    SettingsSliderRow(
+                        stringResource(R.string.visualizer_bar_count), "${prefs.barCount}", prefs.barCount.toFloat(), 16f..160f, steps = 0) { save(prefs.copy(barCount = it.toInt())) }
                     SettingsRowDivider()
-                    SettingsSliderRow("Smoothing", "${(prefs.smoothing * 100).toInt()}%", prefs.smoothing, 0f..0.95f) { save(prefs.copy(smoothing = it)) }
+                    SettingsSliderRow(
+                        stringResource(R.string.visualizer_smoothing), "${(prefs.smoothing * 100).toInt()}%", prefs.smoothing, 0f..0.95f) { save(prefs.copy(smoothing = it)) }
                     SettingsRowDivider()
-                    SettingsSliderRow("Sensitivity", String.format("%.2fx", prefs.sensitivity), prefs.sensitivity, 0.25f..4f) { save(prefs.copy(sensitivity = it)) }
+                    SettingsSliderRow(
+                        stringResource(R.string.visualizer_sensitivity), String.format("%.2fx", prefs.sensitivity), prefs.sensitivity, 0.25f..4f) { save(prefs.copy(sensitivity = it)) }
                     SettingsRowDivider()
-                    SettingsSwitchRow(null, "Peak hold", "Falling caps on the bars", prefs.peakHold) { save(prefs.copy(peakHold = it)) }
+                    SettingsSwitchRow(
+                        null,
+                        stringResource(R.string.visualizer_peak_hold),
+                        stringResource(R.string.visualizer_peak_hold_summary), prefs.peakHold) { save(prefs.copy(peakHold = it)) }
                     SettingsRowDivider()
-                    SettingsSwitchRow(null, "Mirror", "Reflect the spectrum", prefs.mirror) { save(prefs.copy(mirror = it)) }
+                    SettingsSwitchRow(
+                        null,
+                        stringResource(R.string.visualizer_mirror),
+                        stringResource(R.string.visualizer_mirror_summary), prefs.mirror) { save(prefs.copy(mirror = it)) }
                 }
             }
 
-            item { SettingsSectionTitle("Frequency range") }
+            item { SettingsSectionTitle(stringResource(R.string.visualizer_frequency_range)) }
             item {
                 SettingsGroup {
-                    SettingsSliderRow("Low cut", "${prefs.minHz} Hz", prefs.minHz.toFloat(), 10f..500f) { save(prefs.copy(minHz = it.toInt())) }
+                    SettingsSliderRow(
+                        stringResource(R.string.visualizer_low_cut), "${prefs.minHz} Hz", prefs.minHz.toFloat(), 10f..500f) { save(prefs.copy(minHz = it.toInt())) }
                     SettingsRowDivider()
-                    SettingsSliderRow("High cut", "${prefs.maxHz / 1000} kHz", prefs.maxHz.toFloat(), 2000f..22000f) { save(prefs.copy(maxHz = it.toInt())) }
+                    SettingsSliderRow(
+                        stringResource(R.string.visualizer_high_cut), "${prefs.maxHz / 1000} kHz", prefs.maxHz.toFloat(), 2000f..22000f) { save(prefs.copy(maxHz = it.toInt())) }
                 }
             }
 
-            item { SettingsSectionTitle("Motion & quality") }
+            item { SettingsSectionTitle(stringResource(R.string.visualizer_motion_quality)) }
             item {
                 SettingsGroup {
                     val fftIdx = when (prefs.fftSize) { 1024 -> 0; 4096 -> 2; else -> 1 }
-                    SegmentedRow("FFT resolution", listOf("1024", "2048", "4096"), fftIdx) {
+                    SegmentedRow(
+                        stringResource(R.string.visualizer_fft_resolution),
+                        listOf("1024", "2048", "4096"),
+                        fftIdx,
+                    ) {
                         save(prefs.copy(fftSize = when (it) { 0 -> 1024; 2 -> 4096; else -> 2048 }))
                     }
                     SettingsRowDivider()
                     val fpsIdx = when (prefs.fpsCap) { 30 -> 0; 90 -> 2; 120 -> 3; else -> 1 }
-                    SegmentedRow("Frame rate", listOf("30", "60", "90", "120"), fpsIdx) {
+                    SegmentedRow(
+                        stringResource(R.string.visualizer_frame_rate),
+                        listOf("30", "60", "90", "120"),
+                        fpsIdx,
+                    ) {
                         save(prefs.copy(fpsCap = when (it) { 0 -> 30; 2 -> 90; 3 -> 120; else -> 60 }))
                     }
                     SettingsRowDivider()
-                    SettingsSwitchRow(null, "Rotate radial styles", "Slow spin for radial / combo", prefs.rotate) { save(prefs.copy(rotate = it)) }
+                    SettingsSwitchRow(
+                        null,
+                        stringResource(R.string.visualizer_rotate),
+                        stringResource(R.string.visualizer_rotate_summary), prefs.rotate) { save(prefs.copy(rotate = it)) }
                     SettingsRowDivider()
-                    SettingsSliderRow("Particles", "${prefs.particleCount}", prefs.particleCount.toFloat(), 20f..400f) { save(prefs.copy(particleCount = it.toInt())) }
+                    SettingsSliderRow(
+                        stringResource(R.string.visualizer_particles), "${prefs.particleCount}", prefs.particleCount.toFloat(), 20f..400f) { save(prefs.copy(particleCount = it.toInt())) }
                 }
             }
 
-            item { SettingsSectionTitle("Overlay") }
+            item { SettingsSectionTitle(stringResource(R.string.visualizer_overlay)) }
             item {
                 SettingsGroup {
-                    SettingsSwitchRow(null, "Album art centre", "Show artwork in radial styles", prefs.showAlbumArt) { save(prefs.copy(showAlbumArt = it)) }
+                    SettingsSwitchRow(
+                        null,
+                        stringResource(R.string.visualizer_album_art_centre),
+                        stringResource(R.string.visualizer_album_art_centre_summary), prefs.showAlbumArt) { save(prefs.copy(showAlbumArt = it)) }
                     SettingsRowDivider()
-                    SettingsSwitchRow(null, "Track info", "Title & artist over the visual", prefs.showTrackInfo) { save(prefs.copy(showTrackInfo = it)) }
+                    SettingsSwitchRow(
+                        null,
+                        stringResource(R.string.visualizer_track_info),
+                        stringResource(R.string.visualizer_track_info_summary), prefs.showTrackInfo) { save(prefs.copy(showTrackInfo = it)) }
                 }
             }
         }
     }
 }
+
+private fun visualizerStyleLabelRes(
+    style: Int,
+): Int =
+    when (style) {
+        VisualizerStyle.BARS ->
+            R.string.visualizer_style_spectrum_bars
+        VisualizerStyle.MIRROR_BARS ->
+            R.string.visualizer_style_mirror_bars
+        VisualizerStyle.WAVEFORM ->
+            R.string.visualizer_style_waveform
+        VisualizerStyle.FILLED_WAVE ->
+            R.string.visualizer_style_filled_wave
+        VisualizerStyle.RADIAL_BARS ->
+            R.string.visualizer_style_radial_spectrum
+        VisualizerStyle.RADIAL_WAVE ->
+            R.string.visualizer_style_radial_wave
+        VisualizerStyle.PARTICLES ->
+            R.string.visualizer_style_particles
+        VisualizerStyle.FLUID ->
+            R.string.visualizer_style_fluid_blob
+        VisualizerStyle.COMBO ->
+            R.string.visualizer_style_combo
+        VisualizerStyle.SMOOTH_CURVE ->
+            R.string.visualizer_style_spectrum_curve
+        VisualizerStyle.DOT_GRID ->
+            R.string.visualizer_style_dot_matrix
+        VisualizerStyle.RINGS ->
+            R.string.visualizer_style_pulse_rings
+        VisualizerStyle.ORB ->
+            R.string.visualizer_style_orb
+        VisualizerStyle.LADDER ->
+            R.string.visualizer_style_led_ladder
+        VisualizerStyle.HORIZON ->
+            R.string.visualizer_style_horizon
+        VisualizerStyle.CONSTELLATION ->
+            R.string.visualizer_style_constellation
+        VisualizerStyle.PEAK_DOTS ->
+            R.string.visualizer_style_peak_dots
+        VisualizerStyle.SPECTRUM_LINE ->
+            R.string.visualizer_style_neon_line
+        VisualizerStyle.NORTHERN_LIGHTS ->
+            R.string.visualizer_style_northern_lights
+        VisualizerStyle.SPECTRAL_RIVER ->
+            R.string.visualizer_style_spectral_river
+        VisualizerStyle.SPECTRAL_TERRAIN ->
+            R.string.visualizer_style_terrain
+        VisualizerStyle.CURL_FLOW ->
+            R.string.visualizer_style_curl_flow
+        VisualizerStyle.STRANGE_ATTRACTOR ->
+            R.string.visualizer_style_strange_attractor
+        VisualizerStyle.CYMATIC ->
+            R.string.visualizer_style_cymatics
+        VisualizerStyle.SUPERFORMULA_BLOOM ->
+            R.string.visualizer_style_bloom
+        VisualizerStyle.WORMHOLE ->
+            R.string.visualizer_style_wormhole
+        else ->
+            R.string.visualizer_style_spectrum_bars
+    }
+
 
 @Composable
 private fun VisualizerPreview(prefs: VisualizerPrefs) {
@@ -188,7 +318,7 @@ private fun VisualizerPreview(prefs: VisualizerPrefs) {
         VisualizerCanvas(controller, prefs, colors, Modifier.fillMaxWidth().height(160.dp).padding(8.dp))
         if (controller.frame.level <= 0.001f) {
             Text(
-                "Play something to see it react",
+                stringResource(R.string.visualizer_preview_empty),
                 color = Color.White.copy(alpha = 0.5f),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.align(Alignment.Center),

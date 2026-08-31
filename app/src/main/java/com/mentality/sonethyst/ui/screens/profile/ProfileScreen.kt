@@ -1,5 +1,7 @@
 package com.mentality.sonethyst.ui.screens.profile
 
+import com.mentality.sonethyst.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,6 +48,7 @@ fun ProfileScreen(
     username: String,
     server: String,
     serverLabel: String,
+    isLocal: Boolean = false,
     avatarUrl: String,
     playlists: List<Playlist>,
     artists: List<Artist>,
@@ -54,8 +56,25 @@ fun ProfileScreen(
     onOpenSettings: () -> Unit,
     onOpenDetail: (String, String) -> Unit,
 ) {
-    val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val initials = username.take(2).uppercase().ifBlank { "ME" }
+    val topInset =
+        WindowInsets.statusBars
+            .asPaddingValues()
+            .calculateTopPadding()
+
+    val initials =
+        username
+            .take(2)
+            .uppercase()
+            .ifBlank {
+                stringResource(
+                    R.string.user_avatar_fallback
+                )
+            }
+
+    val listenerLabel =
+        stringResource(
+            R.string.home_listener
+        )
     LazyColumn(
         Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding() + 24.dp),
@@ -71,9 +90,10 @@ fun ProfileScreen(
                     Modifier.fillMaxWidth().padding(top = topInset + 6.dp, start = 8.dp, end = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onBack).padding(8.dp))
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        stringResource(R.string.action_back), modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onBack).padding(8.dp))
                     Spacer(Modifier.weight(1f))
-                    Icon(Icons.Filled.MoreVert, "More", modifier = Modifier.size(40.dp).clip(CircleShape).padding(8.dp))
                 }
                 Column(
                     Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
@@ -91,7 +111,10 @@ fun ProfileScreen(
                         }
                     }
                     Spacer(Modifier.height(10.dp))
-                    Text(username.ifBlank { "Listener" }, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+                    Text(
+                        if (isLocal) stringResource(R.string.accounts_local_library) else username.ifBlank {
+                            listenerLabel
+                        }, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
                     Text(serverLabel.ifBlank { server.removePrefix("http://").removePrefix("https://") }, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -102,9 +125,28 @@ fun ProfileScreen(
                 Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                Stat("${playlists.size}", "Playlists")
-                Stat("${artists.size}", "Artists")
-                Stat(serverLabel.ifBlank { "Server" }, "Server")
+                Stat(
+                    "${playlists.size}",
+                    stringResource(
+                        R.string.profile_playlists
+                    ),
+                )
+                Stat(
+                    "${artists.size}",
+                    stringResource(
+                        R.string.profile_artists
+                    ),
+                )
+                Stat(
+                    serverLabel.ifBlank {
+                        stringResource(
+                            R.string.profile_server
+                        )
+                    },
+                    stringResource(
+                        R.string.profile_server
+                    ),
+                )
             }
         }
 
@@ -117,7 +159,10 @@ fun ProfileScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.Edit, null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Settings", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                        Text(
+                            stringResource(
+                                R.string.settings_title
+                            ), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
                     }
                 }
             }
@@ -125,7 +170,10 @@ fun ProfileScreen(
 
         if (artists.isNotEmpty()) {
             item {
-                SectionHeader("Top artists", Modifier.padding(horizontal = 16.dp))
+                SectionHeader(
+                    stringResource(
+                        R.string.profile_top_artists
+                    ), Modifier.padding(horizontal = 16.dp))
                 Spacer(Modifier.height(10.dp))
                 LazyRow(contentPadding = PaddingValues(horizontal = 8.dp)) {
                     items(
@@ -146,7 +194,10 @@ fun ProfileScreen(
 
         if (playlists.isNotEmpty()) {
             item {
-                SectionHeader("Your playlists", Modifier.padding(horizontal = 16.dp))
+                SectionHeader(
+                    stringResource(
+                        R.string.profile_your_playlists
+                    ), Modifier.padding(horizontal = 16.dp))
                 Spacer(Modifier.height(10.dp))
                 LazyRow(contentPadding = PaddingValues(horizontal = 8.dp)) {
                     items(

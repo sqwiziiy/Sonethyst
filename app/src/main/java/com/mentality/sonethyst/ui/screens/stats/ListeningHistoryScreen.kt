@@ -1,5 +1,7 @@
 package com.mentality.sonethyst.ui.screens.stats
 
+import com.mentality.sonethyst.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -37,6 +39,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mentality.sonethyst.SonethystApplication
 import com.mentality.sonethyst.data.PlayEvent
 import com.mentality.sonethyst.ui.components.Artwork
+import com.mentality.sonethyst.ui.components.displayArtist
+import com.mentality.sonethyst.ui.components.displayTitle
 import com.mentality.sonethyst.util.accentFor
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -45,31 +49,70 @@ import java.util.Locale
 
 @Composable
 fun ListeningHistoryScreen(contentPadding: PaddingValues, onBack: () -> Unit, onPlay: (String) -> Unit) {
-    val container = (LocalContext.current.applicationContext as SonethystApplication).container
-    val history by container.playHistory.history.collectAsStateWithLifecycle()
-    val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+    val context =
+        LocalContext.current
+
+    val container =
+        (
+            context.applicationContext
+                as SonethystApplication
+            ).container
+
+    val history by
+        container.playHistory.history
+            .collectAsStateWithLifecycle()
+
+    val topInset =
+        WindowInsets.statusBars
+            .asPaddingValues()
+            .calculateTopPadding()
+
+    val localeKey =
+        context.resources.configuration.locales
+            .toLanguageTags()
+
+    val timeFmt =
+        remember(localeKey) {
+            android.text.format.DateFormat
+                .getTimeFormat(context)
+        }
 
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(top = topInset + 6.dp, start = 8.dp, end = 16.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onBack).padding(8.dp))
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                stringResource(R.string.action_back), modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onBack).padding(8.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Listening history", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text(
+                stringResource(R.string.history_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         }
         if (history.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Filled.History, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(56.dp))
                     Spacer(Modifier.size(12.dp))
-                    Text("Nothing played yet", style = MaterialTheme.typography.titleMedium)
-                    Text("Your recently played tracks will appear here", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        stringResource(R.string.history_empty), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(
+                            R.string.history_empty_summary
+                        ), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             return@Column
         }
-        val grouped = remember(history) {
-            history.groupBy { dayLabel(it.timestamp) }
-        }
+        val grouped =
+            remember(
+                history,
+                localeKey,
+            ) {
+                history.groupBy {
+                    dayLabel(
+                        context,
+                        it.timestamp,
+                    )
+                }
+            }
         LazyColumn(Modifier.fillMaxWidth(), contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding() + 24.dp)) {
             grouped.forEach { (day, events) ->
                 item {
@@ -90,8 +133,8 @@ fun ListeningHistoryScreen(contentPadding: PaddingValues, onBack: () -> Unit, on
                         Artwork(e.artworkUrl, accentFor(e.songId), Modifier.size(48.dp), corner = 10.dp)
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(e.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(e.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(displayTitle(e.title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(displayArtist(e.artist), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         Text(timeFmt.format(Date(e.timestamp)), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -101,15 +144,66 @@ fun ListeningHistoryScreen(contentPadding: PaddingValues, onBack: () -> Unit, on
     }
 }
 
-private fun dayLabel(ts: Long): String {
-    val now = Calendar.getInstance()
-    val then = Calendar.getInstance().apply { timeInMillis = ts }
-    val sameDay = now.get(Calendar.YEAR) == then.get(Calendar.YEAR) && now.get(Calendar.DAY_OF_YEAR) == then.get(Calendar.DAY_OF_YEAR)
-    now.add(Calendar.DAY_OF_YEAR, -1)
-    val yesterday = now.get(Calendar.YEAR) == then.get(Calendar.YEAR) && now.get(Calendar.DAY_OF_YEAR) == then.get(Calendar.DAY_OF_YEAR)
+private fun dayLabel(
+    context: android.content.Context,
+    ts: Long,
+): String {
+    val now =
+        Calendar.getInstance()
+
+    val then =
+        Calendar.getInstance().apply {
+            timeInMillis = ts
+        }
+
+    val sameDay =
+        now.get(Calendar.YEAR) ==
+            then.get(Calendar.YEAR) &&
+            now.get(Calendar.DAY_OF_YEAR) ==
+            then.get(Calendar.DAY_OF_YEAR)
+
+    now.add(
+        Calendar.DAY_OF_YEAR,
+        -1,
+    )
+
+    val yesterday =
+        now.get(Calendar.YEAR) ==
+            then.get(Calendar.YEAR) &&
+            now.get(Calendar.DAY_OF_YEAR) ==
+            then.get(Calendar.DAY_OF_YEAR)
+
     return when {
-        sameDay -> "Today"
-        yesterday -> "Yesterday"
-        else -> SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(Date(ts))
+        sameDay ->
+            context.getString(
+                R.string.history_today
+            )
+
+        yesterday ->
+            context.getString(
+                R.string.history_yesterday
+            )
+
+        else -> {
+            val locale =
+                context.resources
+                    .configuration
+                    .locales[0]
+                    ?: Locale.getDefault()
+
+            val pattern =
+                android.text.format.DateFormat
+                    .getBestDateTimePattern(
+                        locale,
+                        "EEEEMMMd",
+                    )
+
+            SimpleDateFormat(
+                pattern,
+                locale,
+            ).format(
+                Date(ts)
+            )
+        }
     }
 }

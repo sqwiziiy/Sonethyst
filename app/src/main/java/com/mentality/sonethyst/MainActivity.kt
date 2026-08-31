@@ -12,6 +12,10 @@ import com.mentality.sonethyst.ui.SonethystApp
 import com.mentality.sonethyst.ui.theme.SonethystTheme
 
 class MainActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)

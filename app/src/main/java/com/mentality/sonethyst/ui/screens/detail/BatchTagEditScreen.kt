@@ -53,6 +53,9 @@ fun BatchTagEditScreen(
     onBack: () -> Unit,
     confirm: (String) -> Unit,
 ) {
+    val context =
+        androidx.compose.ui.platform.LocalContext.current
+
     val consentLauncher =
         rememberLauncherForActivityResult(
             ActivityResultContracts
@@ -65,7 +68,9 @@ fun BatchTagEditScreen(
                 onSave()
             } else {
                 confirm(
-                    "Write permission denied"
+                    context.getString(
+                        com.mentality.sonethyst.R.string.batch_tags_write_denied
+                    )
                 )
             }
         }
@@ -89,7 +94,9 @@ fun BatchTagEditScreen(
         Modifier.fillMaxSize()
     ) {
         SettingsTopBar(
-            "Batch edit tags",
+            androidx.compose.ui.res.stringResource(
+                com.mentality.sonethyst.R.string.batch_tags_title
+            ),
             onBack,
         )
 
@@ -124,7 +131,11 @@ fun BatchTagEditScreen(
                 )
         ) {
             Text(
-                "${state.items.size} tracks selected",
+                androidx.compose.ui.res.pluralStringResource(
+                    com.mentality.sonethyst.R.plurals.batch_tags_selected,
+                    state.items.size,
+                    state.items.size,
+                ),
                 style =
                     MaterialTheme
                         .typography
@@ -138,7 +149,9 @@ fun BatchTagEditScreen(
             )
 
             Text(
-                "Only checked fields will be changed. Unchecked metadata stays untouched.",
+                androidx.compose.ui.res.stringResource(
+                    com.mentality.sonethyst.R.string.batch_tags_explanation
+                ),
                 style =
                     MaterialTheme
                         .typography
@@ -154,7 +167,9 @@ fun BatchTagEditScreen(
             )
 
             BatchField(
-                "Title",
+                androidx.compose.ui.res.stringResource(
+                    com.mentality.sonethyst.R.string.batch_tags_field_title
+                ),
                 state.fields[
                     BatchTagField.TITLE
                 ],
@@ -173,7 +188,9 @@ fun BatchTagEditScreen(
             )
 
             BatchField(
-                "Artist",
+                androidx.compose.ui.res.stringResource(
+                    com.mentality.sonethyst.R.string.batch_tags_field_artist
+                ),
                 state.fields[
                     BatchTagField.ARTIST
                 ],
@@ -192,7 +209,9 @@ fun BatchTagEditScreen(
             )
 
             BatchField(
-                "Album",
+                androidx.compose.ui.res.stringResource(
+                    com.mentality.sonethyst.R.string.batch_tags_field_album
+                ),
                 state.fields[
                     BatchTagField.ALBUM
                 ],
@@ -211,7 +230,9 @@ fun BatchTagEditScreen(
             )
 
             BatchField(
-                "Album artist",
+                androidx.compose.ui.res.stringResource(
+                    com.mentality.sonethyst.R.string.batch_tags_field_album_artist
+                ),
                 state.fields[
                     BatchTagField.ALBUM_ARTIST
                 ],
@@ -230,7 +251,9 @@ fun BatchTagEditScreen(
             )
 
             BatchField(
-                "Genre",
+                androidx.compose.ui.res.stringResource(
+                    com.mentality.sonethyst.R.string.batch_tags_field_genre
+                ),
                 state.fields[
                     BatchTagField.GENRE
                 ],
@@ -249,7 +272,9 @@ fun BatchTagEditScreen(
             )
 
             BatchField(
-                "Year",
+                androidx.compose.ui.res.stringResource(
+                    com.mentality.sonethyst.R.string.batch_tags_field_year
+                ),
                 state.fields[
                     BatchTagField.YEAR
                 ],
@@ -268,7 +293,9 @@ fun BatchTagEditScreen(
             )
 
             BatchField(
-                "Track #",
+                androidx.compose.ui.res.stringResource(
+                    com.mentality.sonethyst.R.string.batch_tags_field_track_number
+                ),
                 state.fields[
                     BatchTagField.TRACK_NUMBER
                 ],
@@ -318,9 +345,13 @@ fun BatchTagEditScreen(
 
                 Text(
                     if (state.saving) {
-                        "Saving…"
+                        androidx.compose.ui.res.stringResource(
+                            com.mentality.sonethyst.R.string.batch_tags_saving
+                        )
                     } else {
-                        "Apply to selected tracks"
+                        androidx.compose.ui.res.stringResource(
+                            com.mentality.sonethyst.R.string.batch_tags_apply
+                        )
                     },
                     fontWeight =
                         FontWeight.Bold,
@@ -369,7 +400,9 @@ private fun BatchField(
                     if (state.mixed) {
                         {
                             Text(
-                                "Multiple values"
+                                androidx.compose.ui.res.stringResource(
+                                    com.mentality.sonethyst.R.string.batch_tags_multiple_values
+                                )
                             )
                         }
                     } else {
@@ -386,7 +419,9 @@ private fun BatchField(
                 state.value.isBlank()
             ) {
                 Text(
-                    "Blank will clear this field on all selected tracks.",
+                    androidx.compose.ui.res.stringResource(
+                        com.mentality.sonethyst.R.string.batch_tags_blank_clears
+                    ),
                     style =
                         MaterialTheme
                             .typography

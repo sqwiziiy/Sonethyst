@@ -161,13 +161,32 @@ class AppContainer(context: Context) {
         song.copy(streamUrl = local.streamUrl, artworkUrl = local.artworkUrl.ifBlank { song.artworkUrl })
 
     private fun buildBackend(session: Session): MediaBackend = when (session.type) {
-        ServerType.JELLYFIN -> JellyfinBackend(JellyfinClient(session), { maxBitrate }, ::localizeSong)
-        ServerType.SUBSONIC -> SubsonicBackend(SubsonicClient(session), { maxBitrate }, ::localizeSong)
+        ServerType.JELLYFIN ->
+            JellyfinBackend(
+                appContext,
+                JellyfinClient(session),
+                { maxBitrate },
+                ::localizeSong,
+            )
+        ServerType.SUBSONIC ->
+            SubsonicBackend(
+                appContext,
+                SubsonicClient(session),
+                { maxBitrate },
+                ::localizeSong,
+            )
         ServerType.SPOTIFY -> SpotifyBackend(
+            appContext,
             SpotifyClient(session, spotifyClientIdValue, onTokenRefreshed = { tok -> scope.launch { settingsStore.updateToken(tok) } }),
             { maxBitrate }, ::localizeSong,
         )
-        ServerType.LOCAL -> LocalBackend(localLibrary, localStore, session)
+        ServerType.LOCAL ->
+            LocalBackend(
+                appContext,
+                localLibrary,
+                localStore,
+                session,
+            )
     }
 
     private fun buildActiveBackend(session: Session, unified: Boolean, mergeKeys: Set<String>, saved: List<Session>): MediaBackend {
@@ -178,10 +197,21 @@ class AppContainer(context: Context) {
             .filter { mergeKeys.isEmpty() || accountKey(it) in mergeKeys }
             .distinctBy { accountKey(it) }
         val sources = buildList {
-            add(LocalBackend(localLibrary, localStore, localMergeSession))
+            add(
+                LocalBackend(
+                    appContext,
+                    localLibrary,
+                    localStore,
+                    localMergeSession,
+                )
+            )
             serverSessions.forEach { add(buildBackend(it)) }
         }
-        return if (sources.size <= 1) buildBackend(session) else MergedBackend(sources, session)
+        return if (sources.size <= 1) buildBackend(session) else MergedBackend(
+            appContext,
+            sources,
+            session,
+        )
     }
 
     private suspend fun rebuildBackend() {
@@ -231,7 +261,7 @@ class AppContainer(context: Context) {
 
     val listenBrainz = ListenBrainzScrobbler(settingsStore, scope)
 
-    val discord = DiscordRpc(settingsStore, scope)
+    val discord = DiscordRpc(appContext, settingsStore, scope)
 
     val youtubeResolver = com.mentality.sonethyst.playback.YoutubeResolver()
 
@@ -315,6 +345,14 @@ class AppContainer(context: Context) {
             extraBufferCapacity = 16,
         )
     val ratingChanges = _ratingChanges.asSharedFlow()
+
+    // Star/unstar mutations refresh only the small Liked summary in library UI.
+    private val _likesReload = MutableStateFlow(0)
+    val likesReload: StateFlow<Int> = _likesReload.asStateFlow()
+
+    fun notifyLikesChanged() {
+        _likesReload.value++
+    }
     @Volatile private var lastAccountKey: String? = null
     private fun accountKey(s: Session?): String = s?.accountKey() ?: ""
 
@@ -331,6 +369,7 @@ class AppContainer(context: Context) {
     val smartEngine = SmartPlaylistEngine(playHistory, downloadManager)
 
     val repository = MusicRepository(
+        context = appContext,
         backendProvider = { backend },
         downloadManager = downloadManager,
         localStore = localStore,

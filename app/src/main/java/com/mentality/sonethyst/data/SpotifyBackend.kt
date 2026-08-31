@@ -1,5 +1,7 @@
 package com.mentality.sonethyst.data
 
+import android.content.Context
+import com.mentality.sonethyst.R
 import com.mentality.sonethyst.data.remote.AddTracksBody
 import com.mentality.sonethyst.data.remote.ChangeDetailsBody
 import com.mentality.sonethyst.data.remote.CreatePlaylistBody
@@ -33,6 +35,7 @@ import java.net.URLEncoder
 
 // stream urls are Sonethyst YouTube sentinel URIs resolved at play time
 class SpotifyBackend(
+    private val context: Context,
     private val c: SpotifyClient,
     private val maxBitrateProvider: () -> Int,
     private val localize: (Song) -> Song,
@@ -40,6 +43,33 @@ class SpotifyBackend(
 
     private val api = c.api
     override val session: Session = c.session
+
+    private fun songCountText(count: Int): String =
+        context.resources.getQuantityString(
+            R.plurals.backend_song_count,
+            count,
+            count,
+        )
+
+    private fun followersText(count: Long): String {
+        val quantity =
+            count.coerceIn(
+                0L,
+                Int.MAX_VALUE.toLong(),
+            ).toInt()
+
+        return context.resources.getQuantityString(
+            R.plurals.backend_followers,
+            quantity,
+            formatCount(count),
+        )
+    }
+
+    private fun byUser(name: String): String =
+        context.getString(
+            R.string.backend_by_user,
+            name,
+        )
 
     // invalidated on like/unlike
     @Volatile private var likedCache: List<Song>? = null
@@ -197,7 +227,10 @@ class SpotifyBackend(
     private fun SpPlaylist.toPlaylist() = Playlist(
         id = id ?: "",
         title = name ?: "",
-        subtitle = owner?.displayName?.let { "by $it" } ?: (description ?: ""),
+        subtitle =
+            owner?.displayName
+                ?.let(::byUser)
+                ?: (description ?: ""),
         coverUrl = img(images),
         songCount = items?.total ?: tracks?.total ?: 0,
         accent = accentFor(id ?: ""),
@@ -323,7 +356,16 @@ class SpotifyBackend(
                 val albums = runCatching { api.artistAlbums(id).items?.map { it.toAlbum() } }.getOrNull().orEmpty()
                 Log.d("SpotifyBE", "artist $id (${ar.name}) market=$mkt → top=${top.size} albums=${albums.size}")
                 val followers = ar.followers?.total ?: 0
-                val sub = if (followers > 0) "${formatCount(followers)} followers" else "Artist"
+                val sub =
+                    if (followers > 0) {
+                        followersText(
+                            followers
+                        )
+                    } else {
+                        context.getString(
+                            R.string.backend_fallback_artist
+                        )
+                    }
                 DetailData(
                     info = DetailInfo(ar.name ?: "", sub, img(ar.images), accentFor(id), true, top.size, "Artist"),
                     tracks = top,
@@ -332,12 +374,28 @@ class SpotifyBackend(
             }
             "playlist" -> {
                 val header = runCatching { api.playlist(id) }.getOrNull()
-                val sub = header?.owner?.displayName?.let { "by $it" } ?: ""
+                val sub =
+                    header?.owner
+                        ?.displayName
+                        ?.let(::byUser)
+                        .orEmpty()
                 val apiPage = runCatching { api.playlistItems(id, 0, PAGE) }.getOrNull()
                 val apiTracks = apiPage?.items?.mapNotNull { (it.item ?: it.track)?.toSong() }.orEmpty()
                 if (apiTracks.isNotEmpty()) {
                     DetailData(
-                        info = DetailInfo(header?.name ?: "Playlist", sub, img(header?.images), accentFor(id), false, apiPage?.total ?: apiTracks.size, "Playlist"),
+                        info = DetailInfo(
+                            header?.name
+                                ?: context.getString(
+                                    R.string.backend_fallback_playlist
+                                ),
+                            sub,
+                            img(header?.images),
+                            accentFor(id),
+                            false,
+                            apiPage?.total
+                                ?: apiTracks.size,
+                            "Playlist",
+                        ),
                         tracks = apiTracks,
                     )
                 } else {
@@ -345,7 +403,18 @@ class SpotifyBackend(
                     val embed = fetchEmbedTracks(id)
                     Log.d("SpotifyBE", "playlist $id non-owned → embed tracks=${embed.size}")
                     DetailData(
-                        info = DetailInfo(header?.name ?: "Playlist", sub, img(header?.images), accentFor(id), false, embed.size, "Playlist"),
+                        info = DetailInfo(
+                            header?.name
+                                ?: context.getString(
+                                    R.string.backend_fallback_playlist
+                                ),
+                            sub,
+                            img(header?.images),
+                            accentFor(id),
+                            false,
+                            embed.size,
+                            "Playlist",
+                        ),
                         tracks = embed,
                     )
                 }
@@ -354,7 +423,19 @@ class SpotifyBackend(
                 val page = api.savedTracks(limit = PAGE, offset = 0)
                 val tracks = page.items?.mapNotNull { it.track?.toSong() }.orEmpty()
                 DetailData(
-                    info = DetailInfo("Liked Songs", "${page.total} songs", tracks.firstOrNull()?.artworkUrl ?: "", accentFor("liked"), false, page.total, "Liked"),
+                    info = DetailInfo(
+                        context.getString(
+                            R.string.backend_liked_songs
+                        ),
+                        songCountText(
+                            page.total
+                        ),
+                        tracks.firstOrNull()?.artworkUrl ?: "",
+                        accentFor("liked"),
+                        false,
+                        page.total,
+                        "Liked",
+                    ),
                     tracks = tracks,
                 )
             }

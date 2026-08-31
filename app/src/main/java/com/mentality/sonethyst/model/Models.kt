@@ -2,6 +2,8 @@ package com.mentality.sonethyst.model
 
 import androidx.compose.ui.graphics.Color
 
+const val UNKNOWN_TITLE_SENTINEL = "\u0000sonethyst_unknown_title"
+
 data class Song(
     val id: String,
     val title: String,
